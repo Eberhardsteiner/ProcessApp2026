@@ -1,0 +1,306 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Info,
+  RefreshCw,
+  Search,
+  GitBranch,
+  RotateCcw,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react';
+import type { ProcessMiningAssistedV2State, ProcessMiningDiscoverySummary } from '../../domain/process';
+import { computeV2Discovery, formatShare } from './discovery';
+import type { V2DiscoveryResult } from './discovery';
+import { VariantCard } from './VariantCard';
+import { getAnalysisModeLabel } from './pmShared';
+import { buildDiscoveryNarrative } from './stepNarratives';
+import { StepNarrativePanel } from './StepNarrativePanel';
+
+interface Props {
+  state: ProcessMiningAssistedV2State;
+  onChange: (patch: Partial<ProcessMiningAssistedV2State>) => void;
+  onNext: () => void;
+  onBack: () => void;
+}
+
+function buildSummaryFromResult(
+  result: V2DiscoveryResult,
+  notes: string,
+): ProcessMiningDiscoverySummary {
+  return {
+    caseCount: result.totalCases,
+    variantCount: result.variants.length,
+    mainVariantShare: result.coreProcessCaseCoverage,
+    topSteps: result.coreProcess,
+    analysisMode: result.analysisMode,
+    sampleNotice: result.sampleNotice,
+    notes,
+    updatedAt: result.computedAt,
+  };
+}
+
+export function DiscoveryStep({ state, onChange, onNext, onBack }: Props) {
+  const [result, setResult] = useState<V2DiscoveryResult | null>(null);
+  const [notes, setNotes] = useState(state.discoverySummary?.notes ?? '');
+  const [showAllVariants, setShowAllVariants] = useState(false);
+  const [showLoops, setShowLoops] = useState(false);
+  const [ran, setRan] = useState(!!state.discoverySummary);
+  const autoRunRef = useRef(false);
+
+  const stepObservations = useMemo(
+    () => state.observations.filter(observation => observation.kind === 'step'),
+    [state.observations],
+  );
+
+  function runDiscovery() {
+    const nextResult = computeV2Discovery({
+      cases: state.cases,
+      observations: state.observations,
+      lastDerivationSummary: state.lastDerivationSummary,
+    });
+    setResult(nextResult);
+    setRan(true);
+    onChange({ discoverySummary: buildSummaryFromResult(nextResult, notes) });
+  }
+
+  function saveNotes() {
+    const baseResult = displayResult;
+    if (!baseResult) return;
+    onChange({ discoverySummary: buildSummaryFromResult(baseResult, notes) });
+  }
+
+  const displayResult = result ?? (
+    ran || state.discoverySummary
+      ? computeV2Discovery({
+          cases: state.cases,
+          observations: state.observations,
+          lastDerivationSummary: state.lastDerivationSummary,
+        })
+      : null
+  );
+
+  useEffect(() => {
+    if (autoRunRef.current) return;
+    if (stepObservations.length === 0) return;
+    if (state.discoverySummary) return;
+    autoRunRef.current = true;
+    runDiscovery();
+  }, [stepObservations.length, state.discoverySummary]);
+
+  const visibleVariants = showAllVariants
+    ? (displayResult?.variants ?? [])
+    : (displayResult?.variants ?? []).slice(0, 3);
+
+  const isProcessDraft = displayResult?.analysisMode === 'process-draft';
+  const metricCards = displayResult
+    ? isProcessDraft
+      ? [
+          { label: 'Quellen ausgewertet', value: displayResult.totalCases || state.cases.length },
+          { label: 'Erkannte Hauptschritte', value: displayResult.coreProcess.length },
+          { label: 'Analysemodus', value: 'Entwurf' },
+          { label: 'Schritte gesamt', value: displayResult.totalStepObservations },
+        ]
+      : [
+          { label: 'Fälle analysiert', value: displayResult.totalCases },
+          { label: 'Varianten erkannt', value: displayResult.variants.length },
+          { label: 'Kernprozess-Abdeckung', value: formatShare(displayResult.coreProcessCaseCoverage) },
+          { label: 'Erkannte Schritte', value: displayResult.totalStepObservations },
+        ]
+    : [];
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
+        <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+        <div className="text-sm text-blue-800 space-y-1">
+          <p className="font-medium">Was passiert hier?</p>
+          <p>
+            Die automatisch erkannten Schritte werden zu einem verständlichen Ablauf verdichtet.
+            Bei nur einem Dokument oder einem einzelnen Fall entsteht zunächst ein Prozessentwurf.
+            Erst mit mehreren Fällen werden Varianten und Häufigkeiten wirklich belastbar.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 flex-wrap">
+        <button
+          type="button"
+          onClick={runDiscovery}
+          disabled={stepObservations.length === 0}
+          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {ran ? (
+            <>
+              <RefreshCw className="w-4 h-4" />
+              Erneut analysieren
+            </>
+          ) : (
+            <>
+              <Search className="w-4 h-4" />
+              Kernprozess erkennen
+            </>
+          )}
+        </button>
+        {stepObservations.length === 0 && (
+          <p className="text-xs text-slate-400">
+            Kehren Sie zu Schritt 1 zurück und werten Sie mindestens einen Fall oder ein Dokument aus.
+          </p>
+        )}
+        {stepObservations.length > 0 && !ran && (
+          <p className="text-xs text-slate-500">
+            {stepObservations.length} erkannte Schritte aus {Math.max(state.cases.length, new Set(stepObservations.map(o => o.sourceCaseId).filter(Boolean)).size)} Quellen bereit.
+          </p>
+        )}
+      </div>
+
+      {displayResult && (
+        <div className="space-y-5">
+          <StepNarrativePanel
+            title="Was die Analyse in Schritt 2 aussagt"
+            narrative={buildDiscoveryNarrative(displayResult)}
+          />
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <p className="font-semibold text-slate-800">{getAnalysisModeLabel(displayResult.analysisMode)}</p>
+            <p className="mt-1 text-slate-600 leading-relaxed">{displayResult.sampleNotice}</p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {metricCards.map(metric => (
+              <div key={metric.label} className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <p className="text-xs text-slate-500">{metric.label}</p>
+                <p className="text-2xl font-bold text-slate-800 mt-0.5">{metric.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {displayResult.coreProcess.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                <GitBranch className="w-4 h-4 text-blue-600" />
+                {isProcessDraft ? 'Erkannter Prozessentwurf' : 'Wie läuft der Prozess meistens ab?'}
+              </h3>
+              <div className="bg-blue-50 border border-blue-300 rounded-xl p-4">
+                <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide mb-3">
+                  {isProcessDraft
+                    ? 'Aus dem ausgewerteten Material abgeleitete Hauptschritte'
+                    : `Kernprozess — tritt in ${formatShare(displayResult.coreProcessCaseCoverage)} der Fälle auf`}
+                </p>
+                <ol className="space-y-2">
+                  {displayResult.coreProcess.map((step, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <span className="mt-0.5 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                        {index + 1}
+                      </span>
+                      <span className="text-sm text-slate-800 leading-relaxed pt-0.5">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+                {isProcessDraft && (
+                  <p className="mt-4 text-xs text-blue-700 leading-relaxed">
+                    Diese Schrittfolge stammt aus einem einzelnen Dokument oder Fall. Sie ist ein belastbarer Erstentwurf,
+                    aber noch keine statistische Aussage über den Standardablauf im Unternehmen.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!isProcessDraft && displayResult.variants.length > 1 && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                <GitBranch className="w-4 h-4 text-slate-500" />
+                Welche Varianten gibt es?
+              </h3>
+              <div className="space-y-2">
+                {visibleVariants.map((variant, index) => (
+                  <VariantCard key={variant.id} variant={variant} rank={index + 1} />
+                ))}
+              </div>
+              {displayResult.variants.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllVariants(show => !show)}
+                  className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  {showAllVariants ? (
+                    <><ChevronDown className="w-3.5 h-3.5" /> Weniger anzeigen</>
+                  ) : (
+                    <><ChevronRight className="w-3.5 h-3.5" /> {displayResult.variants.length - 3} weitere Varianten anzeigen</>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
+
+          {displayResult.loops.length > 0 && (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowLoops(show => !show)}
+                className="flex items-center gap-2 font-semibold text-slate-700 text-sm"
+              >
+                {showLoops ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                <RotateCcw className="w-4 h-4 text-orange-500" />
+                Wiederholungen erkannt ({displayResult.loops.length})
+              </button>
+              {showLoops && (
+                <div className="space-y-1.5 pl-4">
+                  {displayResult.loops.map((loop, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                      <span className="text-sm text-orange-800">
+                        „{loop.label}" wird in {loop.count} {loop.count === 1 ? 'Quelle' : 'Quellen'} wiederholt.
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">
+              Eigene Notizen zum erkannten Prozess
+            </label>
+            <textarea
+              rows={3}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
+              placeholder={isProcessDraft
+                ? 'Was wirkt am abgeleiteten Prozessentwurf plausibel? Wo sollte nachgeschärft oder mit weiteren Fällen ergänzt werden?'
+                : 'Was fällt Ihnen beim erkannten Kernprozess auf? Gibt es etwas Unerwartetes?'}
+              value={notes}
+              onChange={event => setNotes(event.target.value)}
+              onBlur={saveNotes}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-2 px-4 py-2 text-slate-600 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Zurück
+        </button>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={!displayResult || displayResult.coreProcess.length === 0}
+          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          Mit Soll abgleichen
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
