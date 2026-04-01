@@ -1,0 +1,982 @@
+import type {
+  DerivationSummary,
+  ProcessMiningAnalysisMode,
+  ProcessMiningObservation,
+  ProcessMiningObservationCase,
+} from '../../domain/process';
+import { findDocumentProcessCandidates } from '../../import/documentProcessDiscovery';
+import { extractSemiStructuredProcedureFromText } from '../../import/semiStructuredProcedureExtraction';
+import type { SemiStructuredProcedureStep } from '../../import/semiStructuredProcedureExtraction';
+import { extractStructuredProcedureFromText } from '../../import/structuredProcedureExtraction';
+import type { StructuredProcedureStep } from '../../import/structuredProcedureExtraction';
+import { extractObservationsFromCase } from './narrativeParsing';
+import {
+  buildAnalysisModeNotice,
+  createObservation,
+  detectProcessMiningAnalysisMode,
+  normalizeWhitespace,
+  sentenceCase,
+  uniqueStrings,
+} from './pmShared';
+import {
+  canonicalizeProcessStepLabel,
+  inferStepFamily,
+  stepSemanticKey,
+} from './semanticStepFamilies';
+import { repairDerivedObservations } from './reviewSuggestions';
+
+export interface DerivationInput {
+  text: string;
+  fileName?: string;
+  sourceType: 'pdf' | 'docx' | 'narrative' | 'csv-row' | 'xlsx-row';
+}
+
+export interface DerivationResult {
+  cases: ProcessMiningObservationCase[];
+  observations: ProcessMiningObservation[];
+  method: 'structured' | 'semi-structured' | 'narrative-fallback';
+  documentKind: 'procedure-document' | 'case-narrative' | 'unknown';
+  warnings: string[];
+  confidence: 'high' | 'medium' | 'low';
+  derivedSteps: Array<{ label: string; role?: string; evidenceSnippet?: string }>;
+  roles: string[];
+  systems: string[];
+  issueSignals: string[];
+  summary: DerivationSummary;
+}
+
+const ENGINE_VERSION = 'pm-local-engine-v2.4';
+const MIN_USEFUL_STEPS = 3;
+const MAX_NARRATIVE_LENGTH_IN_CASE = 2000;
+
+interface CandidateBlock {
+  title: string;
+  body: string;
+  timestampRaw?: string;
+}
+
+interface NarrativeDocumentProfile {
+  hasStoryHeading: boolean;
+  hasTimeline: boolean;
+  hasAiSection: boolean;
+  hasSignalSection: boolean;
+  hasQuestions: boolean;
+  isMixed: boolean;
+}
+
+interface IssueEvidence {
+  label: string;
+  snippet: string;
+}
+
+const TIME_HEADING_RE = /^(\d{1,2}:\d{2}\s*Uhr)\s*\|\s*(.+)$/i;
+const MAJOR_HEADING_RE = /^\s*([1-9])\.\s+(.+)$/;
+const STORY_HEADING_RE = /^\s*3\.\s+Die Geschichte\s*$/im;
+const PIPE_ROW_RE = /^\s*\|(.+)\|\s*$/;
+const HEADING_BLOCKLIST = [
+  /rahmen der geschichte/i,
+  /die person im prozess/i,
+  /tagesverlauf/i,
+  /ki-unterstützung/i,
+  /kurzfazit/i,
+  /welche signale/i,
+  /beispielfragen/i,
+  /app-test/i,
+  /testfall/i,
+  /signal\s*$/i,
+  /nutzen fu?r den test/i,
+  /erwartete wirkung/i,
+];
+
+const ROLE_PATTERNS: Array<[RegExp, string]> = [
+  [/\bservicekoordinator(?:in)?\b/i, 'Servicekoordination'],
+  [/\bqualitätsmanagement\b|\bqualitaetsmanagement\b|\bqm\b/i, 'Qualitätsmanagement'],
+  [/\btechnik\b|\btechniker(?:in)?\b/i, 'Technik'],
+  [/\bteamleitung\b/i, 'Teamleitung'],
+  [/\bvertrieb\b/i, 'Vertrieb'],
+  [/\blogistik\b/i, 'Logistik'],
+  [/\bkey-?account\b/i, 'Key Account'],
+  [/\bkunde\b/i, 'Kunde'],
+  [/\bsachbearbeiter(?:in)?\b/i, 'Sachbearbeitung'],
+  [/\bservice\b/i, 'Service'],
+];
+
+const SYSTEM_PATTERNS: Array<[RegExp, string]> = [
+  [/\bcrm\b/i, 'CRM'],
+  [/\berp\b/i, 'ERP'],
+  [/\bdms\b|dokumentenmanagement/i, 'DMS'],
+  [/\be-?mail\b|postfach/i, 'E-Mail'],
+  [/\bchat\b/i, 'Chat'],
+  [/\btelefon(?:at)?\b/i, 'Telefon'],
+  [/\bremote\b/i, 'Remote-Support'],
+  [/\breport\b/i, 'Reporting'],
+  [/\bsap\b/i, 'SAP'],
+];
+
+const ISSUE_PATTERNS: Array<[RegExp, string]> = [
+  [/seriennummer|auftragsnummer|fehlende information|mindestdaten|pflichtangaben|betriebsdauer|technischer zustand/i, 'Fehlende Pflichtangaben verzögern den Fallstart'],
+  [/crm|erp|e-?mail|dokumentenmanagement|zwischen fenstern|mehreren systemen|verschiedenen systemen/i, 'Informationen müssen aus mehreren Systemen zusammengeführt werden'],
+  [/priorit|eskalationsmodus|risikoabwägung|unsicherheit|schichtplanung|stillstand|dringend/i, 'Priorisierung erfolgt unter Unsicherheit'],
+  [/warte|wartet|wartezeiten|noch auf antworten|halte den druck aus|freigaben kosten/i, 'Wartezeiten und Koordinationsaufwand belasten den Ablauf'],
+  [/ähnlich(?:en)? fäll|aehnlich(?:en)? faell|wissensspeicher|erinnerung|postfach entdecke ich|private e-mail/i, 'Erfahrungswissen ist schlecht auffindbar'],
+  [/kundenfähige sprache|kundenfaehige sprache|zwischenmeldung|kommunikation|abschlussmail|kernaussage|beziehungspflege/i, 'Hohe Kommunikationslast und Mehrfachdokumentation'],
+  [/freigabe|kulanz|teamleitung und vertrieb|genehmig/i, 'Freigaben verzögern die Umsetzung'],
+  [/implizite koordination|kleine übergaben|kleine uebergaben|schnittstelle/i, 'Viele kleine Übergaben erzeugen implizite Koordination'],
+];
+
+const SIGNAL_ROW_HINTS: Array<[RegExp, string]> = [
+  [/fehlende pflichtangaben|unvollständige eingänge|unvollstaendige eing[aä]nge/i, 'Fehlende Pflichtangaben verzögern den Fallstart'],
+  [/eskalationssignale|stillstand|schichtplanung|strategisch wichtiger kunde/i, 'Priorisierung erfolgt unter Unsicherheit'],
+  [/verteiltes wissen|ähnliche fälle|aehnliche faelle|persönliche erinnerung|persoenliche erinnerung/i, 'Erfahrungswissen ist schlecht auffindbar'],
+  [/implizite koordination|service|qm|technik|vertrieb|logistik/i, 'Viele kleine Übergaben erzeugen implizite Koordination'],
+  [/kommunikationslast|mehrfachdokumentation|zwischenstände|zwischenstaende/i, 'Hohe Kommunikationslast und Mehrfachdokumentation'],
+  [/freigabe|kulanz/i, 'Freigaben verzögern die Umsetzung'],
+];
+
+function cleanInputText(text: string): string {
+  return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\t/g, ' ').trim();
+}
+
+function buildCase(params: {
+  name: string;
+  narrative: string;
+  rawText: string;
+  sourceNote?: string;
+  sourceType: ProcessMiningObservationCase['sourceType'];
+  inputKind: ProcessMiningObservationCase['inputKind'];
+  derivedStepLabels?: string[];
+}): ProcessMiningObservationCase {
+  const now = new Date().toISOString();
+  return {
+    id: crypto.randomUUID(),
+    name: params.name,
+    narrative: params.narrative,
+    rawText: params.rawText,
+    sourceNote: params.sourceNote,
+    sourceType: params.sourceType,
+    inputKind: params.inputKind,
+    derivedStepLabels: params.derivedStepLabels,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function getSourceName(fileName: string | undefined, sourceType: DerivationInput['sourceType']): string {
+  return fileName ?? (sourceType === 'narrative' ? 'Freitext' : 'Import');
+}
+
+function sliceNarrative(text: string): string {
+  const trimmed = cleanInputText(text);
+  if (trimmed.length <= MAX_NARRATIVE_LENGTH_IN_CASE) return trimmed;
+  return `${trimmed.slice(0, MAX_NARRATIVE_LENGTH_IN_CASE).trimEnd()}…`;
+}
+
+function extractStorySection(text: string): string | null {
+  const match = STORY_HEADING_RE.exec(text);
+  if (!match) return null;
+  const start = match.index + match[0].length;
+  const after = text.slice(start);
+  const nextHeading = after.match(/^\s*[4-9]\.\s+.+$/m);
+  const storyText = nextHeading ? after.slice(0, nextHeading.index).trim() : after.trim();
+  return storyText || null;
+}
+
+function profileNarrativeDocument(text: string): NarrativeDocumentProfile {
+  const normalized = text.toLowerCase();
+  const hasStoryHeading = /\b3\.\s+die geschichte\b/i.test(text);
+  const hasTimeline = (text.match(/^\d{1,2}:\d{2}\s*Uhr\s*\|/gm) ?? []).length >= 2;
+  const hasAiSection = /ki-unterstützung|ki-unterstuetzung/i.test(normalized);
+  const hasSignalSection = /welche signale|beobachtete reibung|erkennbar im text/i.test(normalized);
+  const hasQuestions = /beispielfragen/i.test(normalized);
+  return {
+    hasStoryHeading,
+    hasTimeline,
+    hasAiSection,
+    hasSignalSection,
+    hasQuestions,
+    isMixed: hasStoryHeading && (hasAiSection || hasSignalSection || hasQuestions),
+  };
+}
+
+function extractRelevantNarrativeSource(text: string): string {
+  return extractStorySection(text) ?? text;
+}
+
+function isMostlyNarrative(text: string): boolean {
+  const lower = text.toLowerCase();
+  const firstPersonSignals = (lower.match(/\b(ich|wir|mein|meine|mich|uns)\b/g) ?? []).length;
+  const timeHeadings = (text.match(/^\d{1,2}:\d{2}\s*Uhr\s*\|/gm) ?? []).length;
+  return timeHeadings >= 2 || firstPersonSignals >= 5 || /die geschichte/i.test(text);
+}
+
+function extractTimelineBlocks(text: string): CandidateBlock[] {
+  const relevantText = extractRelevantNarrativeSource(text);
+  const lines = relevantText.split('\n');
+  const blocks: CandidateBlock[] = [];
+  let current: CandidateBlock | null = null;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const blockedHeading = line.match(MAJOR_HEADING_RE);
+    if (blockedHeading && Number(blockedHeading[1]) >= 4) {
+      break;
+    }
+    const timeMatch = line.match(TIME_HEADING_RE);
+    if (timeMatch) {
+      if (current && normalizeWhitespace(`${current.title} ${current.body}`).length > 24) {
+        blocks.push(current);
+      }
+      current = {
+        timestampRaw: timeMatch[1],
+        title: normalizeWhitespace(timeMatch[2]),
+        body: '',
+      };
+      continue;
+    }
+    if (current) {
+      current.body = current.body ? `${current.body}\n${line}` : line;
+    }
+  }
+
+  if (current && normalizeWhitespace(`${current.title} ${current.body}`).length > 24) {
+    blocks.push(current);
+  }
+
+  return blocks;
+}
+
+function candidateTexts(text: string, refId: string): string[] {
+  const candidates = findDocumentProcessCandidates([{ refId, text }], { maxCandidates: 5 });
+  if (candidates.length === 0) return [text];
+  return uniqueStrings(candidates.map(candidate => candidate.text));
+}
+
+function isBlockedParagraph(paragraph: string): boolean {
+  if (!paragraph) return true;
+  if (PIPE_ROW_RE.test(paragraph)) return true;
+  const firstLine = paragraph.split('\n')[0] ?? paragraph;
+  if (HEADING_BLOCKLIST.some(re => re.test(firstLine))) return true;
+  if (/^\d+\)\s+/.test(paragraph)) return true;
+  if (/^signal$/i.test(paragraph) || /^nutzen/i.test(paragraph)) return true;
+  return false;
+}
+
+function paragraphBlocksFromText(text: string): CandidateBlock[] {
+  const source = extractRelevantNarrativeSource(text);
+  return source
+    .split(/\n{2,}/)
+    .map(chunk => normalizeWhitespace(chunk))
+    .filter(chunk => chunk.length > 40)
+    .filter(chunk => !isBlockedParagraph(chunk))
+    .map(chunk => {
+      const firstSentence = chunk.split(/(?<=[.!?])\s+/)[0] ?? chunk;
+      return { title: sentenceCase(firstSentence), body: chunk };
+    });
+}
+
+function extractRoles(text: string): string[] {
+  return uniqueStrings(ROLE_PATTERNS.filter(([re]) => re.test(text)).map(([, label]) => label));
+}
+
+function extractSystems(text: string): string[] {
+  return uniqueStrings(SYSTEM_PATTERNS.filter(([re]) => re.test(text)).map(([, label]) => label));
+}
+
+function extractIssueSignals(text: string): string[] {
+  return uniqueStrings(ISSUE_PATTERNS.filter(([re]) => re.test(text)).map(([, label]) => label));
+}
+
+function dedupeIssueEvidence(entries: IssueEvidence[]): IssueEvidence[] {
+  const byKey = new Map<string, IssueEvidence>();
+  for (const entry of entries) {
+    const key = normalizeWhitespace(entry.label).toLowerCase();
+    if (!key) continue;
+    if (!byKey.has(key)) {
+      byKey.set(key, { label: entry.label, snippet: entry.snippet });
+      continue;
+    }
+    const existing = byKey.get(key)!;
+    if (entry.snippet && existing.snippet && existing.snippet !== entry.snippet) {
+      byKey.set(key, {
+        label: existing.label,
+        snippet: `${existing.snippet} ${entry.snippet}`.slice(0, 320).trim(),
+      });
+    }
+  }
+  return Array.from(byKey.values());
+}
+
+function extractIssueEvidence(text: string): IssueEvidence[] {
+  const snippets = cleanInputText(text)
+    .split(/\n{2,}|(?<=[.!?])\s+/)
+    .map(part => normalizeWhitespace(part))
+    .filter(part => part.length >= 25);
+
+  const evidence: IssueEvidence[] = [];
+  for (const snippet of snippets) {
+    for (const [re, label] of ISSUE_PATTERNS) {
+      if (re.test(snippet)) {
+        evidence.push({ label, snippet: sentenceCase(snippet).slice(0, 220) });
+      }
+    }
+  }
+
+  for (const rawLine of text.split('\n')) {
+    const match = rawLine.match(PIPE_ROW_RE);
+    if (!match) continue;
+    const cells = match[1]
+      .split('|')
+      .map(cell => normalizeWhitespace(cell))
+      .filter(Boolean);
+    if (cells.length < 2) continue;
+    const joined = cells.join(' | ');
+    if (/beobachtete reibung|erwartete wirkung|erkennbar im text|nutzen fu?r den test|sinnvolle ki-unterstützung|sinnvolle ki-unterstuetzung/i.test(joined)) {
+      continue;
+    }
+    for (const [re, label] of SIGNAL_ROW_HINTS) {
+      if (re.test(joined)) {
+        evidence.push({ label, snippet: joined.slice(0, 220) });
+      }
+    }
+  }
+
+  return dedupeIssueEvidence(evidence);
+}
+
+function buildIssueObservations(params: {
+  caseId: string;
+  startIndex: number;
+  issueEvidence: IssueEvidence[];
+}): ProcessMiningObservation[] {
+  return params.issueEvidence.map((issue, index) =>
+    createObservation({
+      caseId: params.caseId,
+      label: issue.label,
+      sequenceIndex: params.startIndex + index,
+      evidenceSnippet: issue.snippet,
+      kind: 'issue',
+      timestampQuality: 'missing',
+    }),
+  );
+}
+
+function toObservationsFromStructured(caseId: string, steps: StructuredProcedureStep[]): ProcessMiningObservation[] {
+  return steps.map((step, index) =>
+    createObservation({
+      caseId,
+      label: canonicalizeProcessStepLabel({ title: step.label, body: step.description || step.evidenceSnippet, fallback: step.label, index }),
+      sequenceIndex: index,
+      role: step.responsible,
+      evidenceSnippet: step.evidenceSnippet,
+      kind: 'step',
+      timestampQuality: 'missing',
+    }),
+  );
+}
+
+function toObservationsFromSemiStructured(caseId: string, steps: SemiStructuredProcedureStep[]): ProcessMiningObservation[] {
+  return steps.map((step, index) =>
+    createObservation({
+      caseId,
+      label: canonicalizeProcessStepLabel({ title: step.label, body: step.description || step.evidenceSnippet, fallback: step.label, index }),
+      sequenceIndex: index,
+      role: step.responsible,
+      evidenceSnippet: step.evidenceSnippet,
+      kind: 'step',
+      timestampQuality: 'missing',
+    }),
+  );
+}
+
+function dedupeDerivedSteps(
+  steps: Array<{ label: string; role?: string; evidenceSnippet?: string; timestampRaw?: string; systems?: string[]; issueSignals?: string[] }>,
+) {
+  const seen = new Set<string>();
+  return steps.filter(step => {
+    const key = stepSemanticKey(step.label);
+    if (!step.label || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function buildNarrativeDocumentNote(profile: NarrativeDocumentProfile): string | undefined {
+  if (profile.isMixed) {
+    return 'Mischdokument erkannt: Der Prozessentwurf wird primär aus der eigentlichen Fallgeschichte bzw. Zeitleiste gebildet. Tabellen mit KI-Ideen, Kurzfazit und Testfragen fließen nur als Zusatzsignale ein.';
+  }
+  if (profile.hasStoryHeading || profile.hasTimeline) {
+    return 'Narrative Fallbeschreibung erkannt: Die App verdichtet die geschilderten Episoden zu einem belastbaren lokalen Prozessentwurf.';
+  }
+  return undefined;
+}
+
+function buildNarrativeDerivation(params: {
+  blocks: CandidateBlock[];
+  sourceName: string;
+  sourceType: DerivationInput['sourceType'];
+  rawText: string;
+  warnings: string[];
+  supplementalIssueSignals?: string[];
+  profile: NarrativeDocumentProfile;
+  baseConfidence?: 'high' | 'medium' | 'low';
+}): DerivationResult | null {
+  const {
+    blocks,
+    sourceName,
+    sourceType,
+    rawText,
+    warnings,
+    supplementalIssueSignals = [],
+    profile,
+    baseConfidence = 'medium',
+  } = params;
+
+  const derivedStepCandidates = dedupeDerivedSteps(
+    blocks
+      .map((block, index) => {
+        const label = canonicalizeProcessStepLabel({ title: block.title, body: block.body, fallback: block.title, index });
+        const roles = extractRoles(`${block.title} ${block.body}`);
+        const systems = extractSystems(block.body);
+        const issues = extractIssueSignals(`${block.title} ${block.body}`);
+        return {
+          label,
+          role: roles[0],
+          evidenceSnippet: normalizeWhitespace(`${block.timestampRaw ? `${block.timestampRaw} | ` : ''}${block.title}. ${block.body}`).slice(0, 320),
+          timestampRaw: block.timestampRaw,
+          systems,
+          issueSignals: issues,
+        };
+      })
+      .filter(step => step.label && step.label.length >= 4),
+  );
+
+  if (derivedStepCandidates.length < 2) return null;
+
+  const caseItem = buildCase({
+    name: sourceName.replace(/\.[^.]+$/, ''),
+    narrative: sliceNarrative(blocks.map(block => `${block.timestampRaw ? `${block.timestampRaw} | ` : ''}${block.title}\n${block.body}`).join('\n\n')),
+    rawText,
+    sourceNote: `Import aus: ${sourceName}`,
+    sourceType,
+    inputKind: sourceType === 'narrative' ? 'narrative' : 'document',
+    derivedStepLabels: derivedStepCandidates.map(step => step.label),
+  });
+
+  const observations: ProcessMiningObservation[] = [];
+  derivedStepCandidates.forEach((step, index) => {
+    observations.push(
+      createObservation({
+        caseId: caseItem.id,
+        label: step.label,
+        sequenceIndex: index,
+        role: step.role,
+        system: step.systems?.[0],
+        evidenceSnippet: step.evidenceSnippet,
+        timestampRaw: step.timestampRaw,
+        timestampQuality: step.timestampRaw ? 'synthetic' : 'missing',
+        kind: 'step',
+      }),
+    );
+  });
+
+  const roles = uniqueStrings(derivedStepCandidates.map(step => step.role));
+  const systems = uniqueStrings(derivedStepCandidates.flatMap(step => step.systems ?? []));
+  const issueSignals = uniqueStrings([
+    ...derivedStepCandidates.flatMap(step => step.issueSignals ?? []),
+    ...supplementalIssueSignals,
+  ]);
+
+  const narrativeIssueEvidence = dedupeIssueEvidence([
+    ...derivedStepCandidates.flatMap(step => (step.issueSignals ?? []).map(signal => ({ label: signal, snippet: step.evidenceSnippet ?? signal }))),
+    ...supplementalIssueSignals.map(signal => ({ label: signal, snippet: signal })),
+  ]);
+  observations.push(...buildIssueObservations({ caseId: caseItem.id, startIndex: derivedStepCandidates.length, issueEvidence: narrativeIssueEvidence }));
+
+  const familyHits = derivedStepCandidates.filter(step => inferStepFamily(step.label)).length;
+  const confidence: 'high' | 'medium' | 'low' =
+    baseConfidence === 'high' || familyHits >= Math.max(3, Math.ceil(derivedStepCandidates.length * 0.6))
+      ? 'high'
+      : derivedStepCandidates.length >= MIN_USEFUL_STEPS
+      ? 'medium'
+      : 'low';
+
+  const analysisMode: ProcessMiningAnalysisMode = 'process-draft';
+  const summaryNote = buildNarrativeDocumentNote(profile);
+  const documentSummary = [
+    buildAnalysisModeNotice({ mode: analysisMode, caseCount: 1, documentKind: 'case-narrative' }),
+    summaryNote,
+    issueSignals.length > 0 ? `Wichtige Reibungssignale: ${issueSignals.slice(0, 3).join(', ')}.` : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
+  const summary: DerivationSummary = {
+    sourceLabel: sourceName,
+    method: 'narrative-fallback',
+    documentKind: 'case-narrative',
+    analysisMode,
+    caseCount: 1,
+    observationCount: observations.length,
+    warnings,
+    confidence,
+    stepLabels: derivedStepCandidates.map(step => step.label),
+    roles,
+    systems,
+    issueSignals,
+    documentSummary,
+    engineVersion: ENGINE_VERSION,
+    provenance: 'local',
+    updatedAt: new Date().toISOString(),
+  };
+
+  return {
+    cases: [caseItem],
+    observations,
+    method: 'narrative-fallback',
+    documentKind: 'case-narrative',
+    warnings,
+    confidence,
+    derivedSteps: derivedStepCandidates.map(step => ({ label: step.label, role: step.role, evidenceSnippet: step.evidenceSnippet })),
+    roles,
+    systems,
+    issueSignals,
+    summary,
+  };
+}
+
+function buildStructuredDerivation(params: {
+  steps: StructuredProcedureStep[];
+  roles: string[];
+  warnings: string[];
+  title?: string;
+  sourceName: string;
+  sourceType: DerivationInput['sourceType'];
+  rawText: string;
+  confidence: 'high' | 'medium' | 'low';
+}): DerivationResult {
+  const { steps, roles, warnings, title, sourceName, sourceType, rawText, confidence } = params;
+  const derivedSteps = steps.map((step, index) => ({
+    label: canonicalizeProcessStepLabel({ title: step.label, body: step.description || step.evidenceSnippet, fallback: step.label, index }),
+    role: step.responsible,
+    evidenceSnippet: step.evidenceSnippet,
+  }));
+  const caseItem = buildCase({
+    name: title ?? sourceName.replace(/\.[^.]+$/, ''),
+    narrative: sliceNarrative(rawText),
+    rawText,
+    sourceNote: `Import aus: ${sourceName}`,
+    sourceType,
+    inputKind: sourceType === 'narrative' ? 'narrative' : 'document',
+    derivedStepLabels: derivedSteps.map(step => step.label),
+  });
+  const observations = toObservationsFromStructured(caseItem.id, steps);
+  const systems = extractSystems(rawText);
+  const issueEvidence = extractIssueEvidence(rawText);
+  const issueSignals = uniqueStrings(issueEvidence.map(entry => entry.label));
+  observations.push(...buildIssueObservations({ caseId: caseItem.id, startIndex: derivedSteps.length, issueEvidence }));
+  const summary: DerivationSummary = {
+    sourceLabel: sourceName,
+    method: 'structured',
+    documentKind: 'procedure-document',
+    analysisMode: 'process-draft',
+    caseCount: 1,
+    observationCount: observations.length,
+    warnings,
+    confidence,
+    stepLabels: derivedSteps.map(step => step.label),
+    roles,
+    systems,
+    issueSignals,
+    documentSummary: buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' }),
+    engineVersion: ENGINE_VERSION,
+    provenance: 'local',
+    updatedAt: new Date().toISOString(),
+  };
+  return {
+    cases: [caseItem],
+    observations,
+    method: 'structured',
+    documentKind: 'procedure-document',
+    warnings,
+    confidence,
+    derivedSteps,
+    roles,
+    systems,
+    issueSignals,
+    summary,
+  };
+}
+
+function buildSemiStructuredDerivation(params: {
+  steps: SemiStructuredProcedureStep[];
+  roles: string[];
+  warnings: string[];
+  title?: string;
+  sourceName: string;
+  sourceType: DerivationInput['sourceType'];
+  rawText: string;
+  confidence: 'high' | 'medium' | 'low';
+}): DerivationResult {
+  const { steps, roles, warnings, title, sourceName, sourceType, rawText, confidence } = params;
+  const derivedSteps = steps.map((step, index) => ({
+    label: canonicalizeProcessStepLabel({ title: step.label, body: step.description || step.evidenceSnippet, fallback: step.label, index }),
+    role: step.responsible,
+    evidenceSnippet: step.evidenceSnippet,
+  }));
+  const caseItem = buildCase({
+    name: title ?? sourceName.replace(/\.[^.]+$/, ''),
+    narrative: sliceNarrative(rawText),
+    rawText,
+    sourceNote: `Import aus: ${sourceName}`,
+    sourceType,
+    inputKind: sourceType === 'narrative' ? 'narrative' : 'document',
+    derivedStepLabels: derivedSteps.map(step => step.label),
+  });
+  const observations = toObservationsFromSemiStructured(caseItem.id, steps);
+  const systems = extractSystems(rawText);
+  const issueEvidence = extractIssueEvidence(rawText);
+  const issueSignals = uniqueStrings(issueEvidence.map(entry => entry.label));
+  observations.push(...buildIssueObservations({ caseId: caseItem.id, startIndex: derivedSteps.length, issueEvidence }));
+  const summary: DerivationSummary = {
+    sourceLabel: sourceName,
+    method: 'semi-structured',
+    documentKind: 'procedure-document',
+    analysisMode: 'process-draft',
+    caseCount: 1,
+    observationCount: observations.length,
+    warnings,
+    confidence,
+    stepLabels: derivedSteps.map(step => step.label),
+    roles,
+    systems,
+    issueSignals,
+    documentSummary: buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' }),
+    engineVersion: ENGINE_VERSION,
+    provenance: 'local',
+    updatedAt: new Date().toISOString(),
+  };
+  return {
+    cases: [caseItem],
+    observations,
+    method: 'semi-structured',
+    documentKind: 'procedure-document',
+    warnings,
+    confidence,
+    derivedSteps,
+    roles,
+    systems,
+    issueSignals,
+    summary,
+  };
+}
+
+function buildEmptyResult(sourceName: string, sourceType: DerivationInput['sourceType'], text: string, warning: string): DerivationResult {
+  const caseItem = buildCase({
+    name: sourceName,
+    narrative: sliceNarrative(text),
+    rawText: text,
+    sourceNote: `Import aus: ${sourceName}`,
+    sourceType,
+    inputKind: sourceType === 'narrative' ? 'narrative' : 'document',
+  });
+  const summary: DerivationSummary = {
+    sourceLabel: sourceName,
+    method: 'narrative-fallback',
+    documentKind: 'unknown',
+    analysisMode: 'process-draft',
+    caseCount: 1,
+    observationCount: 0,
+    warnings: [warning],
+    confidence: 'low',
+    stepLabels: [],
+    roles: [],
+    systems: [],
+    issueSignals: [],
+    documentSummary: buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'unknown' }),
+    engineVersion: ENGINE_VERSION,
+    provenance: 'local',
+    updatedAt: new Date().toISOString(),
+  };
+  return {
+    cases: [caseItem],
+    observations: [],
+    method: 'narrative-fallback',
+    documentKind: 'unknown',
+    warnings: [warning],
+    confidence: 'low',
+    derivedSteps: [],
+    roles: [],
+    systems: [],
+    issueSignals: [],
+    summary,
+  };
+}
+
+function finalizeDerivationResult(result: DerivationResult): DerivationResult {
+  const repaired = repairDerivedObservations(result.observations);
+  const stepLabels = uniqueStrings(
+    repaired.observations
+      .filter(observation => observation.kind === 'step')
+      .map(observation => observation.label),
+  );
+  const roles = uniqueStrings([...result.roles, ...repaired.observations.map(observation => observation.role)]);
+  const systems = uniqueStrings([...result.systems, ...repaired.observations.map(observation => observation.system)]);
+  const issueSignals = uniqueStrings([
+    ...result.issueSignals,
+    ...repaired.observations.filter(observation => observation.kind === 'issue').map(observation => observation.label),
+  ]);
+  const repairNotes = repaired.report.notes.length > 0 ? repaired.report.notes : result.summary.repairNotes;
+
+  return {
+    ...result,
+    cases: result.cases.map(caseItem => ({
+      ...caseItem,
+      derivedStepLabels: stepLabels.length > 0 ? stepLabels : caseItem.derivedStepLabels,
+      updatedAt: new Date().toISOString(),
+    })),
+    observations: repaired.observations,
+    roles,
+    systems,
+    issueSignals,
+    derivedSteps: repaired.observations
+      .filter(observation => observation.kind === 'step')
+      .map(observation => ({
+        label: observation.label,
+        role: observation.role,
+        evidenceSnippet: observation.evidenceSnippet,
+      })),
+    summary: {
+      ...result.summary,
+      observationCount: repaired.observations.length,
+      stepLabels,
+      roles,
+      systems,
+      issueSignals,
+      repairNotes,
+      engineVersion: ENGINE_VERSION,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+export function deriveProcessArtifactsFromText(input: DerivationInput): DerivationResult {
+  const rawText = cleanInputText(input.text);
+  const sourceName = getSourceName(input.fileName, input.sourceType);
+  const profile = profileNarrativeDocument(rawText);
+
+  if (rawText.length < 20) {
+    return finalizeDerivationResult(buildEmptyResult(sourceName, input.sourceType, rawText, 'Text zu kurz oder leer — keine Schritte erkennbar.'));
+  }
+
+  const warnings: string[] = [];
+  if (profile.isMixed) {
+    warnings.push('Mischdokument erkannt — Prozessschritte werden vor allem aus der eigentlichen Fallgeschichte oder Zeitleiste abgeleitet. Tabellen, KI-Ideen und Testfragen werden nur ergänzend genutzt.');
+  }
+
+  const roles = extractRoles(rawText);
+  const systems = extractSystems(rawText);
+  const supplementalIssueEvidence = extractIssueEvidence(rawText);
+  const supplementalIssueSignals = uniqueStrings(supplementalIssueEvidence.map(entry => entry.label));
+  const storyBlocks = extractTimelineBlocks(rawText);
+
+  if (isMostlyNarrative(rawText) && storyBlocks.length >= MIN_USEFUL_STEPS) {
+    const narrativeResult = buildNarrativeDerivation({
+      blocks: storyBlocks,
+      sourceName,
+      sourceType: input.sourceType,
+      rawText,
+      warnings,
+      supplementalIssueSignals,
+      profile,
+      baseConfidence: storyBlocks.length >= 5 ? 'high' : 'medium',
+    });
+    if (narrativeResult) {
+      narrativeResult.roles = uniqueStrings([...narrativeResult.roles, ...roles]);
+      narrativeResult.systems = uniqueStrings([...narrativeResult.systems, ...systems]);
+      narrativeResult.issueSignals = uniqueStrings([...narrativeResult.issueSignals, ...supplementalIssueSignals]);
+      narrativeResult.summary.roles = narrativeResult.roles;
+      narrativeResult.summary.systems = narrativeResult.systems;
+      narrativeResult.summary.issueSignals = narrativeResult.issueSignals;
+      return finalizeDerivationResult(narrativeResult);
+    }
+  }
+
+  for (const candidateText of candidateTexts(rawText, sourceName)) {
+    const structured = extractStructuredProcedureFromText(sourceName, candidateText);
+    if (structured && structured.steps.length >= MIN_USEFUL_STEPS) {
+      return finalizeDerivationResult(buildStructuredDerivation({
+        steps: structured.steps,
+        roles: uniqueStrings([...structured.roles.map(role => role.name), ...roles, ...structured.steps.map(step => step.responsible)]),
+        warnings: uniqueStrings([...structured.warnings, ...warnings]),
+        title: structured.title,
+        sourceName,
+        sourceType: input.sourceType,
+        rawText,
+        confidence: 'high',
+      }));
+    }
+  }
+
+  for (const candidateText of candidateTexts(rawText, sourceName)) {
+    const semiStructured = extractSemiStructuredProcedureFromText(sourceName, candidateText);
+    if (semiStructured && semiStructured.steps.length >= MIN_USEFUL_STEPS) {
+      return finalizeDerivationResult(buildSemiStructuredDerivation({
+        steps: semiStructured.steps,
+        roles: uniqueStrings([...semiStructured.roles, ...roles, ...semiStructured.steps.map(step => step.responsible)]),
+        warnings: uniqueStrings([...semiStructured.warnings, ...warnings]),
+        title: semiStructured.title,
+        sourceName,
+        sourceType: input.sourceType,
+        rawText,
+        confidence: semiStructured.confidence,
+      }));
+    }
+  }
+
+  const paragraphBlocks = paragraphBlocksFromText(rawText);
+  if (paragraphBlocks.length >= 2) {
+    const narrativeResult = buildNarrativeDerivation({
+      blocks: paragraphBlocks,
+      sourceName,
+      sourceType: input.sourceType,
+      rawText,
+      warnings: uniqueStrings([...warnings, 'Lokale Narrative-Heuristik verwendet, weil keine klare Verfahrensstruktur erkannt wurde.']),
+      supplementalIssueSignals,
+      profile,
+      baseConfidence: paragraphBlocks.length >= MIN_USEFUL_STEPS ? 'medium' : 'low',
+    });
+    if (narrativeResult) {
+      narrativeResult.roles = uniqueStrings([...narrativeResult.roles, ...roles]);
+      narrativeResult.systems = uniqueStrings([...narrativeResult.systems, ...systems]);
+      narrativeResult.issueSignals = uniqueStrings([...narrativeResult.issueSignals, ...supplementalIssueSignals]);
+      narrativeResult.summary.roles = narrativeResult.roles;
+      narrativeResult.summary.systems = narrativeResult.systems;
+      narrativeResult.summary.issueSignals = narrativeResult.issueSignals;
+      return finalizeDerivationResult(narrativeResult);
+    }
+  }
+
+  warnings.push('Keine belastbare Prozessstruktur erkannt — einfacher Satz-Fallback wird verwendet.');
+  const fallbackCase = buildCase({
+    name: sourceName,
+    narrative: sliceNarrative(rawText),
+    rawText,
+    sourceNote: `Import aus: ${sourceName}`,
+    sourceType: input.sourceType,
+    inputKind: input.sourceType === 'narrative' ? 'narrative' : 'document',
+  });
+  const { observations: fallbackObservations } = extractObservationsFromCase(fallbackCase);
+  const usableObservations = fallbackObservations.map((observation, index) => ({
+    ...observation,
+    label: observation.kind === 'step'
+      ? canonicalizeProcessStepLabel({ title: observation.label, body: observation.evidenceSnippet, fallback: observation.label, index })
+      : observation.label,
+  }));
+  const fallbackIssueEvidence = extractIssueEvidence(rawText);
+  const enrichedFallbackObservations = [
+    ...usableObservations,
+    ...buildIssueObservations({
+      caseId: fallbackCase.id,
+      startIndex: usableObservations.length,
+      issueEvidence: fallbackIssueEvidence,
+    }),
+  ];
+
+  const summary: DerivationSummary = {
+    sourceLabel: sourceName,
+    method: 'narrative-fallback',
+    documentKind: profile.hasStoryHeading || profile.hasTimeline ? 'case-narrative' : 'unknown',
+    analysisMode: 'process-draft',
+    caseCount: 1,
+    observationCount: enrichedFallbackObservations.length,
+    warnings,
+    confidence: 'low',
+    stepLabels: enrichedFallbackObservations.filter(observation => observation.kind === 'step').map(observation => observation.label),
+    roles,
+    systems,
+    issueSignals: supplementalIssueSignals,
+    documentSummary: [
+      buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: profile.hasStoryHeading || profile.hasTimeline ? 'case-narrative' : 'unknown' }),
+      buildNarrativeDocumentNote(profile),
+    ].filter(Boolean).join(' '),
+    engineVersion: ENGINE_VERSION,
+    provenance: 'local',
+    updatedAt: new Date().toISOString(),
+  };
+  return finalizeDerivationResult({
+    cases: [fallbackCase],
+    observations: enrichedFallbackObservations,
+    method: 'narrative-fallback',
+    documentKind: profile.hasStoryHeading || profile.hasTimeline ? 'case-narrative' : 'unknown',
+    warnings,
+    confidence: 'low',
+    derivedSteps: enrichedFallbackObservations
+      .filter(observation => observation.kind === 'step')
+      .map(observation => ({ label: observation.label, evidenceSnippet: observation.evidenceSnippet })),
+    roles,
+    systems,
+    issueSignals: supplementalIssueSignals,
+    summary,
+  });
+}
+
+export function deriveFromMultipleTexts(
+  inputs: Array<{ text: string; name: string; sourceType: DerivationInput['sourceType'] }>,
+): {
+  cases: ProcessMiningObservationCase[];
+  observations: ProcessMiningObservation[];
+  summaries: DerivationSummary[];
+  combinedSummary: DerivationSummary;
+  totalSteps: number;
+  warnings: string[];
+} {
+  const cases: ProcessMiningObservationCase[] = [];
+  const observations: ProcessMiningObservation[] = [];
+  const summaries: DerivationSummary[] = [];
+  const warnings: string[] = [];
+  let stepCount = 0;
+
+  for (const input of inputs) {
+    const result = deriveProcessArtifactsFromText({ text: input.text, fileName: input.name, sourceType: input.sourceType });
+    cases.push(...result.cases);
+    observations.push(...result.observations);
+    summaries.push(result.summary);
+    warnings.push(...result.warnings);
+    stepCount += result.derivedSteps.length;
+  }
+
+  const analysisMode = detectProcessMiningAnalysisMode({ cases, observations, lastDerivationSummary: summaries[0] });
+  const combinedSummary: DerivationSummary = {
+    sourceLabel: inputs.length === 1 ? inputs[0].name : `${inputs.length} importierte Beschreibungen`,
+    method: summaries.some(summary => summary.method === 'structured')
+      ? 'structured'
+      : summaries.some(summary => summary.method === 'semi-structured')
+      ? 'semi-structured'
+      : 'narrative-fallback',
+    documentKind: inputs.length > 1 ? 'case-narrative' : summaries[0]?.documentKind ?? 'unknown',
+    analysisMode,
+    caseCount: cases.length,
+    observationCount: observations.length,
+    warnings: uniqueStrings(warnings),
+    confidence: cases.length >= 5 || stepCount >= 15 ? 'high' : stepCount >= 6 ? 'medium' : 'low',
+    stepLabels: uniqueStrings(observations.filter(observation => observation.kind === 'step').map(observation => observation.label)).slice(0, 20),
+    roles: uniqueStrings(summaries.flatMap(summary => summary.roles)),
+    systems: uniqueStrings(summaries.flatMap(summary => summary.systems ?? [])),
+    issueSignals: uniqueStrings(summaries.flatMap(summary => summary.issueSignals ?? [])),
+    documentSummary: buildAnalysisModeNotice({ mode: analysisMode, caseCount: cases.length, documentKind: inputs.length > 1 ? 'case-narrative' : summaries[0]?.documentKind }),
+    engineVersion: ENGINE_VERSION,
+    provenance: 'local',
+    updatedAt: new Date().toISOString(),
+  };
+
+  return {
+    cases,
+    observations,
+    summaries,
+    combinedSummary,
+    totalSteps: stepCount,
+    warnings: uniqueStrings(warnings),
+  };
+}
