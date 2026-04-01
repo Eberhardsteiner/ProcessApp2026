@@ -539,6 +539,9 @@ export interface ProcessMiningObservationCase {
   dateHints?: string;
   sourceNote?: string;
   derivedStepLabels?: string[];
+  analysisProfileLabel?: string;
+  analysisProfileHint?: string;
+  analysisStrategies?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -605,6 +608,31 @@ export interface ProcessMiningQualitySummary {
   updatedAt: string;
 }
 
+
+export interface DerivationSourceProfile {
+  inputProfile: 'procedure-document' | 'narrative-timeline' | 'mixed-process-document' | 'signal-heavy-document' | 'table-like-material' | 'unclear';
+  inputProfileLabel: string;
+  extractionFocus: string;
+  sectionCounts: {
+    timeline: number;
+    procedural: number;
+    communication: number;
+    issue: number;
+    decision: number;
+    knowledge: number;
+    tableLike: number;
+    noise: number;
+  };
+  stability: 'high' | 'medium' | 'low';
+}
+
+export interface DerivationMultiCaseSummary {
+  caseCount: number;
+  stableSteps: string[];
+  variableSteps: string[];
+  patternNote: string;
+}
+
 export interface DerivationSummary {
   sourceLabel: string;
   method: 'structured' | 'semi-structured' | 'narrative-fallback';
@@ -619,6 +647,8 @@ export interface DerivationSummary {
   systems?: string[];
   issueSignals?: string[];
   documentSummary?: string;
+  sourceProfile?: DerivationSourceProfile;
+  multiCaseSummary?: DerivationMultiCaseSummary;
   repairNotes?: string[];
   engineVersion?: string;
   provenance?: 'local' | 'ai';

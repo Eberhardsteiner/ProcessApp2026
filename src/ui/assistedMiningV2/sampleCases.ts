@@ -4,6 +4,8 @@ import type {
   ProcessMiningObservationCase,
 } from '../../domain/process';
 import { deriveProcessArtifactsFromText, LOCAL_MINING_ENGINE_VERSION } from './documentDerivation';
+import { detectProcessMiningAnalysisMode } from './pmShared';
+import { aggregateSourceProfiles, buildMultiCaseSummary } from './sourceProfiling';
 
 export interface SampleScenarioDefinition {
   key: 'complaints' | 'service';
@@ -79,7 +81,6 @@ export function buildSampleScenario(key: SampleScenarioDefinition['key']): Sampl
   const warnings = new Set<string>();
   const methods = new Set<string>();
   const confidences = new Set<string>();
-  const analysisModes = new Set<string>();
 
   for (const source of definition.sources) {
     const result = deriveProcessArtifactsFromText({
@@ -100,6 +101,9 @@ export function buildSampleScenario(key: SampleScenarioDefinition['key']): Sampl
       sourceType: 'narrative',
       sourceNote: `Beispielquelle: ${definition.label}`,
       derivedStepLabels: result.summary.stepLabels,
+      analysisProfileLabel: baseCase?.analysisProfileLabel,
+      analysisProfileHint: baseCase?.analysisProfileHint,
+      analysisStrategies: baseCase?.analysisStrategies,
       createdAt: now,
       updatedAt: now,
     };
@@ -121,14 +125,22 @@ export function buildSampleScenario(key: SampleScenarioDefinition['key']): Sampl
     result.summary.warnings.forEach(warning => warnings.add(warning));
     methods.add(result.summary.method);
     confidences.add(result.summary.confidence);
-    analysisModes.add(result.summary.analysisMode);
   }
 
+  const sourceProfile = aggregateSourceProfiles(cases.map(caseItem => {
+    const result = definition.sources.find(source => source.name === caseItem.name);
+    if (!result) return undefined;
+    return deriveProcessArtifactsFromText({
+      text: result.text,
+      fileName: result.name,
+      sourceType: 'narrative',
+    }).summary.sourceProfile;
+  }));
   const summary: DerivationSummary = {
     sourceLabel: definition.label,
     method: methods.has('structured') ? 'structured' : methods.has('semi-structured') ? 'semi-structured' : 'narrative-fallback',
     documentKind: 'case-narrative',
-    analysisMode: analysisModes.has('true-mining') ? 'true-mining' : analysisModes.has('exploratory-mining') ? 'exploratory-mining' : 'process-draft',
+    analysisMode: detectProcessMiningAnalysisMode({ cases, observations }),
     caseCount: cases.length,
     observationCount: observations.length,
     warnings: Array.from(warnings),
@@ -138,6 +150,8 @@ export function buildSampleScenario(key: SampleScenarioDefinition['key']): Sampl
     systems: Array.from(systems),
     issueSignals: Array.from(issueSignals),
     documentSummary: definition.summary,
+    sourceProfile,
+    multiCaseSummary: buildMultiCaseSummary(observations),
     engineVersion: `${LOCAL_MINING_ENGINE_VERSION} · example pack`,
     provenance: 'local',
     updatedAt: new Date().toISOString(),

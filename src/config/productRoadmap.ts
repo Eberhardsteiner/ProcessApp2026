@@ -90,14 +90,15 @@ export const COMPLETED_PHASES: RoadmapPhase[] = [
     title: 'UI-Konsolidierung und ruhigerer Arbeitsfluss',
     summary: 'Große Bereiche wurden klar gebündelt, optionale Vertiefungen einklappbar gemacht und die Navigationslogik über mehrere Schritte beruhigt und vereinheitlicht.',
   },
+  {
+    versionLabel: 'v0.15',
+    phase: 'Phase 15',
+    title: 'Lokale Analyseengine 3.0',
+    summary: 'Stärkere Materialprofile, bessere Abschnittsselektion, robustere Kurzfall-Ableitung und klarere Mehrfallmuster machen die lokale Analyse ohne KI deutlich präziser und nachvollziehbarer.',
+  },
 ];
 
 export const NEXT_PHASES: RoadmapPhase[] = [
-  {
-    phase: 'Phase 15',
-    title: 'Lokale Analyseengine 3.0',
-    summary: 'Dokumentklassifikation, Abschnittserkennung, Schrittfamilien und Mehrfallvergleich ohne KI noch robuster und präziser machen.',
-  },
   {
     phase: 'Phase 16',
     title: 'Prüfwerkstatt 2.0',

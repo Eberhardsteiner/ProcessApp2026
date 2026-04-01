@@ -24,6 +24,13 @@ import {
   stepSemanticKey,
 } from './semanticStepFamilies';
 import { repairDerivedObservations } from './reviewSuggestions';
+import {
+  aggregateSourceProfiles,
+  buildMultiCaseSummary,
+  buildSourceProfile,
+  buildSourceProfileNote,
+  selectProcessParagraphs,
+} from './sourceProfiling';
 
 export interface DerivationInput {
   text: string;
@@ -45,7 +52,7 @@ export interface DerivationResult {
   summary: DerivationSummary;
 }
 
-export const LOCAL_MINING_ENGINE_VERSION = 'pm-local-engine-v2.5';
+export const LOCAL_MINING_ENGINE_VERSION = 'pm-local-engine-v3.0';
 const ENGINE_VERSION = LOCAL_MINING_ENGINE_VERSION;
 const MIN_USEFUL_STEPS = 3;
 const MAX_NARRATIVE_LENGTH_IN_CASE = 2000;
@@ -119,23 +126,29 @@ const SYSTEM_PATTERNS: Array<[RegExp, string]> = [
 ];
 
 const ISSUE_PATTERNS: Array<[RegExp, string]> = [
-  [/seriennummer|auftragsnummer|fehlende information|mindestdaten|pflichtangaben|betriebsdauer|technischer zustand/i, 'Fehlende Pflichtangaben verzögern den Fallstart'],
-  [/crm|erp|e-?mail|dokumentenmanagement|zwischen fenstern|mehreren systemen|verschiedenen systemen/i, 'Informationen müssen aus mehreren Systemen zusammengeführt werden'],
-  [/priorit|eskalationsmodus|risikoabwägung|unsicherheit|schichtplanung|stillstand|dringend/i, 'Priorisierung erfolgt unter Unsicherheit'],
-  [/warte|wartet|wartezeiten|noch auf antworten|halte den druck aus|freigaben kosten/i, 'Wartezeiten und Koordinationsaufwand belasten den Ablauf'],
-  [/ähnlich(?:en)? fäll|aehnlich(?:en)? faell|wissensspeicher|erinnerung|postfach entdecke ich|private e-mail/i, 'Erfahrungswissen ist schlecht auffindbar'],
-  [/kundenfähige sprache|kundenfaehige sprache|zwischenmeldung|kommunikation|abschlussmail|kernaussage|beziehungspflege/i, 'Hohe Kommunikationslast und Mehrfachdokumentation'],
-  [/freigabe|kulanz|teamleitung und vertrieb|genehmig/i, 'Freigaben verzögern die Umsetzung'],
-  [/implizite koordination|kleine übergaben|kleine uebergaben|schnittstelle/i, 'Viele kleine Übergaben erzeugen implizite Koordination'],
+  [/seriennummer|auftragsnummer|fehlende information|mindestdaten|pflichtangaben|betriebsdauer|technischer zustand/i, 'Fehlende Pflichtangaben'],
+  [/crm|erp|e-?mail|dokumentenmanagement|zwischen fenstern|mehreren systemen|verschiedenen systemen|ticketsystem|leitstand|monitoring/i, 'Informationen müssen aus mehreren Systemen zusammengeführt werden'],
+  [/priorit|eskalationsmodus|risikoabwägung|unsicherheit|schichtplanung|stillstand|dringend|sla/i, 'Priorisierung erfolgt unter Unsicherheit'],
+  [/warte|wartet|wartezeiten|noch auf antworten|halte den druck aus|freigaben kosten|drehscheibe|warte auf/i, 'Wartezeiten und Koordinationsaufwand belasten den Ablauf'],
+  [/ähnlich(?:en)? fäll|aehnlich(?:en)? faell|wissensspeicher|erinnerung|postfach entdecke ich|private e-mail|historie ab|alte e-mail/i, 'Erfahrungswissen liegt verstreut und schwer nutzbar vor'],
+  [/kundenfähige sprache|kundenfaehige sprache|zwischenmeldung|kommunikation|abschlussmail|kernaussage|beziehungspflege|erwartungsmanagement/i, 'Kommunikation muss Unsicherheit professionell abfedern'],
+  [/mehrfachdokumentation|dieselbe kernaussage|mehrere systeme|report|crm und report|medienbr[iü]ch|dieselbe kernaussage in mehreren systemen/i, 'Mehrfachdokumentation und Medienbrüche erhöhen den Aufwand'],
+  [/freigabe|kulanz|teamleitung und vertrieb|genehmig|kosten fehlt/i, 'Freigaben verlangsamen die Umsetzung'],
+  [/implizite koordination|kleine übergaben|kleine uebergaben|schnittstelle|drehscheibe|abstimm/i, 'Implizite Koordination bindet viele Beteiligte'],
+  [/sla|zeitfenster|priorisiert den einsatz/i, 'SLA-Druck prägt die Priorisierung'],
+  [/remote|ferndiagnose|remote-diagnose|remote-unterst[üu]tzung/i, 'Remote-Diagnose und Fernunterstützung sind Teil des Falls'],
+  [/sensorfehler|konfigurationsproblem|temperatursensor|wiederkehrender sensorfehler/i, 'Wiederkehrender Sensorfehler oder Konfigurationsproblem'],
 ];
 
 const SIGNAL_ROW_HINTS: Array<[RegExp, string]> = [
-  [/fehlende pflichtangaben|unvollständige eingänge|unvollstaendige eing[aä]nge/i, 'Fehlende Pflichtangaben verzögern den Fallstart'],
+  [/fehlende pflichtangaben|unvollständige eingänge|unvollstaendige eing[aä]nge/i, 'Fehlende Pflichtangaben'],
   [/eskalationssignale|stillstand|schichtplanung|strategisch wichtiger kunde/i, 'Priorisierung erfolgt unter Unsicherheit'],
-  [/verteiltes wissen|ähnliche fälle|aehnliche faelle|persönliche erinnerung|persoenliche erinnerung/i, 'Erfahrungswissen ist schlecht auffindbar'],
-  [/implizite koordination|service|qm|technik|vertrieb|logistik/i, 'Viele kleine Übergaben erzeugen implizite Koordination'],
-  [/kommunikationslast|mehrfachdokumentation|zwischenstände|zwischenstaende/i, 'Hohe Kommunikationslast und Mehrfachdokumentation'],
-  [/freigabe|kulanz/i, 'Freigaben verzögern die Umsetzung'],
+  [/verteiltes wissen|ähnliche fälle|aehnliche faelle|persönliche erinnerung|persoenliche erinnerung/i, 'Erfahrungswissen liegt verstreut und schwer nutzbar vor'],
+  [/implizite koordination|service|qm|technik|vertrieb|logistik/i, 'Implizite Koordination bindet viele Beteiligte'],
+  [/kommunikationslast|mehrfachdokumentation|zwischenstände|zwischenstaende/i, 'Mehrfachdokumentation und Medienbrüche erhöhen den Aufwand'],
+  [/freigabe|kulanz/i, 'Freigaben verlangsamen die Umsetzung'],
+  [/sla|zeitfenster/i, 'SLA-Druck prägt die Priorisierung'],
+  [/remote/i, 'Remote-Diagnose und Fernunterstützung sind Teil des Falls'],
 ];
 
 function cleanInputText(text: string): string {
@@ -150,6 +163,9 @@ function buildCase(params: {
   sourceType: ProcessMiningObservationCase['sourceType'];
   inputKind: ProcessMiningObservationCase['inputKind'];
   derivedStepLabels?: string[];
+  analysisProfileLabel?: string;
+  analysisProfileHint?: string;
+  analysisStrategies?: string[];
 }): ProcessMiningObservationCase {
   const now = new Date().toISOString();
   return {
@@ -161,6 +177,9 @@ function buildCase(params: {
     sourceType: params.sourceType,
     inputKind: params.inputKind,
     derivedStepLabels: params.derivedStepLabels,
+    analysisProfileLabel: params.analysisProfileLabel,
+    analysisProfileHint: params.analysisProfileHint,
+    analysisStrategies: params.analysisStrategies,
     createdAt: now,
     updatedAt: now,
   };
@@ -267,17 +286,63 @@ function isBlockedParagraph(paragraph: string): boolean {
   return false;
 }
 
+const ACTION_LEAD_RE = /^(?:service|julia|kunde|technik|qualit[aä]tsmanagement|qm|logistik|vertrieb|teamleitung|dispatcher|der techniker|die technik|das team|anschlie[ßs]end|danach|sp[aä]ter|am ende|zun[aä]chst|noch bevor|w[aä]hrend|parallel|gleichzeitig)?\s*(?:legt|nimmt|pr[üu]ft|fragt|fordert|stuft|bindet|schickt|leitet|sammelt|recherchiert|sucht|gleicht|entscheidet|priorisiert|best[aä]tigt|formuliert|kommuniziert|stimmt|holt|erh[aä]lt|organisiert|plant|bestellt|l[öo]st|informiert|dokumentiert|aktualisiert|schlie[ßs]t|empfiehlt|erkennt|spielt|behebt|bereitet|versendet)\b/i;
+
+function splitActionClauseUnit(text: string): string[] {
+  const normalized = normalizeWhitespace(text);
+  if (normalized.length < 24) return [normalized];
+
+  const commaSplit = normalized
+    .split(/,|;|\u2022/g)
+    .map(part => normalizeWhitespace(part))
+    .filter(Boolean);
+
+  const coarseParts = commaSplit.length >= 2 ? commaSplit : [normalized];
+  const refined: string[] = [];
+
+  for (const part of coarseParts) {
+    const subparts = part
+      .split(/\s+und\s+(?=(?:der|die|das|ein|eine|service|kunde|technik|logistik|vertrieb|teamleitung|dispatcher|techniker|sie|julia|anschlie[ßs]end|danach)?\s*(?:legt|nimmt|pr[üu]ft|fragt|fordert|stuft|bindet|schickt|leitet|sammelt|recherchiert|sucht|gleicht|entscheidet|priorisiert|best[aä]tigt|formuliert|kommuniziert|stimmt|holt|erh[aä]lt|organisiert|plant|bestellt|l[öo]st|informiert|dokumentiert|aktualisiert|schlie[ßs]t|empfiehlt|erkennt|spielt|behebt|bereitet|versendet)\b)/i)
+      .map(piece => normalizeWhitespace(piece))
+      .filter(Boolean);
+
+    if (subparts.length > 1) {
+      refined.push(...subparts);
+    } else {
+      refined.push(part);
+    }
+  }
+
+  return refined.filter(part => part.length >= 18);
+}
+
 function paragraphBlocksFromText(text: string): CandidateBlock[] {
   const source = extractRelevantNarrativeSource(text);
-  return source
-    .split(/\n{2,}/)
+  const sourceProfile = buildSourceProfile(source);
+  const processParagraphs = selectProcessParagraphs(source, sourceProfile);
+  const baseParagraphs = (processParagraphs.length > 0 ? processParagraphs : source.split(/\n{2,}/))
     .map(chunk => normalizeWhitespace(chunk))
-    .filter(chunk => chunk.length > 40)
-    .filter(chunk => !isBlockedParagraph(chunk))
-    .map(chunk => {
-      const firstSentence = chunk.split(/(?<=[.!?])\s+/)[0] ?? chunk;
-      return { title: sentenceCase(firstSentence), body: chunk };
-    });
+    .filter(chunk => chunk.length > 28)
+    .filter(chunk => !isBlockedParagraph(chunk));
+
+  const blocks: CandidateBlock[] = [];
+  for (const chunk of baseParagraphs) {
+    const units = splitActionClauseUnit(chunk);
+    if (units.length >= 2) {
+      units.forEach(unit => {
+        const title = sentenceCase(unit.split(/(?<=[.!?])\s+/)[0] ?? unit);
+        if (ACTION_LEAD_RE.test(unit) || unit.length > 30) {
+          blocks.push({ title, body: unit });
+        }
+      });
+      continue;
+    }
+
+    const firstSentence = chunk.split(/(?<=[.!?])\s+/)[0] ?? chunk;
+    blocks.push({ title: sentenceCase(firstSentence), body: chunk });
+  }
+
+  return blocks;
 }
 
 function extractRoles(text: string): string[] {
@@ -416,6 +481,23 @@ function buildNarrativeDocumentNote(profile: NarrativeDocumentProfile): string |
   return undefined;
 }
 
+function buildAnalysisStrategies(profileLabel: string): string[] {
+  const lower = normalizeWhitespace(profileLabel).toLowerCase();
+  if (lower.includes('mischdokument')) {
+    return ['Prozesskern aus dem Material filtern', 'Signal- und Zusatzmaterial getrennt behandeln', 'Ergebnis in der Prüfwerkstatt kurz kontrollieren'];
+  }
+  if (lower.includes('zeitverlauf') || lower.includes('fallgeschichte')) {
+    return ['Zeitverlauf in eine Hauptlinie verdichten', 'Rollen und Reibungen lokal ergänzen'];
+  }
+  if (lower.includes('verfahrensbeschreibung')) {
+    return ['Formale Schritte direkt übernehmen', 'Rollen und Systeme aus dem Text ergänzen'];
+  }
+  if (lower.includes('signal')) {
+    return ['Nur ablaufnahe Passagen als Schritte verwenden', 'Rest als Reibungssignal behandeln'];
+  }
+  return ['Vorsichtige Standardlogik verwenden', 'Ergebnis über Belegstellen prüfen'];
+}
+
 function buildNarrativeDerivation(params: {
   blocks: CandidateBlock[];
   sourceName: string;
@@ -436,6 +518,10 @@ function buildNarrativeDerivation(params: {
     profile,
     baseConfidence = 'medium',
   } = params;
+
+  const sourceProfile = buildSourceProfile(rawText);
+  const sourceProfileNote = buildSourceProfileNote(sourceProfile);
+  const analysisStrategies = buildAnalysisStrategies(sourceProfile.inputProfileLabel);
 
   const derivedStepCandidates = dedupeDerivedSteps(
     blocks
@@ -466,6 +552,9 @@ function buildNarrativeDerivation(params: {
     sourceType,
     inputKind: sourceType === 'narrative' ? 'narrative' : 'document',
     derivedStepLabels: derivedStepCandidates.map(step => step.label),
+    analysisProfileLabel: sourceProfile.inputProfileLabel,
+    analysisProfileHint: sourceProfile.extractionFocus,
+    analysisStrategies,
   });
 
   const observations: ProcessMiningObservation[] = [];
@@ -511,6 +600,7 @@ function buildNarrativeDerivation(params: {
   const documentSummary = [
     buildAnalysisModeNotice({ mode: analysisMode, caseCount: 1, documentKind: 'case-narrative' }),
     summaryNote,
+    sourceProfileNote,
     issueSignals.length > 0 ? `Wichtige Reibungssignale: ${issueSignals.slice(0, 3).join(', ')}.` : '',
   ]
     .filter(Boolean)
@@ -531,6 +621,7 @@ function buildNarrativeDerivation(params: {
     systems,
     issueSignals,
     documentSummary,
+    sourceProfile,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
@@ -562,6 +653,9 @@ function buildStructuredDerivation(params: {
   confidence: 'high' | 'medium' | 'low';
 }): DerivationResult {
   const { steps, roles, warnings, title, sourceName, sourceType, rawText, confidence } = params;
+  const sourceProfile = buildSourceProfile(rawText);
+  const sourceProfileNote = buildSourceProfileNote(sourceProfile);
+  const analysisStrategies = buildAnalysisStrategies(sourceProfile.inputProfileLabel);
   const derivedSteps = steps.map((step, index) => ({
     label: canonicalizeProcessStepLabel({ title: step.label, body: step.description || step.evidenceSnippet, fallback: step.label, index }),
     role: step.responsible,
@@ -575,6 +669,9 @@ function buildStructuredDerivation(params: {
     sourceType,
     inputKind: sourceType === 'narrative' ? 'narrative' : 'document',
     derivedStepLabels: derivedSteps.map(step => step.label),
+    analysisProfileLabel: sourceProfile.inputProfileLabel,
+    analysisProfileHint: sourceProfile.extractionFocus,
+    analysisStrategies,
   });
   const observations = toObservationsFromStructured(caseItem.id, steps);
   const systems = extractSystems(rawText);
@@ -594,7 +691,8 @@ function buildStructuredDerivation(params: {
     roles,
     systems,
     issueSignals,
-    documentSummary: buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' }),
+    documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' })} ${sourceProfileNote}`.trim(),
+    sourceProfile,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
@@ -625,6 +723,9 @@ function buildSemiStructuredDerivation(params: {
   confidence: 'high' | 'medium' | 'low';
 }): DerivationResult {
   const { steps, roles, warnings, title, sourceName, sourceType, rawText, confidence } = params;
+  const sourceProfile = buildSourceProfile(rawText);
+  const sourceProfileNote = buildSourceProfileNote(sourceProfile);
+  const analysisStrategies = buildAnalysisStrategies(sourceProfile.inputProfileLabel);
   const derivedSteps = steps.map((step, index) => ({
     label: canonicalizeProcessStepLabel({ title: step.label, body: step.description || step.evidenceSnippet, fallback: step.label, index }),
     role: step.responsible,
@@ -638,6 +739,9 @@ function buildSemiStructuredDerivation(params: {
     sourceType,
     inputKind: sourceType === 'narrative' ? 'narrative' : 'document',
     derivedStepLabels: derivedSteps.map(step => step.label),
+    analysisProfileLabel: sourceProfile.inputProfileLabel,
+    analysisProfileHint: sourceProfile.extractionFocus,
+    analysisStrategies,
   });
   const observations = toObservationsFromSemiStructured(caseItem.id, steps);
   const systems = extractSystems(rawText);
@@ -657,7 +761,8 @@ function buildSemiStructuredDerivation(params: {
     roles,
     systems,
     issueSignals,
-    documentSummary: buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' }),
+    documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' })} ${sourceProfileNote}`.trim(),
+    sourceProfile,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
@@ -678,6 +783,7 @@ function buildSemiStructuredDerivation(params: {
 }
 
 function buildEmptyResult(sourceName: string, sourceType: DerivationInput['sourceType'], text: string, warning: string): DerivationResult {
+  const sourceProfile = buildSourceProfile(text);
   const caseItem = buildCase({
     name: sourceName,
     narrative: sliceNarrative(text),
@@ -685,6 +791,9 @@ function buildEmptyResult(sourceName: string, sourceType: DerivationInput['sourc
     sourceNote: `Import aus: ${sourceName}`,
     sourceType,
     inputKind: sourceType === 'narrative' ? 'narrative' : 'document',
+    analysisProfileLabel: sourceProfile.inputProfileLabel,
+    analysisProfileHint: sourceProfile.extractionFocus,
+    analysisStrategies: buildAnalysisStrategies(sourceProfile.inputProfileLabel),
   });
   const summary: DerivationSummary = {
     sourceLabel: sourceName,
@@ -699,7 +808,8 @@ function buildEmptyResult(sourceName: string, sourceType: DerivationInput['sourc
     roles: [],
     systems: [],
     issueSignals: [],
-    documentSummary: buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'unknown' }),
+    documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'unknown' })} ${buildSourceProfileNote(sourceProfile)}`.trim(),
+    sourceProfile,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
@@ -733,12 +843,18 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     ...repaired.observations.filter(observation => observation.kind === 'issue').map(observation => observation.label),
   ]);
   const repairNotes = repaired.report.notes.length > 0 ? repaired.report.notes : result.summary.repairNotes;
+  const sourceProfile = result.summary.sourceProfile;
+  const multiCaseSummary = buildMultiCaseSummary(repaired.observations);
+  const analysisStrategies = sourceProfile ? buildAnalysisStrategies(sourceProfile.inputProfileLabel) : undefined;
 
   return {
     ...result,
     cases: result.cases.map(caseItem => ({
       ...caseItem,
       derivedStepLabels: stepLabels.length > 0 ? stepLabels : caseItem.derivedStepLabels,
+      analysisProfileLabel: sourceProfile?.inputProfileLabel ?? caseItem.analysisProfileLabel,
+      analysisProfileHint: sourceProfile?.extractionFocus ?? caseItem.analysisProfileHint,
+      analysisStrategies: analysisStrategies ?? caseItem.analysisStrategies,
       updatedAt: new Date().toISOString(),
     })),
     observations: repaired.observations,
@@ -760,6 +876,7 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       systems,
       issueSignals,
       repairNotes,
+      multiCaseSummary,
       engineVersion: ENGINE_VERSION,
       updatedAt: new Date().toISOString(),
     },
@@ -863,7 +980,8 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     }
   }
 
-  warnings.push('Keine belastbare Prozessstruktur erkannt — einfacher Satz-Fallback wird verwendet.');
+  warnings.push('Keine belastbare Prozessstruktur erkannt — einfache lokale Satz- und Abschnittslogik wird verwendet.');
+  const fallbackSourceProfile = buildSourceProfile(rawText);
   const fallbackCase = buildCase({
     name: sourceName,
     narrative: sliceNarrative(rawText),
@@ -871,6 +989,9 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     sourceNote: `Import aus: ${sourceName}`,
     sourceType: input.sourceType,
     inputKind: input.sourceType === 'narrative' ? 'narrative' : 'document',
+    analysisProfileLabel: fallbackSourceProfile.inputProfileLabel,
+    analysisProfileHint: fallbackSourceProfile.extractionFocus,
+    analysisStrategies: buildAnalysisStrategies(fallbackSourceProfile.inputProfileLabel),
   });
   const { observations: fallbackObservations } = extractObservationsFromCase(fallbackCase);
   const usableObservations = fallbackObservations.map((observation, index) => ({
@@ -905,7 +1026,9 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     documentSummary: [
       buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: profile.hasStoryHeading || profile.hasTimeline ? 'case-narrative' : 'unknown' }),
       buildNarrativeDocumentNote(profile),
+      buildSourceProfileNote(fallbackSourceProfile),
     ].filter(Boolean).join(' '),
+    sourceProfile: fallbackSourceProfile,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
@@ -952,7 +1075,9 @@ export function deriveFromMultipleTexts(
     stepCount += result.derivedSteps.length;
   }
 
-  const analysisMode = detectProcessMiningAnalysisMode({ cases, observations, lastDerivationSummary: summaries[0] });
+  const analysisMode = detectProcessMiningAnalysisMode({ cases, observations });
+  const sourceProfile = aggregateSourceProfiles(summaries.map(summary => summary.sourceProfile));
+  const multiCaseSummary = buildMultiCaseSummary(observations);
   const combinedSummary: DerivationSummary = {
     sourceLabel: inputs.length === 1 ? inputs[0].name : `${inputs.length} importierte Beschreibungen`,
     method: summaries.some(summary => summary.method === 'structured')
@@ -970,7 +1095,13 @@ export function deriveFromMultipleTexts(
     roles: uniqueStrings(summaries.flatMap(summary => summary.roles)),
     systems: uniqueStrings(summaries.flatMap(summary => summary.systems ?? [])),
     issueSignals: uniqueStrings(summaries.flatMap(summary => summary.issueSignals ?? [])),
-    documentSummary: buildAnalysisModeNotice({ mode: analysisMode, caseCount: cases.length, documentKind: inputs.length > 1 ? 'case-narrative' : summaries[0]?.documentKind }),
+    documentSummary: [
+      buildAnalysisModeNotice({ mode: analysisMode, caseCount: cases.length, documentKind: inputs.length > 1 ? 'case-narrative' : summaries[0]?.documentKind }),
+      sourceProfile ? buildSourceProfileNote(sourceProfile) : '',
+      multiCaseSummary?.patternNote ?? '',
+    ].filter(Boolean).join(' '),
+    sourceProfile,
+    multiCaseSummary,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),

@@ -143,3 +143,25 @@ Typischer Workflow:
    - Maßnahmen aus dem Backlog umsetzen
 4. Im Änderungen-Tab: Version 1 als Baseline, Version 2 als aktuell
 5. Änderungszusammenfassung für Stakeholder kopieren
+
+
+---
+
+## v0.15 · Phase 15 · Lokale Analyseengine 3.0
+
+### Schwerpunkt
+Die lokale Analyse ohne KI wurde auf der Engine-Ebene präziser und nachvollziehbarer gemacht.
+
+### Wichtige Änderungen
+- neues lokales Engine-Profil mit Materialerkennung, Extraktionsfokus und Stabilität
+- stärkere Abschnittsselektion für Mischdokumente, Fallgeschichten und signalreiche Texte
+- verbesserte Kurzfall-Ableitung durch Aufspaltung knapper, komma-getrennter Prozessbeschreibungen in belastbarere Handlungseinheiten
+- robusterer Mehrfallvergleich mit stabilen und variablen Mustern über mehrere Quellen
+- verständlichere Signalbezeichnungen für Reklamations- und Servicefälle
+- Engine-Profil im Assisted Process Mining sichtbar gemacht
+- Benchmark und Beispielpakete auf die stärkere Mehrfalllogik angehoben
+
+### Ergebnis
+- lokale Analyseengine: pm-local-engine-v3.0
+- PM-Benchmark: 90/100
+- alle drei Goldfälle bestehen aktuell lokal ohne KI

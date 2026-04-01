@@ -775,6 +775,12 @@ export const HELP_TEXTS = {
       'Fasst die wichtigsten lokalen Ergebnisse direkt in der App zusammen.\n' +
       'Damit sehen Sie Hauptlinie, Soll-Hinweis, Reibungspunkt und Datenlage, bevor Sie mit KI oder Feinschliff weiterarbeiten.',
   },
+  'pmv2.engineProfile': {
+    title: 'Lokales Engine-Profil',
+    body:
+      'Zeigt, welche Materialart die lokale Engine erkannt hat und mit welcher Strategie sie daraus Schritte ableitet.\n' +
+      'So wird verständlicher, warum ein Text eher als Verfahrensbeschreibung, Fallgeschichte oder Signaltext behandelt wurde.',
+  },
   'pmv2.quality': {
     title: 'Datenstärke',
     body:

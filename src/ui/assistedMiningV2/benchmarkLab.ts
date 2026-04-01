@@ -5,7 +5,7 @@ import type {
   ProcessMiningObservationCase,
 } from '../../domain/process';
 import { deriveProcessArtifactsFromText, LOCAL_MINING_ENGINE_VERSION } from './documentDerivation';
-import { normalizeLabel, uniqueStrings } from './pmShared';
+import { detectProcessMiningAnalysisMode, normalizeLabel, uniqueStrings } from './pmShared';
 import { inferStepFamily, labelsLikelySameProcessStep } from './semanticStepFamilies';
 import { getSampleScenarios } from './sampleCases';
 
@@ -276,11 +276,10 @@ function aggregateObservations(results: Array<{
   const warnings = uniqueStrings(results.flatMap(result => result.summary.warnings));
   const methods = uniqueStrings(results.map(result => result.summary.method)) as DerivationSummary['method'][];
   const confidence = buildConfidenceLevel(results.map(result => result.summary));
-  const analysisMode = results.some(result => result.summary.analysisMode === 'true-mining')
-    ? 'true-mining'
-    : results.some(result => result.summary.analysisMode === 'exploratory-mining')
-    ? 'exploratory-mining'
-    : 'process-draft';
+  const analysisMode = detectProcessMiningAnalysisMode({
+    cases: results.flatMap(result => result.cases),
+    observations: results.flatMap(result => result.observations),
+  });
 
   return {
     stepLabels,

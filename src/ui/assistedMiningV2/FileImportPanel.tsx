@@ -29,6 +29,7 @@ import { deriveProcessArtifactsFromText, deriveFromMultipleTexts } from './docum
 import { getAnalysisModeLabel } from './pmShared';
 import type { DerivationResult } from './documentDerivation';
 import { HelpPopover } from '../components/HelpPopover';
+import { LocalEngineProfilePanel } from './LocalEngineProfilePanel';
 
 type FileType = 'docx' | 'pdf' | 'csv' | 'xlsx';
 type ImportPhase = 'idle' | 'loading' | 'deriving' | 'preview-doc' | 'preview-derived' | 'config-table' | 'done';
@@ -117,6 +118,8 @@ function DerivationResultCard({
           {result.summary.documentSummary}
         </div>
       )}
+
+      <LocalEngineProfilePanel summary={result.summary} />
 
       {result.summary.repairNotes && result.summary.repairNotes.length > 0 && (
         <div className="space-y-1">

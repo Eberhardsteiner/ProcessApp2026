@@ -24,6 +24,7 @@ import { StepReviewWorkbench } from './StepReviewWorkbench';
 import { WorkbenchSection } from './WorkbenchSection';
 import { StepQuickJumpBar } from './StepQuickJumpBar';
 import { StepActionBar } from './StepActionBar';
+import { LocalEngineProfilePanel } from './LocalEngineProfilePanel';
 import {
   applyCanonicalLabelSuggestions,
   applyIssueReclassificationSuggestions,
@@ -451,6 +452,8 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
                 )}
               </div>
             )}
+
+            {lastSummary && <LocalEngineProfilePanel summary={lastSummary} />}
 
             {cases.length === 0 && (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
