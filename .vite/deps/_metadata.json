@@ -1,0 +1,61 @@
+{
+  "hash": "d6ad9cdd",
+  "configHash": "8546a0ab",
+  "lockfileHash": "c2b6e932",
+  "browserHash": "8fe1147b",
+  "optimized": {
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "26a423c6",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "44bbcd2e",
+      "needsInterop": true
+    },
+    "lucide-react": {
+      "src": "../../node_modules/lucide-react/dist/esm/lucide-react.js",
+      "file": "lucide-react.js",
+      "fileHash": "13dc573d",
+      "needsInterop": false
+    },
+    "jszip": {
+      "src": "../../node_modules/jszip/dist/jszip.min.js",
+      "file": "jszip.js",
+      "fileHash": "9cc5a8a9",
+      "needsInterop": true
+    },
+    "react-dom": {
+      "src": "../../node_modules/react-dom/index.js",
+      "file": "react-dom.js",
+      "fileHash": "ff2cfe20",
+      "needsInterop": true
+    },
+    "bpmn-js/lib/NavigatedViewer": {
+      "src": "../../node_modules/bpmn-js/lib/NavigatedViewer.js",
+      "file": "bpmn-js_lib_NavigatedViewer.js",
+      "fileHash": "53d3bd6b",
+      "needsInterop": false
+    },
+    "pdfjs-dist/legacy/build/pdf.mjs": {
+      "src": "../../node_modules/pdfjs-dist/legacy/build/pdf.mjs",
+      "file": "pdfjs-dist_legacy_build_pdf__mjs.js",
+      "fileHash": "75431e30",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-KDUSVCWO": {
+      "file": "chunk-KDUSVCWO.js"
+    },
+    "chunk-OC5S6P4L": {
+      "file": "chunk-OC5S6P4L.js"
+    },
+    "chunk-SNAQBZPT": {
+      "file": "chunk-SNAQBZPT.js"
+    }
+  }
+}
