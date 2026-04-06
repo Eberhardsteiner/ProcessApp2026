@@ -1,0 +1,17 @@
+row_id,container,created_at,author,source,text
+1,mailbox_a,2025-05-06 07:31,cs@firma.de,mail,"KD sagt Anlage steht seit Schichtbeginn, SN kommt spaeter"
+2,mailbox_a,2025-05-06 07:44,cs@firma.de,crm-note,"Fall angelegt, aber Auftrag nicht sauber"
+3,thread_19,,vertrieb@firma.de,mail,"wichtiger kunde, bitte heute irgendwas schicken"
+4,thread_19,2025-05-06 08:26,qs@firma.de,mail,evtl charge? bitte prod fragen
+5,ticket_tmp,2025-05-06 08:59,cs@firma.de,ticket,zwischeninfo an kunde raus?
+6,notes_misc,2025-05-06 09:12,prod@firma.de,note,"dichtung oder montagefehler, nicht sicher"
+7,notes_misc,,fin@firma.de,note,kulanz? wenn >5k chef
+8,mailbox_b,2025-05-08 08:05,cs@firma.de,phone-note,"sensor spinnt, kunde kann weiterfahren"
+9,mailbox_b,2025-05-08 09:00,qs@firma.de,dms-hit,"aehnlicher altfall 2024, testschritt reicht evtl"
+10,mailbox_b,,kunde,mail,bild spaeter
+11,mailbox_c,2025-05-09 09:12,cs@firma.de,mail,verpackung kaputt / schaden bei anlieferung
+12,mailbox_c,2025-05-09 09:36,logistik@firma.de,erp-note,rueckholung moeglich
+13,mailbox_c,2025-05-09 13:06,fin@firma.de,mail,gutschrift ok
+14,misc,,unbekannt,copy,bitte alles in crm und ticket nachziehen
+15,misc,2025-05-09 13:20,cs@firma.de,mail,"kunde info raus, aber qs-bericht kommt spaeter"
+16,misc,2025-05-10 08:02,cs@firma.de,sticky,wer macht abschluss?

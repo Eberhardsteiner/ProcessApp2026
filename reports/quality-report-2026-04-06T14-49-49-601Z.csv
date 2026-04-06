@@ -1,0 +1,10 @@
+scope,id,label,status,score,summary
+section,technical,"Technische Funktionsfähigkeit",pass,100,"2/2 Kernchecks erfolgreich."
+section,documents,"Fünf Referenzdokumente",fail,84,"5 Referenzdokumente · Gesamt 84/100 · 3 stabil · 1 beobachten · 1 kritisch."
+section,benchmark,"Referenzbibliothek und Regression",pass,94,"17 Fälle · strenger Check bestanden"
+section,release,"Produktreife und Übergabekette",attention,92,"10 Kernchecks · Gesamt 92/100 · 8 stabil · 2 beobachten · 0 kritisch."
+document,fixture-docx-soll-high,"01_Hochqualitatives_Sollprozessdokument_Reklamationsbearbeitung.docx",pass,94,"01_Hochqualitatives_Sollprozessdokument_Reklamationsbearbeitung.docx: 8 erkannte Schritte, 9 Reibungssignale, 4 Rollen, 6 Systeme, 100% Belegstellen."
+document,fixture-docx-narrative-good,"02_Gute_Narrative_Fallserie_Reklamationsbearbeitung.docx",pass,94,"02_Gute_Narrative_Fallserie_Reklamationsbearbeitung.docx: 15 erkannte Schritte, 11 Reibungssignale, 4 Rollen, 5 Systeme, 100% Belegstellen."
+document,fixture-pdf-mixed-medium,"03_Mittlere_Qualitaet_Mischdokument_Service_Review.pdf",pass,100,"03_Mittlere_Qualitaet_Mischdokument_Service_Review.pdf: 10 erkannte Schritte, 9 Reibungssignale, 3 Rollen, 4 Systeme, 100% Belegstellen."
+document,fixture-xlsx-eventlog-weak,"04_Schwache_Qualitaet_Eventlog_mit_Luecken_Reklamationen.xlsx",attention,79,"04_Schwache_Qualitaet_Eventlog_mit_Luecken_Reklamationen.xlsx: 10 erkannte Schritte, 12 Reibungssignale, 4 Rollen, 6 Systeme, 100% Belegstellen."
+document,fixture-csv-fragments-very-weak,"05_Sehr_Schwache_Qualitaet_Rohnotizen_und_Exportfragmente.csv",fail,52,"05_Sehr_Schwache_Qualitaet_Rohnotizen_und_Exportfragmente.csv: 7 erkannte Schritte, 5 Reibungssignale, 3 Rollen, 4 Systeme, 100% Belegstellen."

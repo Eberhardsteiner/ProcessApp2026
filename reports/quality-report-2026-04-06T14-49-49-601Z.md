@@ -1,0 +1,92 @@
+# Qualitätsreport v0.40.0
+
+- Stand: 2026-04-06T14:49:49.600Z
+- Engine: pm-local-engine-v4.0 · quality-report
+- Gesamtscore: **91/100**
+- Status: **kritisch**
+
+Der Qualitätsreport zeigt noch kritische Punkte.
+
+4 Bewertungsblöcke · Gesamt 91/100 · 2 stabil · 1 beobachten · 1 kritisch.
+
+## Bewertungsblöcke
+
+- **Technische Funktionsfähigkeit**: 100/100 (stabil) · 2/2 Kernchecks erfolgreich.
+- **Fünf Referenzdokumente**: 84/100 (kritisch) · 5 Referenzdokumente · Gesamt 84/100 · 3 stabil · 1 beobachten · 1 kritisch.
+- **Referenzbibliothek und Regression**: 94/100 (stabil) · 17 Fälle · strenger Check bestanden
+- **Produktreife und Übergabekette**: 92/100 (beobachten) · 10 Kernchecks · Gesamt 92/100 · 8 stabil · 2 beobachten · 0 kritisch.
+
+## Technische Kernchecks
+
+- **Typecheck**: bestanden · Typecheck erfolgreich.
+- **Produktionsbuild**: bestanden · Produktionsbuild erfolgreich.
+
+## Fünf Referenzdokumente
+
+### 01_Hochqualitatives_Sollprozessdokument_Reklamationsbearbeitung.docx
+- Score: **94/100** (stabil)
+- Gütegrad: high
+- Fokus: Kernprozess, Rollen, Systeme, Entscheidungen, Freigaben
+- Beobachtet: 8 Schritte · 9 Signale · 4 Rollen · 6 Systeme · 100% Belegstellen
+Die App arbeitet auf diesem Dokument bereits belastbar.
+01_Hochqualitatives_Sollprozessdokument_Reklamationsbearbeitung.docx: 8 erkannte Schritte, 9 Reibungssignale, 4 Rollen, 6 Systeme, 100% Belegstellen.
+- Stärken: Reibungssignale werden brauchbar erkannt (2). | Rollenbild wirkt tragfähig (3 Treffer). | Systemlandschaft wird brauchbar erkannt (4 Treffer). | Analysemodus passt (process-draft). | Sicherheitsniveau wirkt angemessen (high).
+- Auffälligkeiten: Kernschritte bleiben noch lückenhaft (4/5).
+- Empfehlung: 01_Hochqualitatives_Sollprozessdokument_Reklamationsbearbeitung.docx: wirkt für diesen Gütegrad stabil. Weitere Nachschärfung lohnt vor allem bei Detailtreue und Evidenz.
+
+### 02_Gute_Narrative_Fallserie_Reklamationsbearbeitung.docx
+- Score: **94/100** (stabil)
+- Gütegrad: good
+- Fokus: Varianten, Friktionen, wiederkehrende Muster, Rollen, Zwischenschritte
+- Beobachtet: 15 Schritte · 11 Signale · 4 Rollen · 5 Systeme · 100% Belegstellen
+Die App arbeitet auf diesem Dokument bereits belastbar.
+02_Gute_Narrative_Fallserie_Reklamationsbearbeitung.docx: 15 erkannte Schritte, 11 Reibungssignale, 4 Rollen, 5 Systeme, 100% Belegstellen.
+- Stärken: Reibungssignale werden brauchbar erkannt (2). | Rollenbild wirkt tragfähig (3 Treffer). | Systemlandschaft wird brauchbar erkannt (4 Treffer). | Analysemodus passt (process-draft). | Sicherheitsniveau wirkt angemessen (medium).
+- Auffälligkeiten: Kernschritte bleiben noch lückenhaft (4/5).
+- Empfehlung: 02_Gute_Narrative_Fallserie_Reklamationsbearbeitung.docx: wirkt für diesen Gütegrad stabil. Weitere Nachschärfung lohnt vor allem bei Detailtreue und Evidenz.
+
+### 03_Mittlere_Qualitaet_Mischdokument_Service_Review.pdf
+- Score: **100/100** (stabil)
+- Gütegrad: medium
+- Fokus: Trennung von Prozesskern und Reibung, Governance-Hinweise, verteiltes Wissen
+- Beobachtet: 10 Schritte · 9 Signale · 3 Rollen · 4 Systeme · 100% Belegstellen
+Die App geht mit diesem schwierigen Material bereits vernünftig um.
+03_Mittlere_Qualitaet_Mischdokument_Service_Review.pdf: 10 erkannte Schritte, 9 Reibungssignale, 3 Rollen, 4 Systeme, 100% Belegstellen.
+- Stärken: Kernschritte werden ausreichend erkannt (3/3). | Reibungssignale werden brauchbar erkannt (4). | Rollenbild wirkt tragfähig (2 Treffer). | Systemlandschaft wird brauchbar erkannt (3 Treffer). | Analysemodus passt (process-draft). | Sicherheitsniveau wirkt angemessen (medium).
+- Auffälligkeiten: -
+- Empfehlung: 03_Mittlere_Qualitaet_Mischdokument_Service_Review.pdf: wirkt für diesen Gütegrad stabil. Weitere Nachschärfung lohnt vor allem bei Detailtreue und Evidenz.
+
+### 04_Schwache_Qualitaet_Eventlog_mit_Luecken_Reklamationen.xlsx
+- Score: **79/100** (beobachten)
+- Gütegrad: weak
+- Fokus: Datenreife, Dubletten, uneinheitliche Schritte, vorsichtige Bewertung
+- Beobachtet: 10 Schritte · 12 Signale · 4 Rollen · 6 Systeme · 100% Belegstellen
+Die App bleibt bei diesem schwachen Material brauchbar, aber noch nicht konsistent genug.
+04_Schwache_Qualitaet_Eventlog_mit_Luecken_Reklamationen.xlsx: 10 erkannte Schritte, 12 Reibungssignale, 4 Rollen, 6 Systeme, 100% Belegstellen.
+- Stärken: Reibungssignale werden brauchbar erkannt (2). | Rollenbild wirkt tragfähig (3 Treffer). | Systemlandschaft wird brauchbar erkannt (4 Treffer). | Analysemodus passt (exploratory-mining). | Sicherheitsniveau wirkt angemessen (low).
+- Auffälligkeiten: Kernschritte bleiben noch lückenhaft (1/3).
+- Empfehlung: 04_Schwache_Qualitaet_Eventlog_mit_Luecken_Reklamationen.xlsx: nicht mehr Prozesssicherheit erzwingen, sondern Datenreife, Dubletten und Warnungen weiter stärken.
+
+### 05_Sehr_Schwache_Qualitaet_Rohnotizen_und_Exportfragmente.csv
+- Score: **52/100** (kritisch)
+- Gütegrad: very-weak
+- Fokus: vorsichtige Auswertung, niedrigere Sicherheit, rohe Signale statt Scheingenauigkeit
+- Beobachtet: 7 Schritte · 5 Signale · 3 Rollen · 4 Systeme · 100% Belegstellen
+Die App braucht für dieses Dokument noch deutliche Nachschärfung.
+05_Sehr_Schwache_Qualitaet_Rohnotizen_und_Exportfragmente.csv: 7 erkannte Schritte, 5 Reibungssignale, 3 Rollen, 4 Systeme, 100% Belegstellen.
+- Stärken: Rollenbild wirkt tragfähig (1 Treffer). | Systemlandschaft wird brauchbar erkannt (1 Treffer). | Analysemodus passt (process-draft). | Sicherheitsniveau wirkt angemessen (medium).
+- Auffälligkeiten: Kernschritte bleiben noch lückenhaft (0/1). | Reibungssignale werden noch zu schwach erkannt (0/2).
+- Empfehlung: 05_Sehr_Schwache_Qualitaet_Rohnotizen_und_Exportfragmente.csv: nicht mehr Prozesssicherheit erzwingen, sondern Datenreife, Dubletten und Warnungen weiter stärken.
+
+## Benchmark und Produktreife
+
+- Referenzbibliothek: 94/100 · 17 Referenzfälle aus 8 Fachbereichen geprüft. 15 bestanden, 2 mit Beobachtungen, 0 kritisch. Durchschnittlicher Referenzscore: 94 von 100.
+- Produktreife: 92/100 · 10 Kernchecks · Gesamt 92/100 · 8 stabil · 2 beobachten · 0 kritisch.
+
+## Regression
+
+Voriger Score: 91/100 · Delta: +0 · Richtung: same
+
+## Priorisierte Empfehlung
+
+Schwächstes Referenzdokument aktuell: Sehr schwache Qualität Rohnotizen und Exportfragmente (52/100).
