@@ -649,10 +649,12 @@ export interface DerivationMultiCaseSummary {
   stabilityNote?: string;
 }
 
+export type ProcessDocumentType = 'procedure-document' | 'semi-structured-procedure-document' | 'case-narrative' | 'mixed-document' | 'weak-material' | 'unknown';
+
 export interface DerivationSummary {
   sourceLabel: string;
   method: 'structured' | 'semi-structured' | 'narrative-fallback';
-  documentKind: 'procedure-document' | 'case-narrative' | 'unknown';
+  documentKind: ProcessDocumentType;
   analysisMode: ProcessMiningAnalysisMode;
   caseCount: number;
   observationCount: number;

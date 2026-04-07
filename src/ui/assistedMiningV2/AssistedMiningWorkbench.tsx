@@ -68,8 +68,9 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
   const [consistencyNotice, setConsistencyNotice] = useState<string[]>([]);
   const [integrityReport, setIntegrityReport] = useState<WorkspaceIntegrityReport>(initialLoad.integrity);
   const [showOverviewDetails, setShowOverviewDetails] = useState(
-    miningState.currentStep === 'observations' || miningState.observations.length === 0,
+    miningState.observations.length === 0,
   );
+  const [showHealthDetails, setShowHealthDetails] = useState(false);
 
   useEffect(() => {
     latestStateRef.current = miningState;
@@ -82,7 +83,8 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
     setConsistencyNotice(loaded.integrity.issues.map(issue => issue.message));
     setIntegrityReport(loaded.integrity);
     setMiningState(loaded.state);
-    setShowOverviewDetails(loaded.state.currentStep === 'observations' || loaded.state.observations.length === 0);
+    setShowOverviewDetails(loaded.state.observations.length === 0);
+    setShowHealthDetails(false);
   }, [version.id]);
 
   const saveState = useCallback(
@@ -226,6 +228,13 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
         </div>
       </div>
 
+      <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">Kernpfad</p>
+        <p className="mt-1 text-sm text-blue-900">
+          Dokument hochladen → Analyse prüfen → Qualitäts-Export erstellen.
+        </p>
+      </div>
+
       {saveError && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm space-y-3">
           <div className="flex items-start gap-3">
@@ -261,7 +270,23 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
         onOperatingModeChange={mode => applyPatch({ operatingMode: mode })}
       />
 
-      <WorkspaceIntegrityPanel report={integrityReport} />
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-slate-900">Status & Integrität</p>
+          <button
+            type="button"
+            onClick={() => setShowHealthDetails(open => !open)}
+            className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            {showHealthDetails ? 'Details ausblenden' : 'Details anzeigen'}
+          </button>
+        </div>
+        {showHealthDetails && (
+          <div className="mt-3">
+            <WorkspaceIntegrityPanel report={integrityReport} />
+          </div>
+        )}
+      </div>
 
       <QualityExportPanel
         process={process}
