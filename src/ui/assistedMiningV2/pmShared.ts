@@ -69,8 +69,11 @@ export function buildAnalysisModeNotice(params: {
 }): string {
   const { mode, caseCount, documentKind } = params;
   if (mode === 'process-draft') {
-    if (documentKind === 'procedure-document') {
+    if (documentKind === 'procedure-document' || documentKind === 'semi-structured-procedure-document') {
       return 'Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.';
+    }
+    if (documentKind === 'mixed-document') {
+      return 'Aktuell liegt ein Mischdokument vor. Die Ergebnisse zeigen einen vorsichtigen Prozessentwurf mit getrennten Struktur- und Narrativanteilen.';
     }
     return 'Aktuell liegt nur ein einzelner Fall vor. Die Ergebnisse zeigen einen Prozessentwurf aus diesem Fall, noch kein belastbares Mining-Muster.';
   }

@@ -108,7 +108,7 @@ export function getCanonicalLabelSuggestion(observation: ProcessMiningObservatio
 
 export function getSplitSuggestion(observation: ProcessMiningObservation, allowSoftSplit = true): string[] | null {
   if (observation.kind !== 'step') return null;
-  if (inferStepFamily(observation.label) && !/[\/;]/.test(observation.label)) return null;
+  if (inferStepFamily(observation.label) && !/[/;]/.test(observation.label)) return null;
   const parts = splitIntoParts(observation.label, allowSoftSplit);
   return parts.length >= 2 ? parts : null;
 }
@@ -180,7 +180,7 @@ export function repairDerivedObservations(observations: ProcessMiningObservation
   };
 
   for (const [caseId, caseObservations] of grouped.entries()) {
-    let nextCase: ProcessMiningObservation[] = [];
+    const nextCase: ProcessMiningObservation[] = [];
     for (const observation of sortCaseObservations(caseObservations)) {
       const splitParts = getSplitSuggestion(observation, false);
       if (splitParts && splitParts.length >= 2) {

@@ -67,6 +67,24 @@ export interface ProcessMiningQualityExportFile {
     enhancementSummary?: ProcessMiningAssistedV2State['enhancementSummary'];
     reportSnapshot?: ProcessMiningAssistedV2State['reportSnapshot'];
     handoverDrafts?: ProcessMiningAssistedV2State['handoverDrafts'];
+    qualityAssessment: {
+      overall: 'high' | 'medium' | 'low';
+      dimensions: Array<{
+        key:
+          | 'documentTypeDetection'
+          | 'structureFidelity'
+          | 'stepClarity'
+          | 'roleQuality'
+          | 'systemQuality'
+          | 'domainConsistency'
+          | 'evidenceCoverage'
+          | 'conservativeHandling';
+        label: string;
+        score: number;
+        level: 'high' | 'medium' | 'low';
+        reason: string;
+      }>;
+    };
   };
   sourceMaterial: {
     cases: ProcessMiningAssistedV2State['cases'];
@@ -129,6 +147,16 @@ function buildSafeSettings(settings: AppSettings): Record<string, unknown> {
   };
 }
 
+function scoreToLevel(score: number): 'high' | 'medium' | 'low' {
+  if (score >= 0.75) return 'high';
+  if (score >= 0.45) return 'medium';
+  return 'low';
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
 export function buildQualityExportFile(params: {
   process: Process;
   version: ProcessVersion;
@@ -153,6 +181,80 @@ export function buildQualityExportFile(params: {
   const issueCount = state.observations.filter(item => item.kind === 'issue').length;
   const realTimeCount = state.observations.filter(item => item.timestampQuality === 'real').length;
   const evidenceBackedSteps = state.observations.filter(item => item.kind === 'step' && Boolean(item.evidenceSnippet?.trim())).length;
+  const lastSummary = state.lastDerivationSummary;
+  const warnings = lastSummary?.warnings ?? [];
+  const stepLabels = lastSummary?.stepLabels ?? [];
+  const roles = lastSummary?.roles ?? [];
+  const systems = lastSummary?.systems ?? [];
+  const docKind = lastSummary?.documentKind ?? 'unknown';
+  const confidence = lastSummary?.confidence ?? 'low';
+  const evidenceCoverageScore = stepCount > 0 ? evidenceBackedSteps / stepCount : 0;
+  const conservativeTriggered = warnings.some(w => /konservative auswertung aktiv|vorläufiger prozessentwurf/i.test(w));
+
+  const dimensionScores: ProcessMiningQualityExportFile['analysisResults']['qualityAssessment']['dimensions'] = [
+    {
+      key: 'documentTypeDetection',
+      label: 'Dokumenttyp-Erkennung',
+      score: clamp01(docKind === 'unknown' ? 0.25 : docKind === 'weak-material' ? 0.4 : 0.8),
+      level: scoreToLevel(docKind === 'unknown' ? 0.25 : docKind === 'weak-material' ? 0.4 : 0.8),
+      reason: `Erkannter Typ: ${docKind}.`,
+    },
+    {
+      key: 'structureFidelity',
+      label: 'Strukturtreue',
+      score: clamp01(stepLabels.length >= 6 ? 0.85 : stepLabels.length >= 3 ? 0.6 : 0.3),
+      level: scoreToLevel(stepLabels.length >= 6 ? 0.85 : stepLabels.length >= 3 ? 0.6 : 0.3),
+      reason: `${stepLabels.length} belastbare Schrittlabels in der letzten Ableitung.`,
+    },
+    {
+      key: 'stepClarity',
+      label: 'Schrittklarheit',
+      score: clamp01(stepLabels.length > 0 ? stepLabels.filter(label => label.trim().length >= 8).length / stepLabels.length : 0),
+      level: scoreToLevel(stepLabels.length > 0 ? stepLabels.filter(label => label.trim().length >= 8).length / stepLabels.length : 0),
+      reason: 'Bewertung anhand Länge und Nutzbarkeit der Schrittlabels.',
+    },
+    {
+      key: 'roleQuality',
+      label: 'Rollenqualität',
+      score: clamp01(stepCount > 0 ? roles.length / Math.max(3, stepCount / 2) : 0),
+      level: scoreToLevel(stepCount > 0 ? roles.length / Math.max(3, stepCount / 2) : 0),
+      reason: `${roles.length} Rollen gegenüber ${stepCount} Schritten.`,
+    },
+    {
+      key: 'systemQuality',
+      label: 'Systemqualität',
+      score: clamp01(stepCount > 0 ? systems.length / Math.max(2, stepCount / 3) : 0),
+      level: scoreToLevel(stepCount > 0 ? systems.length / Math.max(2, stepCount / 3) : 0),
+      reason: `${systems.length} Systembezüge erkannt.`,
+    },
+    {
+      key: 'domainConsistency',
+      label: 'Domänenkonsistenz',
+      score: clamp01(warnings.some(w => /Primärdomäne erkannt/i.test(w)) ? 0.75 : 0.45),
+      level: scoreToLevel(warnings.some(w => /Primärdomäne erkannt/i.test(w)) ? 0.75 : 0.45),
+      reason: warnings.some(w => /Primärdomäne erkannt/i.test(w) )
+        ? 'Domänenkontext wurde erkannt und im Signalpfad berücksichtigt.'
+        : 'Keine klare Primärdomäne erkannt; Konsistenz begrenzt.',
+    },
+    {
+      key: 'evidenceCoverage',
+      label: 'Evidenzabdeckung',
+      score: clamp01(evidenceCoverageScore),
+      level: scoreToLevel(evidenceCoverageScore),
+      reason: `${evidenceBackedSteps}/${stepCount} Schritte haben Evidenzsnippets.`,
+    },
+    {
+      key: 'conservativeHandling',
+      label: 'Vorsicht bei schwachem Material',
+      score: clamp01(conservativeTriggered ? 0.9 : confidence === 'low' ? 0.7 : 0.5),
+      level: scoreToLevel(conservativeTriggered ? 0.9 : confidence === 'low' ? 0.7 : 0.5),
+      reason: conservativeTriggered
+        ? 'Konservative Auswertung wurde aktiv markiert.'
+        : 'Keine explizite konservative Markierung in den Warnungen.',
+    },
+  ];
+  const avg = dimensionScores.reduce((sum, item) => sum + item.score, 0) / Math.max(dimensionScores.length, 1);
+  const overall = scoreToLevel(avg);
 
   return {
     schemaVersion: 'pm-analysis-quality-export-v1',
@@ -228,6 +330,10 @@ export function buildQualityExportFile(params: {
       enhancementSummary: state.enhancementSummary,
       reportSnapshot: state.reportSnapshot,
       handoverDrafts: state.handoverDrafts,
+      qualityAssessment: {
+        overall,
+        dimensions: dimensionScores,
+      },
     },
     sourceMaterial: {
       cases: state.cases,

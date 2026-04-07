@@ -35,6 +35,8 @@ const STEP_CODE_RE = /^([A-Z]{1,3}-\d{1,3})\s*$/;
 const STEP_CODE_INLINE_RE = /^([A-Z]{1,3}-\d{1,3})\b/;
 const DUE_RE = /T[+-]\s*\d+\s*(Tag(e)?|Woche[n]?|Monat(e)?|KW|Std\.?|h\b)/i;
 const SECTION_RE = /^\s*(\d+)\.\s+/;
+const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
+const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
 
 function splitSections(text: string): Map<string, string> {
   const sections = new Map<string, string>();
@@ -83,6 +85,28 @@ function parsePipeTableRows(sectionText: string): string[][] {
   return rows;
 }
 
+function parseDelimitedTableRows(sectionText: string): string[][] {
+  const rows: string[][] = [];
+  for (const line of sectionText.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.length < 5) continue;
+    if (trimmed.startsWith('|')) continue;
+    if (!TABLE_HEADER_HINT_RE.test(trimmed) && !/[;\t]/.test(trimmed) && !/\s{2,}/.test(trimmed)) continue;
+
+    let cells: string[] = [];
+    if (trimmed.includes(';')) {
+      cells = trimmed.split(';').map(cell => cell.trim());
+    } else if (trimmed.includes('\t')) {
+      cells = trimmed.split('\t').map(cell => cell.trim());
+    } else {
+      cells = trimmed.split(/\s{2,}/).map(cell => cell.trim());
+    }
+    cells = cells.filter(Boolean);
+    if (cells.length >= 2) rows.push(cells);
+  }
+  return rows;
+}
+
 function detectPipeTableHeaders(rows: string[][]): number {
   if (!rows.length) return -1;
   const first = rows[0].map(c => c.toLowerCase());
@@ -114,8 +138,16 @@ function mapPipeTableHeaders(headerRow: string[]): Record<string, number> {
   return map;
 }
 
-function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
-  const rows = parsePipeTableRows(sectionText);
+function sanitizeStepLabel(label: string | undefined): string | undefined {
+  if (!label) return undefined;
+  const normalized = label.replace(/\s+/g, ' ').trim();
+  if (!normalized || normalized.length < 4) return undefined;
+  if (PSEUDO_LABEL_RE.test(normalized)) return undefined;
+  if (/^\d+\.?\s*$/.test(normalized)) return undefined;
+  return normalized;
+}
+
+function parseTableStepsFromRows(rows: string[][]): StructuredProcedureStep[] {
   if (!rows.length) return [];
   const headerIdx = detectPipeTableHeaders(rows);
   if (headerIdx < 0) return [];
@@ -130,17 +162,14 @@ function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
     };
 
     let codeVal = get('code');
-    let labelVal = get('label');
-
-    if (!labelVal && codeVal) {
-      if (!STEP_CODE_INLINE_RE.test(codeVal)) {
-        labelVal = codeVal;
-        codeVal = undefined;
-      }
+    let labelVal = sanitizeStepLabel(get('label'));
+    if (!labelVal && codeVal && !STEP_CODE_INLINE_RE.test(codeVal)) {
+      labelVal = sanitizeStepLabel(codeVal);
+      codeVal = undefined;
     }
     if (!labelVal) {
       const firstFilled = row.find(c => c.length > 2 && !STEP_CODE_INLINE_RE.test(c));
-      if (firstFilled) labelVal = firstFilled;
+      labelVal = sanitizeStepLabel(firstFilled);
     }
     if (!labelVal) continue;
 
@@ -155,6 +184,16 @@ function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
     });
   }
   return steps;
+}
+
+function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
+  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
+}
+
+function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
+  const pipeSteps = parsePipeTableSteps(sectionText);
+  if (pipeSteps.length >= 2) return pipeSteps;
+  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
 }
 
 function parseFlatStepBlocks(sectionText: string): StructuredProcedureStep[] {
@@ -200,6 +239,7 @@ function parseFlatStepBlocks(sectionText: string): StructuredProcedureStep[] {
       }
     }
 
+    label = sanitizeStepLabel(label) ?? '';
     if (!label) continue;
 
     steps.push({
@@ -309,14 +349,14 @@ export function extractStructuredProcedureFromText(
   let steps: StructuredProcedureStep[] = [];
 
   if (stepsSection) {
-    steps = parsePipeTableSteps(stepsSection);
+    steps = parseFlexibleTableSteps(stepsSection);
     if (!steps.length) {
       steps = parseFlatStepBlocks(stepsSection);
     }
   }
 
   if (!steps.length) {
-    steps = parsePipeTableSteps(text);
+    steps = parseFlexibleTableSteps(text);
     if (!steps.length) {
       steps = parseFlatStepBlocks(text);
     }
