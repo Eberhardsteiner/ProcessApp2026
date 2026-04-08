@@ -50,10 +50,20 @@ export function LocalEngineProfilePanel({ summary }: Props) {
             <HelpPopover helpKey="pmv2.engineProfile" ariaLabel="Hilfe: Lokales Engine-Profil" />
           </div>
           <p className="text-sm leading-relaxed text-slate-600">
-            {profile.inputProfileLabel}. {profile.extractionFocus}
+            {profile.documentClassLabel ? `${profile.documentClassLabel}. ` : ''}{profile.inputProfileLabel}. {profile.extractionFocus}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {profile.documentClassLabel && (
+            <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+              {profile.documentClassLabel}
+            </span>
+          )}
+          {profile.primaryDomainLabel && (
+            <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-medium text-violet-800">
+              Primärdomäne: {profile.primaryDomainLabel}
+            </span>
+          )}
           {typeof profile.processBearingSharePct === 'number' && (
             <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-800">
               {profile.processBearingSharePct}% prozessnahes Material
@@ -64,6 +74,12 @@ export function LocalEngineProfilePanel({ summary }: Props) {
           </span>
         </div>
       </div>
+
+      {profile.domainGateNote && (
+        <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs leading-relaxed text-violet-900">
+          {profile.domainGateNote}
+        </div>
+      )}
 
       {sectionHighlights.length > 0 && (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">

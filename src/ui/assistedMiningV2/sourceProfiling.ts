@@ -49,6 +49,28 @@ const KNOWLEDGE_RE = /(ähnlich|aehnlich|wissensspeicher|erinnerung|historie|erf
 const MEASURE_RE = /(sinnvolle .* unterst[üu]tzung|automatische vollst[äa]ndigkeitspr[üu]fung|fallansicht|erwartete wirkung|entlastung|schnellerer zugriff|weniger r[üu]ckfragen|weniger fensterwechsel|konsistenter ton|rollenbezogene zusammenfassungen|to-do-steuerung|einmalige verdichtung|ki-hinweis|nutzen f[üu]r den test)/i;
 const GOVERNANCE_RE = /(governance|review|owner|zieldatum|freigabestatus|audit|compliance|entscheidungsliste|management-freigabe|pilot-weitergabe|review-template)/i;
 const COMMENTARY_RE = /(ki-unterst[üu]tzung|beispielfragen|kurzfazit|welche signale|rahmen der geschichte|die person im prozess|tagesverlauf|aus sicht der mitarbeiterin|fiktiv|test-app|signal\s*$|beobachtete reibung|erwartete wirkung|narrative perspektive)/i;
+const SECTION_HEADING_RE = /^\s*\d{1,2}\.\s+[^.!?\n]{2,120}$/;
+const STEP_SECTION_RE = /\b(standardablauf|prozessablauf|ablauf|vorgehen|prozessschritte?)\b/i;
+const ROLE_SECTION_RE = /\b(rollen? und systeme|rollen?|verantwortlichkeiten?)\b/i;
+const DECISION_SECTION_RE = /\b(entscheidungslogik|entscheidungsregeln|freigaberegeln|entscheidungen)\b/i;
+const KPI_SECTION_RE = /\b(kpi|qualit[aä]tsanforderungen|qualit[aä]t|zielbild|governance)\b/i;
+const TABLE_HEADER_STEP_RE = /^(nr\.?|schritt|verantwort(?:ung|lich)|ergebnis|rolle|aufgabe|systeme?|zielwert)$/i;
+const DIGIT_ONLY_RE = /^\d{1,2}$/;
+
+type StructuredDocumentClass = NonNullable<DerivationSourceProfile['documentClass']>;
+
+interface StructuredDocumentSignals {
+  sectionHeadingCount: number;
+  numberedStepRows: number;
+  tableHeaderCount: number;
+  roleRowCount: number;
+  hasStepSection: boolean;
+  hasRoleSection: boolean;
+  hasDecisionSection: boolean;
+  hasKpiSection: boolean;
+  hasStorySignals: boolean;
+  shortLineRatio: number;
+}
 
 const PROCESS_PRIORITY: SourceParagraphKind[] = [
   'timeline',
@@ -103,13 +125,119 @@ function pct(part: number, total: number): number {
   return Math.round((part / total) * 100);
 }
 
-function splitParagraphs(text: string): string[] {
+function nonEmptyLines(text: string): string[] {
   return text
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
+    .split('\n')
+    .map(line => normalizeWhitespace(line))
+    .filter(Boolean);
+}
+
+function analyzeStructuredDocumentSignals(text: string): StructuredDocumentSignals {
+  const lines = nonEmptyLines(text);
+  const shortLineCount = lines.filter(line => line.length <= 80).length;
+  const signals: StructuredDocumentSignals = {
+    sectionHeadingCount: lines.filter(line => SECTION_HEADING_RE.test(line)).length,
+    numberedStepRows: 0,
+    tableHeaderCount: 0,
+    roleRowCount: 0,
+    hasStepSection: lines.some(line => STEP_SECTION_RE.test(line)),
+    hasRoleSection: lines.some(line => ROLE_SECTION_RE.test(line)),
+    hasDecisionSection: lines.some(line => DECISION_SECTION_RE.test(line)),
+    hasKpiSection: lines.some(line => KPI_SECTION_RE.test(line)),
+    hasStorySignals: /\b(ich|wir|meine|mein|mich|uns)\b/i.test(text) || /\bdie geschichte\b/i.test(text),
+    shortLineRatio: lines.length > 0 ? shortLineCount / lines.length : 0,
+  };
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (TABLE_HEADER_STEP_RE.test(line)) {
+      signals.tableHeaderCount += 1;
+    }
+    if (DIGIT_ONLY_RE.test(line)) {
+      const next = lines[index + 1] ?? '';
+      if (next.length >= 8 && next.length <= 140) {
+        signals.numberedStepRows += 1;
+      }
+    }
+    if (
+      index + 2 < lines.length
+      && /^(rolle|funktion)$/i.test(line)
+      && /^(aufgabe|verantwortung)$/i.test(lines[index + 1] ?? '')
+      && /^systeme?$/i.test(lines[index + 2] ?? '')
+    ) {
+      signals.tableHeaderCount += 3;
+    }
+    if (
+      index + 2 < lines.length
+      && lines[index].length >= 4
+      && lines[index].length <= 80
+      && lines[index + 1].length >= 4
+      && lines[index + 1].length <= 120
+      && lines[index + 2].length >= 3
+      && lines[index + 2].length <= 80
+      && !SECTION_HEADING_RE.test(lines[index])
+      && !DIGIT_ONLY_RE.test(lines[index])
+      && !SECTION_HEADING_RE.test(lines[index + 1])
+    ) {
+      signals.roleRowCount += 1;
+    }
+  }
+
+  return signals;
+}
+
+function classifyStructuredDocument(signals: StructuredDocumentSignals): StructuredDocumentClass {
+  const structuredScore =
+    (signals.hasStepSection ? 3 : 0)
+    + (signals.hasRoleSection ? 2 : 0)
+    + (signals.hasDecisionSection ? 1 : 0)
+    + (signals.hasKpiSection ? 1 : 0)
+    + Math.min(signals.sectionHeadingCount, 5)
+    + Math.min(signals.numberedStepRows, 6)
+    + Math.min(Math.floor(signals.tableHeaderCount / 2), 3);
+
+  const semiStructuredScore =
+    (signals.hasStepSection ? 2 : 0)
+    + Math.min(signals.sectionHeadingCount, 4)
+    + Math.min(signals.numberedStepRows, 4)
+    + (signals.shortLineRatio >= 0.45 ? 1 : 0);
+
+  if (!signals.hasStorySignals && structuredScore >= 10) return 'structured-target-procedure';
+  if (!signals.hasStorySignals && semiStructuredScore >= 6) return 'semi-structured-procedure';
+  if (signals.hasStorySignals && (signals.hasStepSection || signals.hasRoleSection || signals.hasDecisionSection)) return 'mixed-document';
+  if (signals.hasStorySignals) return 'narrative-case';
+  return 'weak-material';
+}
+
+function buildDocumentClassLabel(documentClass: StructuredDocumentClass): string {
+  switch (documentClass) {
+    case 'structured-target-procedure':
+      return 'Strukturiertes Sollprozessdokument';
+    case 'semi-structured-procedure':
+      return 'Semistrukturiertes Verfahrensdokument';
+    case 'narrative-case':
+      return 'Narrative Fallbeschreibung';
+    case 'mixed-document':
+      return 'Mischdokument';
+    default:
+      return 'Rohmaterial / schwaches Material';
+  }
+}
+
+function splitParagraphs(text: string): string[] {
+  const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const blockChunks = normalized
     .split(/\n{2,}/)
     .map(chunk => normalizeWhitespace(chunk))
     .filter(Boolean);
+
+  const lines = nonEmptyLines(normalized);
+  if (blockChunks.length <= 2 && lines.length >= 12) {
+    return lines;
+  }
+  return blockChunks;
 }
 
 function isHeadingOnly(text: string): boolean {
@@ -141,6 +269,18 @@ function scoreParagraphKind(text: string) {
   if (TABLE_RE.test(trimmed) && trimmed.split('|').filter(Boolean).length >= 3) {
     scores.tableLike += 4;
     reasons.push('tabellenartige Struktur');
+  }
+  if (SECTION_HEADING_RE.test(trimmed)) {
+    scores.commentary += 2;
+    reasons.push('strukturierte Abschnittsüberschrift');
+  }
+  if (TABLE_HEADER_STEP_RE.test(trimmed)) {
+    scores.tableLike += 3;
+    reasons.push('Tabellenkopf mit Prozessbezug');
+  }
+  if (DIGIT_ONLY_RE.test(trimmed)) {
+    scores.tableLike += 2;
+    reasons.push('nummerierte Tabellenzeile');
   }
   if (TIME_HEADING_RE.test(trimmed)) {
     scores.timeline += 4;
@@ -290,9 +430,17 @@ function sectionLabel(kind: string): string {
 function buildProfileReasons(params: {
   inputProfile: DerivationSourceProfile['inputProfile'];
   counts: DerivationSourceProfile['sectionCounts'];
+  documentClass?: StructuredDocumentClass;
+  signals?: StructuredDocumentSignals;
 }): string[] {
-  const { inputProfile, counts } = params;
+  const { inputProfile, counts, documentClass, signals } = params;
   const reasons: string[] = [];
+
+  if (documentClass === 'structured-target-procedure') reasons.push('Klare Sollprozess-Struktur mit Ablauf-, Rollen- und Regelblöcken erkannt');
+  if (documentClass === 'semi-structured-procedure') reasons.push('Verfahrensdokument mit erkennbarer Ablaufstruktur erkannt');
+  if (documentClass === 'narrative-case') reasons.push('Fallbeschreibung mit erzählender Struktur erkannt');
+  if (documentClass === 'mixed-document') reasons.push('Mischdokument mit Prozesskern und Zusatzmaterial erkannt');
+  if (documentClass === 'weak-material') reasons.push('Material liefert nur schwache oder uneinheitliche Struktursignale');
 
   if (inputProfile === 'mixed-process-document') reasons.push('Prozesskern wird aus ablaufnahen Abschnitten gefiltert');
   if (inputProfile === 'narrative-timeline') reasons.push('Zeitverlauf trägt die lokale Hauptlinie');
@@ -303,6 +451,9 @@ function buildProfileReasons(params: {
   if (counts.governance > 0) reasons.push('Governance-Hinweise werden getrennt von Prozessschritten geführt');
   if (counts.knowledge > 0) reasons.push('Erfahrungswissen stärkt die lokale Fall- und Signalverdichtung');
   if (counts.tableLike > 0) reasons.push('Tabellen werden nur bei erkennbarem Ablaufbezug übernommen');
+  if (signals?.numberedStepRows && signals.numberedStepRows >= 3) reasons.push('Mehrere nummerierte Schrittzeilen stützen den Ablauf');
+  if (signals?.hasRoleSection) reasons.push('Rollenblock wurde als strukturierter Zusatz erkannt');
+  if (signals?.hasDecisionSection) reasons.push('Entscheidungs- oder Regelblock getrennt erkannt');
 
   return uniqueStrings(reasons).slice(0, 5);
 }
@@ -330,9 +481,17 @@ export function buildSourceProfile(text: string): DerivationSourceProfile {
   const processBearing = counts.timeline + counts.procedural + counts.communication + counts.decision + counts.knowledge;
   const supportBearing = counts.issue + counts.measure + counts.governance + counts.commentary + counts.tableLike + counts.noise;
   const totalParagraphs = Math.max(paragraphs.length, 1);
+  const structuredSignals = analyzeStructuredDocumentSignals(text);
+  const documentClass = classifyStructuredDocument(structuredSignals);
 
   let inputProfile: DerivationSourceProfile['inputProfile'] = 'unclear';
-  if (counts.tableLike >= 2 && processBearing <= 2) {
+  if (documentClass === 'structured-target-procedure' || documentClass === 'semi-structured-procedure') {
+    inputProfile = 'procedure-document';
+  } else if (documentClass === 'mixed-document') {
+    inputProfile = 'mixed-process-document';
+  } else if (documentClass === 'narrative-case') {
+    inputProfile = 'narrative-timeline';
+  } else if (counts.tableLike >= 2 && processBearing <= 2) {
     inputProfile = 'table-like-material';
   } else if ((counts.timeline >= 2 || counts.procedural >= 2) && (counts.issue + counts.knowledge + counts.measure + counts.commentary) >= 2) {
     inputProfile = 'mixed-process-document';
@@ -353,10 +512,12 @@ export function buildSourceProfile(text: string): DerivationSourceProfile {
   return {
     inputProfile,
     inputProfileLabel: buildProfileLabel(inputProfile),
+    documentClass,
+    documentClassLabel: buildDocumentClassLabel(documentClass),
     extractionFocus: buildProfileFocus(inputProfile),
     sectionCounts: counts,
     stability: buildStability(counts),
-    classificationReasons: buildProfileReasons({ inputProfile, counts }),
+    classificationReasons: buildProfileReasons({ inputProfile, counts, documentClass, signals: structuredSignals }),
     processBearingSharePct: pct(processBearing, totalParagraphs),
     evidenceParagraphCount: processBearing + supportBearing,
     dominantKinds,
@@ -432,7 +593,8 @@ export function buildSourceProfileNote(profile: DerivationSourceProfile): string
     ? ` Gründe: ${profile.classificationReasons.slice(0, 3).join(', ')}.`
     : '';
 
-  return `${profile.inputProfileLabel} erkannt. ${profile.extractionFocus}${strongKinds.length > 0 ? ` Schwerpunkte im Material: ${strongKinds.join(', ')}.` : ''}${selectionNote}${reasons}`;
+  const classLabel = profile.documentClassLabel ? `${profile.documentClassLabel}. ` : '';
+  return `${classLabel}${profile.inputProfileLabel} erkannt. ${profile.extractionFocus}${strongKinds.length > 0 ? ` Schwerpunkte im Material: ${strongKinds.join(', ')}.` : ''}${selectionNote}${reasons}`;
 }
 
 export function buildMultiCaseSummary(observations: ProcessMiningObservation[]): DerivationMultiCaseSummary | undefined {
@@ -539,10 +701,20 @@ export function aggregateSourceProfiles(profiles: Array<DerivationSourceProfile 
     : validProfiles.some(profile => profile.stability === 'medium')
     ? 'medium'
     : 'high';
+  const documentClassOrder: StructuredDocumentClass[] = [
+    'mixed-document',
+    'structured-target-procedure',
+    'semi-structured-procedure',
+    'narrative-case',
+    'weak-material',
+  ];
+  const selectedDocumentClass = documentClassOrder.find(documentClass => validProfiles.some(profile => profile.documentClass === documentClass)) ?? 'weak-material';
 
   return {
     inputProfile: selectedProfile,
     inputProfileLabel: selectedProfile === 'unclear' ? 'Gemischtes Quellenpaket' : sentenceCase(buildProfileLabel(selectedProfile)),
+    documentClass: selectedDocumentClass,
+    documentClassLabel: buildDocumentClassLabel(selectedDocumentClass),
     extractionFocus: `Mehrere Quellen wurden gemeinsam verdichtet. ${uniqueStrings(validProfiles.map(profile => profile.extractionFocus)).slice(0, 2).join(' ')}`.trim(),
     sectionCounts: counts,
     stability,

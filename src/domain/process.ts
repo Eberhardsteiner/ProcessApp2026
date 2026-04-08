@@ -612,6 +612,14 @@ export interface ProcessMiningQualitySummary {
 export interface DerivationSourceProfile {
   inputProfile: 'procedure-document' | 'narrative-timeline' | 'mixed-process-document' | 'signal-heavy-document' | 'table-like-material' | 'unclear';
   inputProfileLabel: string;
+  documentClass?: 'structured-target-procedure' | 'semi-structured-procedure' | 'narrative-case' | 'mixed-document' | 'weak-material';
+  documentClassLabel?: string;
+  primaryDomainKey?: ProcessMiningDomainKey;
+  primaryDomainLabel?: string;
+  secondaryDomainKeys?: ProcessMiningDomainKey[];
+  secondaryDomainLabels?: string[];
+  domainGateNote?: string;
+  domainScores?: Array<{ key: ProcessMiningDomainKey; label: string; score: number }>;
   extractionFocus: string;
   sectionCounts: {
     timeline: number;
@@ -649,12 +657,10 @@ export interface DerivationMultiCaseSummary {
   stabilityNote?: string;
 }
 
-export type ProcessDocumentType = 'procedure-document' | 'semi-structured-procedure-document' | 'case-narrative' | 'mixed-document' | 'weak-material' | 'unknown';
-
 export interface DerivationSummary {
   sourceLabel: string;
   method: 'structured' | 'semi-structured' | 'narrative-fallback';
-  documentKind: ProcessDocumentType;
+  documentKind: 'procedure-document' | 'case-narrative' | 'unknown';
   analysisMode: ProcessMiningAnalysisMode;
   caseCount: number;
   observationCount: number;

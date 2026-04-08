@@ -27,6 +27,7 @@ import { StepQuickJumpBar } from './StepQuickJumpBar';
 import { StepActionBar } from './StepActionBar';
 import { StepStageHeader } from './StepStageHeader';
 import { LocalEngineProfilePanel } from './LocalEngineProfilePanel';
+import { QualityExportPanel } from './QualityExportPanel';
 import {
   applyCanonicalLabelSuggestions,
   applyIssueReclassificationSuggestions,
@@ -38,6 +39,7 @@ import { deriveProcessArtifactsFromText } from './documentDerivation';
 import { computeQualitySummary } from './narrativeParsing';
 import { getAnalysisModeLabel } from './pmShared';
 import { getOperatingModeProfile } from './operatingMode';
+import type { WorkspaceIntegrityReport } from './workspaceIntegrity';
 
 type InputTab = 'describe' | 'upload';
 
@@ -59,6 +61,7 @@ interface Props {
   version: ProcessVersion;
   settings: AppSettings;
   state: ProcessMiningAssistedV2State;
+  integrity: WorkspaceIntegrityReport;
   onChange: (patch: Partial<ProcessMiningAssistedV2State>) => void;
   onResetState: () => void;
   onNext: () => void;
@@ -76,23 +79,24 @@ function ensureReviewState(value: ProcessMiningReviewState | undefined): Process
   };
 }
 
-export function ObservationsStep({ process, version, settings, state, onChange, onResetState, onNext }: Props) {
+export function ObservationsStep({ process, version, settings, state, integrity, onChange, onResetState, onNext }: Props) {
   const operatingModeProfile = getOperatingModeProfile(state.operatingMode);
   const [activeTab, setActiveTab] = useState<InputTab>('describe');
   const [expandedEditorCaseId, setExpandedEditorCaseId] = useState<string | null>(null);
   const [showCaseDetails, setShowCaseDetails] = useState(operatingModeProfile.observationDefaults.showCaseDetails);
   const [lastWorkshopNotes, setLastWorkshopNotes] = useState<string[]>([]);
-  const [showReadiness, setShowReadiness] = useState(operatingModeProfile.observationDefaults.showReadiness);
+  const [showReadiness, setShowReadiness] = useState(true);
+  const [showOptionalSection, setShowOptionalSection] = useState(false);
   const [showReview, setShowReview] = useState(operatingModeProfile.observationDefaults.showReview);
-  const [showSources, setShowSources] = useState(operatingModeProfile.observationDefaults.showSources);
   const [showEvidence, setShowEvidence] = useState(operatingModeProfile.observationDefaults.showEvidence);
   const [showDetailsSection, setShowDetailsSection] = useState(operatingModeProfile.observationDefaults.showDetailsSection);
   const [showAiSection, setShowAiSection] = useState(operatingModeProfile.observationDefaults.showAiSection);
   const [sessionStatusLabel, setSessionStatusLabel] = useState('Noch keine Reparaturaktion in dieser Sitzung.');
   const intakeRef = useRef<HTMLDivElement | null>(null);
   const readinessRef = useRef<HTMLDivElement | null>(null);
+  const optionalRef = useRef<HTMLDivElement | null>(null);
+  const exportRef = useRef<HTMLDivElement | null>(null);
   const reviewRef = useRef<HTMLDivElement | null>(null);
-  const sourcesRef = useRef<HTMLDivElement | null>(null);
   const detailsRef = useRef<HTMLDivElement | null>(null);
   const aiRef = useRef<HTMLDivElement | null>(null);
   const undoHistoryRef = useRef<SessionHistoryEntry[]>([]);
@@ -114,14 +118,14 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
 
   useEffect(() => {
     const defaults = operatingModeProfile.observationDefaults;
-    setShowReadiness(defaults.showReadiness);
-    setShowReview(defaults.showReview);
-    setShowSources(defaults.showSources);
-    setShowEvidence(defaults.showEvidence);
-    setShowDetailsSection(defaults.showDetailsSection);
-    setShowAiSection(defaults.showAiSection);
-    setShowCaseDetails(defaults.showCaseDetails);
-  }, [operatingModeProfile.key, version.id]);
+    setShowReadiness(true);
+    setShowOptionalSection(false);
+    setShowReview(defaults.showReview && reviewOverview.suggestionCount > 0);
+    setShowEvidence(false);
+    setShowDetailsSection(false);
+    setShowAiSection(false);
+    setShowCaseDetails(false);
+  }, [operatingModeProfile.key, reviewOverview.suggestionCount, version.id]);
 
   function createSnapshot(): SessionSnapshot {
     return cloneSessionSnapshot({
@@ -349,22 +353,24 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
       return;
     }
     if (actionId === 'review') {
+      setShowOptionalSection(true);
       setShowReview(true);
-      scrollToSection(reviewRef);
+      scrollToSection(optionalRef);
       return;
     }
     if (actionId === 'sources') {
-      setShowSources(true);
-      scrollToSection(sourcesRef);
+      setShowReadiness(true);
+      scrollToSection(readinessRef);
       return;
     }
     if (actionId === 'details') {
+      setShowOptionalSection(true);
       setShowDetailsSection(true);
       setShowCaseDetails(true);
       if (!expandedEditorCaseId && cases[0]) {
         setExpandedEditorCaseId(cases[0].id);
       }
-      scrollToSection(detailsRef);
+      scrollToSection(optionalRef);
       return;
     }
     applyLocalStandardRepair();
@@ -412,8 +418,7 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
     });
     if (derivedObservations.some(observation => observation.kind === 'step')) {
       setExpandedEditorCaseId(caseItem.id);
-      setShowCaseDetails(true);
-      setShowSources(true);
+      setShowReadiness(true);
     }
   }
 
@@ -476,8 +481,7 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
     );
     if (firstCaseWithSteps) {
       setExpandedEditorCaseId(firstCaseWithSteps.id);
-      setShowCaseDetails(true);
-      setShowSources(true);
+      setShowReadiness(true);
     }
   }
 
@@ -516,24 +520,17 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
       {cases.length} {cases.length === 1 ? 'Quelle' : 'Quellen'}
     </span>
   ) : null;
-  const detailBadge = cases.length > 0 ? (
-    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-medium text-slate-700">
-      Detailbearbeitung optional
-    </span>
-  ) : null;
-
   const quickJumpItems = [
     {
       id: 'intake',
-      label: 'Erfassen',
-      hint: cases.length > 0 ? `${cases.length} Quellen vorhanden` : 'neue Quelle hinzufügen',
+      label: '1. Hochladen',
+      hint: cases.length > 0 ? `${cases.length} Quellen vorhanden` : 'Dokument oder Fall hinzufügen',
       onClick: () => scrollToSection(intakeRef),
     },
-
     {
-      id: 'readiness',
-      label: 'Datenreife',
-      hint: quality ? `${quality.stepObservationCount} Schritte, ${quality.issueObservationCount} Reibungssignale` : 'noch keine Auswertung',
+      id: 'result',
+      label: '2. Ergebnis prüfen',
+      hint: quality ? `${quality.stepObservationCount} Schritte · ${quality.issueObservationCount} Reibungssignale` : 'noch keine Auswertung',
       badge: readinessBadge,
       onClick: () => {
         setShowReadiness(true);
@@ -541,33 +538,22 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
       },
     },
     {
-      id: 'review',
-      label: 'Prüfwerkstatt',
+      id: 'optional',
+      label: '3. Optional nachschärfen',
       hint: reviewOverview.suggestionCount > 0 ? 'empfohlene Korrekturen prüfen' : 'nur bei Bedarf öffnen',
       badge: reviewBadge,
       onClick: () => {
+        setShowOptionalSection(true);
         setShowReview(true);
-        scrollToSection(reviewRef);
+        scrollToSection(optionalRef);
       },
     },
     {
-      id: 'sources',
-      label: 'Quellen',
-      hint: cases.length > 0 ? 'Herkunft und Belege ansehen' : 'wird nach der ersten Auswertung wichtig',
-      badge: sourceBadge,
+      id: 'export',
+      label: '4. Qualitätscheck exportieren',
+      hint: canProceed ? 'JSON für die externe Qualitätsbewertung erzeugen' : 'wird nach der ersten Auswertung aktiv',
       onClick: () => {
-        setShowSources(true);
-        scrollToSection(sourcesRef);
-      },
-    },
-    {
-      id: 'details',
-      label: 'Details',
-      hint: cases.length > 0 ? 'Einzelfälle nachschärfen' : 'optional für später',
-      badge: detailBadge,
-      onClick: () => {
-        setShowDetailsSection(true);
-        scrollToSection(detailsRef);
+        scrollToSection(exportRef);
       },
     },
   ];
@@ -576,7 +562,7 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
     <div className="space-y-6">
       <StepStageHeader
         title="Dokument oder Fall automatisch auswerten"
-        description="Beschreiben Sie einen Prozessfall oder laden Sie ein Dokument hoch. Die App leitet daraus automatisch einen Prozessentwurf, Rollen, Reibungssignale und erkannte Schritte ab. Erst danach beginnt die eigentliche Analyse."
+        description="Der Hauptpfad ist bewusst einfach gehalten: Dokument hochladen oder Fall beschreiben, automatisch analysieren, Ergebnis kurz prüfen und danach den Qualitätscheck als JSON exportieren. Alles Weitere bleibt optional eingeklappt."
         helpKey="pmv2.observations"
         tone="blue"
         badges={(
@@ -596,13 +582,13 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
         )}
       />
 
-      <StepQuickJumpBar items={quickJumpItems} />
+      <StepQuickJumpBar title="Kernpfad" items={quickJumpItems} />
 
 
       <div ref={intakeRef}>
         <WorkbenchSection
-          title="1. Prozessmaterial erfassen"
-          description="Starten Sie mit eigenem Material. Die Hauptaktion liegt bewusst hier."
+          title="1. Dokument hochladen oder Fall beschreiben"
+          description="Starten Sie hier mit eigenem Material. Alles Weitere bleibt bewusst nachgelagert oder optional."
           helpKey="pmv2.observations"
           badge={cases.length > 0 ? (
             <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-medium text-cyan-800">
@@ -621,39 +607,6 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
           ) : undefined}
         >
           <div className="space-y-4">
-            {lastSummary && (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm font-semibold text-slate-700">Zuletzt ausgewertet: {lastSummary.sourceLabel}</span>
-                </div>
-                <div className="flex flex-wrap gap-3 text-xs text-slate-600">
-                  <span>{lastSummary.stepLabels.length} erkannte Hauptschritte</span>
-                  <span>{getAnalysisModeLabel(lastSummary.analysisMode)}</span>
-                  {lastSummary.issueSignals && lastSummary.issueSignals.length > 0 && <span>{lastSummary.issueSignals.length} Reibungssignale</span>}
-                  {lastSummary.roles.length > 0 && <span>Rollen: {lastSummary.roles.slice(0, 3).join(', ')}</span>}
-                  {lastSummary.systems && lastSummary.systems.length > 0 && <span>Systeme: {lastSummary.systems.slice(0, 3).join(', ')}</span>}
-                  <span className={`rounded px-1.5 py-0.5 font-medium ${lastSummary.confidence === 'high' ? 'bg-green-100 text-green-800' : lastSummary.confidence === 'medium' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>
-                    {lastSummary.confidence === 'high' ? 'Hohe Verlässlichkeit' : lastSummary.confidence === 'medium' ? 'Mittlere Verlässlichkeit' : 'Niedrige Verlässlichkeit'}
-                  </span>
-                </div>
-                {lastSummary.documentSummary && (
-                  <p className="text-xs leading-relaxed text-slate-500">{lastSummary.documentSummary}</p>
-                )}
-                {lastSummary.repairNotes && lastSummary.repairNotes.length > 0 && (
-                  <div className="space-y-1">
-                    {lastSummary.repairNotes.map((note, index) => (
-                      <p key={index} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-relaxed text-slate-500">
-                        {note}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {lastSummary && <LocalEngineProfilePanel summary={lastSummary} />}
-
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
               <div className="grid grid-cols-2">
                 <button
@@ -682,26 +635,34 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
               </div>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-3">
-              {[
-                {
-                  title: '1. Quelle wählen',
-                  text: 'Freitext beschreiben oder ein Dokument hochladen. Beides bleibt sichtbar und nachvollziehbar in der App.',
-                },
-                {
-                  title: '2. Automatisch auswerten',
-                  text: 'Die lokale Engine erkennt Hauptschritte, Rollen, Systeme und Reibungssignale direkt in der Anwendung.',
-                },
-                {
-                  title: '3. Kurz prüfen',
-                  text: 'Mit Prüfwerkstatt und Quellenübersicht schärfen Sie das Ergebnis, bevor Discovery und Soll-Abgleich starten.',
-                },
-              ].map(card => (
-                <div key={card.title} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{card.title}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-700">{card.text}</p>
-                </div>
-              ))}
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">So läuft der Hauptpfad</p>
+              <ol className="mt-3 grid gap-3 md:grid-cols-3">
+                {[
+                  {
+                    title: '1. Quelle wählen',
+                    text: 'Dokument hochladen oder Fall beschreiben.',
+                  },
+                  {
+                    title: '2. Analyse prüfen',
+                    text: 'Erkannte Schritte, Rollen und Signale kurz auf Plausibilität prüfen.',
+                  },
+                  {
+                    title: '3. Qualitätscheck exportieren',
+                    text: 'Den Analysezustand als JSON für die externe Bewertung mitnehmen.',
+                  },
+                ].map((card, index) => (
+                  <li key={card.title} className="rounded-xl border border-white bg-white px-4 py-3 shadow-sm">
+                    <div className="flex items-center gap-2 text-slate-700">
+                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
+                        {index + 1}
+                      </span>
+                      <p className="text-sm font-semibold text-slate-900">{card.title}</p>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{card.text}</p>
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
         </WorkbenchSection>
@@ -709,19 +670,55 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
 
       <div ref={readinessRef}>
         <WorkbenchSection
-          title="2. Datenreife und erste Qualität prüfen"
-          description="Diese Sicht zeigt, ob das Material schon stabil genug für Discovery, Soll-Abgleich und Hotspots ist."
+          title="2. Analyseergebnis prüfen"
+          description="Hier sehen Sie, was die App aus Ihrem Material wirklich abgeleitet hat. Erst wenn dieses Ergebnis plausibel wirkt, gehen Sie weiter oder exportieren den Qualitätscheck als JSON."
           helpKey="pmv2.maturity"
-          badge={readinessBadge ?? undefined}
+          badge={sourceBadge ?? readinessBadge ?? undefined}
           collapsible
           open={showReadiness}
           onToggle={() => setShowReadiness(open => !open)}
         >
           <div className="space-y-4">
+            {!lastSummary && !quality && cases.length === 0 && (
+              <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+                Sobald ein Dokument oder Fall ausgewertet wurde, sehen Sie hier den erkannten Prozessentwurf und die wichtigsten Qualitätsmerkmale.
+              </div>
+            )}
+
+            {lastSummary && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm font-semibold text-slate-700">Zuletzt ausgewertet: {lastSummary.sourceLabel}</span>
+                </div>
+                <div className="flex flex-wrap gap-3 text-xs text-slate-600">
+                  <span>{lastSummary.stepLabels.length} erkannte Hauptschritte</span>
+                  <span>{getAnalysisModeLabel(lastSummary.analysisMode)}</span>
+                  {lastSummary.issueSignals && lastSummary.issueSignals.length > 0 && <span>{lastSummary.issueSignals.length} Reibungssignale</span>}
+                  {lastSummary.roles.length > 0 && <span>Rollen: {lastSummary.roles.slice(0, 3).join(', ')}</span>}
+                  {lastSummary.systems && lastSummary.systems.length > 0 && <span>Systeme: {lastSummary.systems.slice(0, 3).join(', ')}</span>}
+                  <span className={`rounded px-1.5 py-0.5 font-medium ${lastSummary.confidence === 'high' ? 'bg-green-100 text-green-800' : lastSummary.confidence === 'medium' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>
+                    {lastSummary.confidence === 'high' ? 'Hohe Verlässlichkeit' : lastSummary.confidence === 'medium' ? 'Mittlere Verlässlichkeit' : 'Niedrige Verlässlichkeit'}
+                  </span>
+                </div>
+                {lastSummary.documentSummary && <p className="text-xs leading-relaxed text-slate-500">{lastSummary.documentSummary}</p>}
+              </div>
+            )}
+
+            {lastSummary && <LocalEngineProfilePanel summary={lastSummary} />}
             {quality && <QualitySummaryCard summary={quality} />}
-            <ImportHealthPanel state={state} />
-            {(quality || cases.length > 0) && (
-              <DataMaturityWorkshopPanel state={state} version={version} reviewSuggestionCount={reviewOverview.suggestionCount} onAction={handleMaturityAction} />
+            {cases.length > 0 && <ImportHealthPanel state={state} />}
+            {cases.length > 0 && (
+              <SourceOverviewPanel
+                cases={cases}
+                observations={observations}
+                expandedCaseId={expandedEditorCaseId}
+                onFocusCase={focusEditorForCase}
+                onReanalyzeCase={caseId => {
+                  const selectedCase = cases.find(caseItem => caseItem.id === caseId);
+                  if (selectedCase) extractForCase(selectedCase);
+                }}
+              />
             )}
             {lastWorkshopNotes.length > 0 && (
               <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 space-y-1">
@@ -734,148 +731,188 @@ export function ObservationsStep({ process, version, settings, state, onChange, 
         </WorkbenchSection>
       </div>
 
-      <div ref={reviewRef}>
+      <div ref={optionalRef}>
         <WorkbenchSection
-          title="3. Prüfwerkstatt"
-          description="Hier schärfen Sie erkannte Schritte nach. Öffnen Sie den Bereich vor allem dann, wenn offene Korrekturvorschläge angezeigt werden."
-          helpKey="pmv2.review"
+          title="3. Optional nachschärfen"
+          description="Diese Werkzeuge sind bewusst optional. Öffnen Sie sie nur, wenn das Ergebnis noch nicht plausibel genug wirkt oder einzelne Quellen nachbearbeitet werden müssen."
+          helpKey="pmv2.details"
           badge={reviewBadge}
           collapsible
-          open={showReview}
-          onToggle={() => setShowReview(open => !open)}
+          open={showOptionalSection}
+          onToggle={() => setShowOptionalSection(open => !open)}
         >
-          <StepReviewWorkbench
-            cases={cases}
-            observations={observations}
-            reviewState={reviewState}
-            onApplyChange={handleReviewWorkbenchChange}
-            onFocusCase={focusEditorForCase}
-            onUndo={undoReviewChange}
-            onRedo={redoReviewChange}
-            canUndo={historyCounts.undo > 0}
-            canRedo={historyCounts.redo > 0}
-            sessionStatusLabel={sessionStatusLabel}
-          />
-        </WorkbenchSection>
-      </div>
+          <div className="space-y-4">
+            {(quality || cases.length > 0) && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">Qualität und Datenreife nachschärfen</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">Nutzen Sie diese Hinweise nur bei Bedarf. Der Hauptpfad funktioniert auch ohne diese Zusatzschicht.</p>
+                <div className="mt-3">
+                  <DataMaturityWorkshopPanel state={state} version={version} reviewSuggestionCount={reviewOverview.suggestionCount} onAction={handleMaturityAction} />
+                </div>
+              </div>
+            )}
 
-      <div ref={sourcesRef} className="space-y-4">
-        <WorkbenchSection
-          title="4. Quellenübersicht"
-          description="Nutzen Sie diese Sicht, um Herkunft, Belegstellen, Rollen und Systemsignale pro Quelle schnell einzuordnen."
-          helpKey="pmv2.sources"
-          badge={sourceBadge ?? undefined}
-          collapsible
-          open={showSources}
-          onToggle={() => setShowSources(open => !open)}
-        >
-          <SourceOverviewPanel
-            cases={cases}
-            observations={observations}
-            expandedCaseId={expandedEditorCaseId}
-            onFocusCase={focusEditorForCase}
-            onReanalyzeCase={caseId => {
-              const selectedCase = cases.find(caseItem => caseItem.id === caseId);
-              if (selectedCase) extractForCase(selectedCase);
-            }}
-          />
-        </WorkbenchSection>
-
-        <WorkbenchSection
-          title="Beleg-Inspektor"
-          description="Optionaler Tiefenblick: Prüfen Sie zu einzelnen Schritten die Fundstelle, den Rollen- oder Systemkontext und die Herleitung."
-          helpKey="pmv2.evidenceInspector"
-          collapsible
-          open={showEvidence}
-          onToggle={() => setShowEvidence(open => !open)}
-        >
-          <EvidenceInspectorPanel cases={cases} observations={observations} onFocusCase={focusEditorForCase} />
-        </WorkbenchSection>
-      </div>
-
-      <div ref={detailsRef}>
-        <WorkbenchSection
-          title={cases.length === 0 ? '5. Detailbearbeitung' : `5. Detailbearbeitung für ${cases.length} ${cases.length === 1 ? 'Quelle' : 'Quellen'}`}
-          description="Diese Karten sind bewusst optional. Öffnen Sie sie nur, wenn Texte, Metadaten oder erkannte Schritte im Einzelfall nachgeschärft werden sollen."
-          helpKey="pmv2.details"
-          badge={detailBadge ?? undefined}
-          collapsible
-          open={showDetailsSection}
-          onToggle={() => setShowDetailsSection(open => !open)}
-          actions={
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowCaseDetails(show => !show)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
-              >
-                {showCaseDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                {showCaseDetails ? 'Detailkarten ausblenden' : 'Detailkarten anzeigen'}
-              </button>
-              <button
-                type="button"
-                onClick={addEmptyCase}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
-              >
-                <Plus className="h-4 w-4" />
-                Leere Karte anlegen
-              </button>
+            <div ref={reviewRef} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Prüfwerkstatt</p>
+                  <p className="text-xs leading-relaxed text-slate-500">Öffnen Sie diesen Bereich vor allem dann, wenn offene Korrekturvorschläge angezeigt werden.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowReview(open => !open)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                >
+                  {showReview ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  {showReview ? 'Prüfwerkstatt ausblenden' : 'Prüfwerkstatt anzeigen'}
+                </button>
+              </div>
+              {showReview && (
+                <StepReviewWorkbench
+                  cases={cases}
+                  observations={observations}
+                  reviewState={reviewState}
+                  onApplyChange={handleReviewWorkbenchChange}
+                  onFocusCase={focusEditorForCase}
+                  onUndo={undoReviewChange}
+                  onRedo={redoReviewChange}
+                  canUndo={historyCounts.undo > 0}
+                  canRedo={historyCounts.redo > 0}
+                  sessionStatusLabel={sessionStatusLabel}
+                />
+              )}
             </div>
-          }
-        >
-          <div className="space-y-3">
-            {reviewOverview.suggestionCount > 0 && (
-              <p className="text-xs text-slate-500">
-                {reviewOverview.suggestionCount} empfohlene Korrekturen sind offen. Sie können trotzdem weitergehen, erhalten aber meist stabilere Ergebnisse nach einer kurzen Prüfung.
-              </p>
-            )}
 
-            {cases.length === 0 && (
-              <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-400">
-                Noch keine Fälle. Beschreiben Sie oben einen Prozessfall oder laden Sie ein Dokument hoch.
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Beleg-Inspektor</p>
+                  <p className="text-xs leading-relaxed text-slate-500">Optionaler Tiefenblick auf Fundstellen, Rollen- und Systemkontext einzelner Schritte.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowEvidence(open => !open)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                >
+                  {showEvidence ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  {showEvidence ? 'Belege ausblenden' : 'Belege anzeigen'}
+                </button>
               </div>
-            )}
+              {showEvidence && <EvidenceInspectorPanel cases={cases} observations={observations} onFocusCase={focusEditorForCase} />}
+            </div>
 
-            {showCaseDetails && (
-              <div className="space-y-3">
-                {cases.map((caseItem, index) => {
-                  const caseObservations = observations.filter(observation => observation.sourceCaseId === caseItem.id);
-                  return (
-                    <div key={caseItem.id}>
-                      <NarrativeCaseCard
-                        caseItem={caseItem}
-                        observations={caseObservations}
-                        caseIndex={index}
-                        onUpdate={updatedCase => updateCase(caseItem.id, updatedCase)}
-                        onDelete={() => deleteCase(caseItem.id)}
-                        onExtract={() => extractForCase(caseItem)}
-                        onToggleEditor={() => toggleEditorForCase(caseItem.id)}
-                        editorOpen={expandedEditorCaseId === caseItem.id}
-                        dragHandleProps={{ onMouseDown: () => {} }}
-                      />
-                      {expandedEditorCaseId === caseItem.id && caseObservations.length > 0 && (
-                        <ObservationEditor observations={observations} onUpdate={updateObservations} caseId={caseItem.id} caseName={caseItem.name} />
-                      )}
+            <div ref={detailsRef} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Detailbearbeitung</p>
+                  <p className="text-xs leading-relaxed text-slate-500">Nur nötig, wenn Texte, Metadaten oder einzelne erkannte Schritte im Einzelfall nachgeschärft werden sollen.</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowDetailsSection(open => !open)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                  >
+                    {showDetailsSection ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    {showDetailsSection ? 'Detailbearbeitung ausblenden' : 'Detailbearbeitung anzeigen'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={addEmptyCase}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Leere Karte anlegen
+                  </button>
+                </div>
+              </div>
+              {showDetailsSection && (
+                <div className="space-y-3">
+                  {reviewOverview.suggestionCount > 0 && (
+                    <p className="text-xs text-slate-500">
+                      {reviewOverview.suggestionCount} empfohlene Korrekturen sind offen. Sie können trotzdem weitergehen, erhalten aber meist stabilere Ergebnisse nach einer kurzen Prüfung.
+                    </p>
+                  )}
+                  {cases.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-400">
+                      Noch keine Fälle. Beschreiben Sie oben einen Prozessfall oder laden Sie ein Dokument hoch.
                     </div>
-                  );
-                })}
+                  )}
+                  {cases.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowCaseDetails(show => !show)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                      >
+                        {showCaseDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        {showCaseDetails ? 'Detailkarten ausblenden' : 'Detailkarten anzeigen'}
+                      </button>
+                    </div>
+                  )}
+                  {showCaseDetails && (
+                    <div className="space-y-3">
+                      {cases.map((caseItem, index) => {
+                        const caseObservations = observations.filter(observation => observation.sourceCaseId === caseItem.id);
+                        return (
+                          <div key={caseItem.id}>
+                            <NarrativeCaseCard
+                              caseItem={caseItem}
+                              observations={caseObservations}
+                              caseIndex={index}
+                              onUpdate={updatedCase => updateCase(caseItem.id, updatedCase)}
+                              onDelete={() => deleteCase(caseItem.id)}
+                              onExtract={() => extractForCase(caseItem)}
+                              onToggleEditor={() => toggleEditorForCase(caseItem.id)}
+                              editorOpen={expandedEditorCaseId === caseItem.id}
+                              dragHandleProps={{ onMouseDown: () => {} }}
+                            />
+                            {expandedEditorCaseId === caseItem.id && caseObservations.length > 0 && (
+                              <ObservationEditor observations={observations} onUpdate={updateObservations} caseId={caseItem.id} caseName={caseItem.name} />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div ref={aiRef} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Optionale KI-Verfeinerung</p>
+                  <p className="text-xs leading-relaxed text-slate-500">Die lokale Analyse bleibt der Hauptweg. Öffnen Sie diesen Bereich nur, wenn Formulierungen oder Cluster zusätzlich per KI geschärft werden sollen.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAiSection(open => !open)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                >
+                  {showAiSection ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  {showAiSection ? 'KI-Bereich ausblenden' : 'KI-Bereich anzeigen'}
+                </button>
               </div>
-            )}
+              {showAiSection && <ProcessMiningAiPanel process={process} version={version} settings={settings} state={state} onApply={onChange} />}
+            </div>
           </div>
         </WorkbenchSection>
       </div>
 
-
-      <div ref={aiRef}>
+      <div ref={exportRef}>
         <WorkbenchSection
-          title="Optionale KI-Verfeinerung"
-          description="Die lokale Analyse bleibt der Hauptweg. Öffnen Sie diesen Bereich nur, wenn Sie Formulierungen, Cluster oder Ergänzungen zusätzlich per KI schärfen möchten."
-          helpKey="pmv2.ai"
-          collapsible
-          open={showAiSection}
-          onToggle={() => setShowAiSection(open => !open)}
+          title="4. Qualitätscheck exportieren"
+          description="Wenn das aktuelle Ergebnis plausibel wirkt, exportieren Sie den Analysezustand als JSON und laden ihn anschließend zur externen Qualitätsbewertung hoch."
+          helpKey="pmv2.qualityExport"
         >
-          <ProcessMiningAiPanel process={process} version={version} settings={settings} state={state} onApply={onChange} />
+          <QualityExportPanel
+            process={process}
+            version={version}
+            state={state}
+            settings={settings}
+            integrity={integrity}
+          />
         </WorkbenchSection>
       </div>
 

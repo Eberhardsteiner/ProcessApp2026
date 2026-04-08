@@ -1,3 +1,42 @@
+## v0.40.7 – Sanierungsstufe 5
+
+- Die Analyse unterscheidet jetzt konsequenter zwischen Prozessentwurf, Fallvergleich und echtem Mining.
+- Prozent- und Mengenangaben werden bei kleiner oder nur teilweise belastbarer Datenbasis deutlich vorsichtiger formuliert.
+- Discovery, Soll-Abgleich, Hotspots und Qualitäts-Export enthalten jetzt eine klarere Einordnung der Aussagekraft.
+
+## v0.40.6 – Sanierungsstufe 4
+
+- neue Domänenisolation für Reklamationen, Rechnung & Zahlungsklärung, Service, Retouren, Einkauf, Onboarding und Stammdaten
+- Primär- und Sekundärdomäne werden jetzt lokal aus Dokumentinhalt, Schrittliste, Rollen und Systemen abgeleitet
+- fachfremde Reibungssignale werden nur noch übernommen, wenn dafür starke Evidenz im Material vorliegt
+- Rollen- und Systemprofile werden domänensensitiv bereinigt, damit Rechnungsdokumente keine Onboarding- oder Retourenprofile mehr ziehen
+- das lokale Engine-Profil zeigt jetzt die Primärdomäne und erklärt, wenn fachfremde Signale bewusst ausgeblendet wurden
+
+
+
+## v0.40.5 – Sanierungsstufe 3
+
+- DOCX- und PDF-Strukturen werden jetzt sauberer als echte Tabellen- und Zeilenblöcke erhalten, statt als fortlaufender Text zu zerfallen
+- strukturierte Ablauf-, Rollen- und Entscheidungs-Tabellen werden headerbasiert gelesen und in stabile Prozessschritte überführt
+- zusätzliche Spalten wie System oder Entscheidung fließen jetzt in den strukturierten Parserpfad mit ein
+- Pseudo-Schritte und Tabellenreste wie isolierte Nummern, Systemfragmente oder Mischzeilen werden vor der Schrittableitung gezielt herausgefiltert
+- strukturierte Sollprozessdokumente liefern dadurch stabilere und fachlich lesbarere Schrittlisten, auch bei flach extrahierten Tabellenformen
+
+## v0.40.4 – Sanierungsstufe 2
+
+- neuer Strukturdetektor mit klaren Dokumentklassen für Sollprozessdokument, semistrukturiertes Verfahrensdokument, narrative Fallbeschreibung, Mischdokument und schwaches Material
+- strukturierte Abschnittserkennung für Überschriften, Nummerierungen, Ablaufblöcke, Rollenblöcke, Entscheidungsregeln sowie KPI-/Governance-Blöcke
+- narrative Notlogik jetzt nur noch als letzte Reserve, wenn ein strukturiertes Verfahrensdokument nicht belastbar extrahiert werden kann
+- strukturierte DOCX-Sollprozessdokumente werden in den Testfällen 1 und 2 jetzt als Verfahrensdokument erkannt und nicht mehr als narrative Fallbeschreibung geführt
+- strukturierte Schrittlisten aus DOCX-Tabellen bleiben im Hauptpfad erhalten und werden nicht mehr lokal in generische Sammelschritte umgeschrieben
+
+## v0.40.3 – Sanierungsstufe 1
+
+- Hauptpfad im Assisted Process Mining freigelegt: Dokument hochladen → Analyse prüfen → optional nachschärfen → Qualitätscheck exportieren
+- Qualitätscheck-Export sichtbar in die eigentliche Arbeitsstrecke verlegt
+- Nebenflächen im Arbeitsbereich standardmäßig stärker eingeklappt oder ausgeblendet
+- Beispiel- und Testlogik nicht mehr im sichtbaren Hauptpfad
+
 ## v0.40 · Qualitätscheck-Export für manuelle Testläufe
 
 - sichtbarer Qualitätscheck-Export in der App für manuelle Testläufe
@@ -404,3 +443,18 @@ Die lokale Analyse ohne KI wurde fachlich breiter und zugleich besser erklärbar
 - Neuer Bereich für formale Abnahme mit Entscheidung, Checkliste, Risiken, Enablement und exportierbarer Entscheidungsvorlage.
 - Gemerkte Abnahmestände machen sichtbar, ob die formale Entscheidung noch zur aktuellen Analysebasis passt.
 - Neuer lokaler Acceptance-Check (`npm run acceptance:check`) ergänzt den Release-Check und schließt den aktuellen Kernplan kontrolliert ab.
+
+## v0.40.8 / Sanierungsstufe 6
+
+- Qualitätscheck-Export auf stabiles Schema `pm-analysis-quality-export-v2` umgestellt
+- Acht feste Qualitätsdimensionen ergänzt: Dokumenttyp-Erkennung, Strukturtreue, Schrittklarheit, Rollenqualität, Systemqualität, Domänenkonsistenz, Evidenzabdeckung und Vorsicht bei schwachem Material
+- Qualitätsbewertung jetzt direkt im Export enthalten, damit ein einzelner Testfall für eine belastbare Detailbewertung ausreicht
+- Export-Hilfe und Export-Panel entsprechend nachgeschärft
+
+## v0.40.9 / Sanierungsstufe 7
+
+- Gemeinsame UI-Bausteine für Assisted Process Mining beruhigt: Schrittkopf, Bereichskarten, Schnellzugriffe, Kennzahlen und Aktionsleisten folgen jetzt einem einheitlicheren Muster.
+- Qualitäts-Export bleibt sichtbar im Hauptpfad und ist klarer als primäre Aktion platziert.
+- Der Arbeitsbereich auf einen Blick wurde reduziert: weniger visuelle Dichte im Standardzustand, mehr Einordnung nur noch bei Bedarf.
+- Einstieg in Schritt 1 konzentriert sich jetzt stärker auf den Kernpfad statt auf viele parallele Hinweise.
+

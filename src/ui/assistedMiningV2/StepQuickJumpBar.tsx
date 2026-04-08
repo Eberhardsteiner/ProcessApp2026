@@ -29,8 +29,8 @@ export function StepQuickJumpBar({ title = 'Schnellzugriff', items }: StepQuickJ
             <Route className="h-4 w-4 text-slate-400" />
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>
           </div>
-          <p className="text-xs leading-relaxed text-slate-500">
-            Springen Sie direkt zum passenden Arbeitsbereich. Hinweise bleiben optional, damit die Oberfläche ruhig bleibt.
+          <p className="text-sm leading-relaxed text-slate-600">
+            Der Hauptpfad bleibt sichtbar. Zusätzliche Hinweise können Sie nur bei Bedarf einblenden.
           </p>
         </div>
         {hintItems.length > 0 && (

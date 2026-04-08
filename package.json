@@ -1,7 +1,7 @@
 {
   "name": "vite-react-typescript-starter",
   "private": true,
-  "version": "0.40.2",
+  "version": "0.40.9",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,6 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "benchmark:pm": "node ./scripts/runPmBenchmark.mjs",
-    "phase8:reference": "node ./scripts/runPmPhase8ReferenceExport.mjs",
     "pilot:check": "node ./scripts/runPmPilotCheck.mjs",
     "bundle:summary": "node ./scripts/runBundleSummary.mjs",
     "benchmark:pm:strict": "node ./scripts/runPmBenchmarkStrict.mjs",
@@ -22,14 +21,7 @@
     "collaboration:check": "node ./scripts/runPmCollaborationCheck.mjs",
     "adapter:check": "node ./scripts/runPmAdapterCheck.mjs",
     "security:check": "node ./scripts/runPmSecurityCheck.mjs",
-    "acceptance:check": "node ./scripts/runPmAcceptanceCheck.mjs",
-    "changes:export": "node ./scripts/exportChangedFiles.mjs",
-    "changes:export:latest": "node ./scripts/exportChangedFiles.mjs --from HEAD~1 --to HEAD --out artifacts/latest-commit-files",
-    "export:changes": "node ./scripts/exportChangedFiles.mjs",
-    "changes-export": "node ./scripts/exportChangedFiles.mjs",
-    "export-changes": "node ./scripts/exportChangedFiles.mjs",
-    "changes-export-latest": "node ./scripts/exportChangedFiles.mjs --from HEAD~1 --to HEAD --out artifacts/latest-commit-files",
-    "latest-changes-export": "node ./scripts/exportChangedFiles.mjs --from HEAD~1 --to HEAD --out artifacts/latest-commit-files"
+    "acceptance:check": "node ./scripts/runPmAcceptanceCheck.mjs"
   },
   "dependencies": {
     "bpmn-js": "^18.12.0",

@@ -1,5 +1,5 @@
 import type { ProcessMiningAssistedV2State, ProcessVersion } from '../../domain/process';
-import { detectProcessMiningAnalysisMode, getAnalysisModeLabel } from './pmShared';
+import { canUseStrongPercentages, detectProcessMiningAnalysisMode, getAnalysisModeLabel } from './pmShared';
 
 export type MiningReadinessStage = 'intake' | 'draft' | 'comparison' | 'mining';
 
@@ -30,8 +30,8 @@ function hasHappyPath(version?: ProcessVersion): boolean {
 function getStageLabel(stage: MiningReadinessStage): string {
   if (stage === 'intake') return 'Einstieg';
   if (stage === 'draft') return 'Prozessentwurf';
-  if (stage === 'comparison') return 'Vergleich & Muster';
-  return 'Belastbare Analyse';
+  if (stage === 'comparison') return 'Fallvergleich';
+  return 'Echtes Mining';
 }
 
 function getConfidenceTone(confidence?: 'high' | 'medium' | 'low'): MiningReadinessResult['confidenceTone'] {
@@ -69,8 +69,8 @@ export function computeMiningReadiness(params: {
 
   let stage: MiningReadinessStage = 'intake';
   if (stepCount > 0) stage = 'draft';
-  if (caseCount >= 2 && stepCount >= 4) stage = 'comparison';
-  if (caseCount >= 5 && realTimeCount >= Math.max(3, Math.ceil(stepCount * 0.4))) stage = 'mining';
+  if (analysisMode === 'exploratory-mining' && caseCount >= 2 && stepCount >= 4) stage = 'comparison';
+  if (analysisMode === 'true-mining' && canUseStrongPercentages(analysisMode, caseCount)) stage = 'mining';
 
   const capabilities: MiningCapability[] = [
     {
@@ -78,7 +78,7 @@ export function computeMiningReadiness(params: {
       label: 'Prozessentwurf verdichten',
       enabled: stepCount > 0,
       note: stepCount > 0
-        ? 'Erkannte Schritte lassen sich zu einem belastbaren Erstentwurf ordnen.'
+        ? 'Erkannte Schritte lassen sich zu einem gut prüfbaren Erstentwurf ordnen.'
         : 'Sobald ein Dokument oder Fall ausgewertet wurde, entsteht ein Prozessentwurf.',
     },
     {
@@ -94,7 +94,7 @@ export function computeMiningReadiness(params: {
       label: 'Varianten vergleichen',
       enabled: caseCount >= 2 && stepCount >= 4,
       note: caseCount >= 2
-        ? 'Mehrere Quellen erlauben Muster und Unterschiede zwischen Fällen.'
+        ? 'Mehrere Quellen erlauben einen vorsichtigen Vergleich zwischen Fällen.'
         : 'Für echte Varianten braucht es mindestens zwei Fälle oder Dokumente.',
     },
     {
@@ -139,8 +139,8 @@ export function computeMiningReadiness(params: {
   if (analysisMode === 'process-draft') {
     cautionNotes.push('Die Ergebnisse zeigen derzeit vor allem einen dokumentbasierten Prozessentwurf und keine belastbaren Unternehmensquoten.');
   }
-  if (caseCount > 0 && caseCount < 5) {
-    cautionNotes.push('Mit wenigen Fällen sind Varianten und Abweichungsraten nur als erste Hinweise zu lesen.');
+  if (caseCount > 0 && !canUseStrongPercentages(analysisMode, caseCount)) {
+    cautionNotes.push('Mit dieser Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.');
   }
   if (realTimeCount === 0 && stepCount > 0) {
     cautionNotes.push('Ohne echte Zeitangaben bleiben Aussagen zu Durchlauf- oder Wartezeiten vorsichtig formuliert.');
@@ -158,10 +158,10 @@ export function computeMiningReadiness(params: {
     stage === 'intake'
       ? 'Die App wartet noch auf auswertbares Material.'
       : stage === 'draft'
-      ? 'Ein belastbarer Prozessentwurf ist vorhanden.'
+      ? 'Ein erster Prozessentwurf ist vorhanden.'
       : stage === 'comparison'
-      ? 'Die App kann jetzt Muster, Unterschiede und Soll-Abweichungen herausarbeiten.'
-      : 'Die Datenbasis trägt jetzt auch weitergehende Mining-Aussagen.';
+      ? 'Die App kann jetzt mehrere Fälle vorsichtig vergleichen.'
+      : 'Die Datenbasis trägt jetzt belastbarere Mining-Aussagen.';
 
   const summary =
     stage === 'intake'
@@ -169,7 +169,7 @@ export function computeMiningReadiness(params: {
       : stage === 'draft'
       ? 'Die lokale Engine kann bereits einen Prozessentwurf, erkannte Rollen, Reibungssignale und erste Soll-Hinweise liefern. Für robuste Varianten braucht es mehr als einen Fall.'
       : stage === 'comparison'
-      ? 'Mit mehreren Quellen lassen sich Kernprozess, Soll-Abweichungen, instabile Stellen und erste Hotspots auch ohne KI sinnvoll verdichten.'
+      ? 'Mit mehreren Quellen lassen sich Kernprozess, Soll-Abweichungen, instabile Stellen und erste Hotspots vorsichtig verdichten.'
       : 'Mehrere strukturierte Fälle und echte Zeitangaben erlauben jetzt belastbarere Aussagen zu Varianten, Übergaben und zeitbasierten Hotspots.';
 
   return {

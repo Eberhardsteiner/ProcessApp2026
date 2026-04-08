@@ -1,5 +1,7 @@
 import { AlertTriangle, ArrowLeftRight, Plus, Minus, RefreshCw } from 'lucide-react';
+import type { ProcessMiningAnalysisMode } from '../../domain/process';
 import type { V2Deviation, DeviationType } from './conformance';
+import { canUseStrongPercentages } from './pmShared';
 
 const TYPE_CONFIG: Record<
   DeviationType,
@@ -31,13 +33,16 @@ interface Props {
   deviation: V2Deviation;
   rank: number;
   totalCases: number;
+  analysisMode?: ProcessMiningAnalysisMode;
 }
 
-export function DeviationCard({ deviation, rank, totalCases }: Props) {
+export function DeviationCard({ deviation, rank, totalCases, analysisMode = 'exploratory-mining' }: Props) {
   const config = TYPE_CONFIG[deviation.type];
   const scopeLabel = totalCases <= 1
     ? `${deviation.count} Fall`
-    : `${deviation.pct} % der Fälle (${deviation.count})`;
+    : canUseStrongPercentages(analysisMode, totalCases)
+    ? `${deviation.pct} % der Fälle (${deviation.count})`
+    : `${deviation.count} von ${totalCases} Fällen`;
 
   return (
     <div className={`flex gap-3 border rounded-xl px-4 py-3 ${config.color}`}>
@@ -74,7 +79,7 @@ export function NoDeviationsMessage({ hasTarget }: EmptyStateProps) {
   return (
     <div className="flex gap-2.5 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800">
       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-      <p>Keine Abweichungen erkannt. Das ausgewertete Material folgt dem Soll-Prozess in dieser Sicht vollständig.</p>
+      <p>Keine Abweichungen erkannt. In dieser Sicht zeigt sich aktuell kein dominanter Unterschied zum Soll-Prozess.</p>
     </div>
   );
 }

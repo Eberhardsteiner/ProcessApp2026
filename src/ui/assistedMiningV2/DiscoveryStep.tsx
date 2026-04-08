@@ -11,7 +11,7 @@ import type { ProcessMiningAssistedV2State, ProcessMiningDiscoverySummary } from
 import { computeV2Discovery, formatShare } from './discovery';
 import type { V2DiscoveryResult } from './discovery';
 import { VariantCard } from './VariantCard';
-import { getAnalysisModeLabel } from './pmShared';
+import { formatCaseCountShare, getAnalysisModeLabel } from './pmShared';
 import { buildDiscoveryNarrative } from './stepNarratives';
 import { StepNarrativePanel } from './StepNarrativePanel';
 import { StepInsightPanel } from './StepInsightPanel';
@@ -94,9 +94,12 @@ export function DiscoveryStep({ state, onChange, onNext, onBack }: Props) {
     : (displayResult?.variants ?? []).slice(0, 3);
 
   const isProcessDraft = displayResult?.analysisMode === 'process-draft';
+  const isExploratory = displayResult?.analysisMode === 'exploratory-mining';
   const insightText = displayResult
     ? isProcessDraft
-      ? `Aus ${Math.max(displayResult.totalCases, 1)} ${Math.max(displayResult.totalCases, 1) === 1 ? 'Quelle' : 'Quellen'} wurden ${displayResult.coreProcess.length} Hauptschritte zu einem belastbaren Prozessentwurf verdichtet.`
+      ? `Aus ${Math.max(displayResult.totalCases, 1)} ${Math.max(displayResult.totalCases, 1) === 1 ? 'Quelle' : 'Quellen'} wurden ${displayResult.coreProcess.length} Hauptschritte zu einem ersten Prozessentwurf verdichtet.`
+      : isExploratory
+      ? `${formatCaseCountShare({ count: displayResult.coreProcessCaseCount, total: displayResult.totalCases, mode: displayResult.analysisMode })} folgen derselben Hauptlinie. ${displayResult.variants.length > 1 ? `${displayResult.variants.length} Varianten wurden als vorsichtige Vergleichsbasis erkannt.` : 'Zusätzliche Varianten spielen aktuell nur eine untergeordnete Rolle.'}`
       : `${formatShare(displayResult.coreProcessCaseCoverage)} der Fälle folgen derselben Hauptlinie. ${displayResult.variants.length > 1 ? `${displayResult.variants.length} Varianten wurden zusätzlich erkannt.` : 'Zusätzliche Varianten spielen aktuell nur eine untergeordnete Rolle.'}`
     : '';
   const nextActionText = displayResult
@@ -125,6 +128,13 @@ export function DiscoveryStep({ state, onChange, onNext, onBack }: Props) {
           { label: 'Erkannte Hauptschritte', value: displayResult.coreProcess.length },
           { label: 'Analysemodus', value: 'Entwurf' },
           { label: 'Schritte gesamt', value: displayResult.totalStepObservations },
+        ]
+      : isExploratory
+      ? [
+          { label: 'Fälle analysiert', value: displayResult.totalCases },
+          { label: 'Varianten erkannt', value: displayResult.variants.length },
+          { label: 'Hauptlinie', value: `${displayResult.coreProcessCaseCount} von ${Math.max(displayResult.totalCases, 1)} Fällen` },
+          { label: 'Erkannte Schritte', value: displayResult.totalStepObservations },
         ]
       : [
           { label: 'Fälle analysiert', value: displayResult.totalCases },
@@ -216,6 +226,8 @@ export function DiscoveryStep({ state, onChange, onNext, onBack }: Props) {
                 <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide mb-3">
                   {isProcessDraft
                     ? 'Aus dem ausgewerteten Material abgeleitete Hauptschritte'
+                    : isExploratory
+                    ? `Hauptlinie — sichtbar in ${displayResult.coreProcessCaseCount} von ${Math.max(displayResult.totalCases, 1)} Fällen`
                     : `Kernprozess — tritt in ${formatShare(displayResult.coreProcessCaseCoverage)} der Fälle auf`}
                 </p>
                 <ol className="space-y-2">
@@ -230,7 +242,7 @@ export function DiscoveryStep({ state, onChange, onNext, onBack }: Props) {
                 </ol>
                 {isProcessDraft && (
                   <p className="mt-4 text-xs text-blue-700 leading-relaxed">
-                    Diese Schrittfolge stammt aus einem einzelnen Dokument oder Fall. Sie ist ein belastbarer Erstentwurf,
+                    Diese Schrittfolge stammt aus einem einzelnen Dokument oder Fall. Sie ist ein gut prüfbarer Erstentwurf,
                     aber noch keine statistische Aussage über den Standardablauf im Unternehmen.
                   </p>
                 )}
@@ -246,7 +258,7 @@ export function DiscoveryStep({ state, onChange, onNext, onBack }: Props) {
               </h3>
               <div className="space-y-2">
                 {visibleVariants.map((variant, index) => (
-                  <VariantCard key={variant.id} variant={variant} rank={index + 1} />
+                  <VariantCard key={variant.id} variant={variant} rank={index + 1} analysisMode={displayResult.analysisMode} totalCases={displayResult.totalCases} />
                 ))}
               </div>
               {displayResult.variants.length > 3 && (

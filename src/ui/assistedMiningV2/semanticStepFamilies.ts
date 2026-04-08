@@ -545,7 +545,7 @@ function stemToken(token: string): string {
 
 export function tokenizeProcessLabel(value: string): string[] {
   return normalizeLabel(value)
-    .replace(/[()[\],.:;!?/|]+/g, ' ')
+    .replace(/[()\[\],.:;!?/|]+/g, ' ')
     .replace(/reklamationseingang/g, 'reklamation eingang')
     .replace(/zwischenmeldung/g, 'zwischen meldung')
     .replace(/ersatzauftrag/g, 'ersatz auftrag')

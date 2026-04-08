@@ -120,57 +120,43 @@ export function MiningWorkspaceOverview({
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div className="space-y-2 min-w-0">
+        <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-2 text-slate-700">
             <Compass className="w-4 h-4 text-cyan-600" />
             <p className="text-sm font-semibold">Arbeitsbereich auf einen Blick</p>
             <HelpPopover helpKey="pmv2.workspace" ariaLabel="Hilfe: Arbeitsbereich" />
-            <span className="rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-[11px] font-medium text-slate-600">
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-medium text-slate-600">
               Schritt {currentStepIndex + 1} von {MINING_STEPS.length}
             </span>
-            <span className="rounded-full bg-cyan-50 border border-cyan-200 px-2.5 py-0.5 text-[11px] font-medium text-cyan-800">
+            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-medium text-cyan-800">
               {readiness.analysisModeLabel}
-            </span>
-            <span className="rounded-full bg-violet-50 border border-violet-200 px-2.5 py-0.5 text-[11px] font-medium text-violet-800">
-              {maturity.levelLabel}
-            </span>
-            <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${pilotReadiness.level === 'pilot-ready' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : pilotReadiness.level === 'workshop-ready' ? 'bg-cyan-50 border-cyan-200 text-cyan-800' : pilotReadiness.level === 'internal-review' ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
-              {pilotReadiness.levelLabel}
             </span>
             <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${operatingModeProfile.badgeClass}`}>
               Modus: {operatingModeProfile.shortLabel}
             </span>
-            {releaseStability && currentStep === 'augmentation' && (
-              <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${releaseStability.level === 'release-ready' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : releaseStability.level === 'review-ready' ? 'bg-cyan-50 border-cyan-200 text-cyan-800' : releaseStability.level === 'stabilizing' ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
-                Freigabe: {releaseStability.levelLabel}
-              </span>
-            )}
-            {acceptanceSummary && currentStep === 'augmentation' && (
-              <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${acceptanceSummary.level === 'ready' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : acceptanceSummary.level === 'attention' ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
-                Abnahme: {acceptanceSummary.levelLabel}
-              </span>
-            )}
-            {state.reportSnapshot && (
-              <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${reportFreshness?.isAligned ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
-                {reportFreshness?.isAligned ? 'Bericht aktuell' : 'Bericht prüfen'}
-              </span>
-            )}
           </div>
           <div>
             <p className="text-base font-semibold text-slate-900">{currentStepDef?.label}</p>
-            <p className="mt-1 text-sm text-slate-600 leading-relaxed max-w-3xl">
+            <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-600">
               {currentStepDef?.description}
             </p>
           </div>
+          <p className="text-xs leading-relaxed text-slate-500">
+            Aktuelle Einordnung: {currentStep === 'augmentation' && releaseStability ? releaseStability.levelLabel : maturity.levelLabel}
+            {state.reportSnapshot ? ` · ${reportFreshness?.isAligned ? 'Bericht aktuell' : 'Bericht sollte geprüft werden'}` : ''}
+            {acceptanceSummary && currentStep === 'augmentation' ? ` · Abnahme: ${acceptanceSummary.levelLabel}` : ''}
+          </p>
         </div>
 
         <button
           type="button"
           onClick={onToggleDetails}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
         >
           {detailsOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-          {detailsOpen ? 'Analyse-Überblick einklappen' : 'Analyse-Überblick anzeigen'}
+          {detailsOpen ? 'Weniger Einordnung zeigen' : 'Mehr Einordnung zeigen'}
         </button>
       </div>
 
@@ -199,7 +185,9 @@ export function MiningWorkspaceOverview({
         </div>
       </div>
 
-      <OperatingModePanel value={operatingModeProfile.key} onChange={onOperatingModeChange} />
+      {detailsOpen && (
+        <div className="space-y-4">
+          <OperatingModePanel value={operatingModeProfile.key} onChange={onOperatingModeChange} />
 
       <div className={`rounded-xl border p-4 space-y-2 ${integrationBlockedCount > 0 ? 'border-amber-200 bg-amber-50' : 'border-cyan-200 bg-cyan-50'}`}>
         <div className="flex items-center gap-2 text-slate-900">
@@ -478,6 +466,8 @@ export function MiningWorkspaceOverview({
           <p className="mt-1 text-sm leading-relaxed text-green-900/90">
             Discovery, Soll-Abgleich, Verbesserungsanalyse und Bericht werden bei Änderungen an der Basis automatisch neu aufgebaut.
           </p>
+        </div>
+      )}
         </div>
       )}
     </div>

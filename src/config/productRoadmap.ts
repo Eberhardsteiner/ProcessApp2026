@@ -242,9 +242,9 @@ export const COMPLETED_PHASES: RoadmapPhase[] = [
   },
   {
     versionLabel: 'v0.40',
-    phase: 'Optionaler Ausbau',
-    title: 'Qualitätscheck-Export für manuelle Testläufe',
-    summary: 'Ein sichtbarer JSON-Export stellt den aktuellen Analysezustand eines manuell geprüften Beispiels bereit. Damit kann die Qualitätsbewertung extern und transparent erfolgen, ohne fest eingebaute Referenzfälle in der App.',
+    phase: 'Sanierungsstufen 1–2',
+    title: 'Kernpfad freigelegt und Strukturdetektor für Soll-Dokumente',
+    summary: 'Der Assisted Flow konzentriert sich sichtbar auf Dokument hochladen, Analyse prüfen und Qualitätscheck exportieren. Gleichzeitig erkennt die lokale Engine strukturierte Sollprozessdokumente jetzt als Verfahrensdokumente statt sie in den narrativen Fallback zu schicken.',
   },
 
 ];

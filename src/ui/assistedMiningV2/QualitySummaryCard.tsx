@@ -30,7 +30,7 @@ function buildWarnings(s: ProcessMiningQualitySummary): Warning[] {
 
   if (s.stepObservationCount > 0 && s.stepObservationCount < 4) {
     warnings.push({
-      text: 'Noch sehr wenige Hauptschritte erkannt. Prüfen Sie die automatische Ableitung oder ergänzen Sie weitere Fälle, damit Discovery und Soll-Ist-Abgleich belastbarer werden.',
+      text: 'Noch sehr wenige Hauptschritte erkannt. Prüfen Sie die automatische Ableitung oder ergänzen Sie weitere Fälle, damit Discovery und Soll-Ist-Abgleich tragfähiger werden.',
       severity: 'info',
     });
   }
@@ -61,7 +61,7 @@ function buildWarnings(s: ProcessMiningQualitySummary): Warning[] {
 
   if (s.totalCases === 1) {
     warnings.push({
-      text: 'Derzeit liegt nur ein Dokument bzw. ein Fall vor. Das reicht für einen belastbaren Prozessentwurf, aber noch nicht für belastbares Varianten- oder Mengen-Mining.',
+      text: 'Derzeit liegt nur ein Dokument bzw. ein Fall vor. Das reicht für einen gut prüfbaren Prozessentwurf, aber noch nicht für belastbare Varianten- oder Mengenvergleiche.',
       severity: 'info',
     });
   }
@@ -80,7 +80,7 @@ function buildMetrics(s: ProcessMiningQualitySummary): Metric[] {
       label: 'Quellen / Fälle',
       value: s.totalCases,
       status: s.totalCases >= 5 ? 'good' : s.totalCases > 0 ? 'warn' : 'neutral',
-      note: s.totalCases < 5 ? 'Für Mining ideal: mehrere Fälle' : undefined,
+      note: s.totalCases < 5 ? 'Für Fallvergleich oder Mining helfen mehrere Fälle' : undefined,
     },
     {
       label: 'Erkannte Hauptschritte',
@@ -172,7 +172,7 @@ export function QualitySummaryCard({ summary }: Props) {
       {warnings.length === 0 && summary.totalObservations > 0 && (
         <div className="flex gap-2.5 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800">
           <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-          <p>Gute Datenbasis. Sie können mit Discovery und Soll-Ist-Abgleich fortfahren.</p>
+          <p>Die Datenbasis ist tragfähig genug, um mit Discovery und Soll-Ist-Abgleich weiterzuarbeiten.</p>
         </div>
       )}
 

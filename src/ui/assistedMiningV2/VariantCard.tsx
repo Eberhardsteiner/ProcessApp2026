@@ -1,14 +1,20 @@
 import { ChevronDown, ChevronRight, Star } from 'lucide-react';
 import { useState } from 'react';
+import type { ProcessMiningAnalysisMode } from '../../domain/process';
 import type { V2Variant } from './discovery';
+import { canUseStrongPercentages } from './pmShared';
 
 interface Props {
   variant: V2Variant;
   rank: number;
+  analysisMode?: ProcessMiningAnalysisMode;
+  totalCases?: number;
 }
 
-export function VariantCard({ variant, rank }: Props) {
+export function VariantCard({ variant, rank, analysisMode = 'exploratory-mining', totalCases = variant.caseCount }: Props) {
   const [expanded, setExpanded] = useState(variant.isCore);
+  const showPercentages = canUseStrongPercentages(analysisMode, totalCases);
+  const shareLabel = showPercentages ? `${variant.share} %` : `${variant.caseCount} von ${Math.max(totalCases, 1)}`;
 
   return (
     <div
@@ -50,7 +56,7 @@ export function VariantCard({ variant, rank }: Props) {
               style={{ width: `${Math.max(variant.share * 0.8, 4)}px`, maxWidth: '80px', minWidth: '4px' }}
             />
             <span className={`text-sm font-bold ${variant.isCore ? 'text-blue-700' : 'text-slate-600'}`}>
-              {variant.share} %
+              {shareLabel}
             </span>
           </div>
           <span className="text-xs text-slate-400">

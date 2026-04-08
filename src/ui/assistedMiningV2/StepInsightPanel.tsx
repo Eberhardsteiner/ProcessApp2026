@@ -15,21 +15,21 @@ const TONE = {
 
 export function StepInsightPanel({ insight, nextAction, tone = 'blue' }: Props) {
   return (
-    <div className={`rounded-xl border p-4 ${TONE[tone]}`}>
+    <div className={`rounded-xl border p-4 shadow-sm ${TONE[tone]}`}>
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="flex items-center gap-2 text-slate-800">
             <Lightbulb className="w-4 h-4 text-amber-500" />
             <p className="text-sm font-semibold">Wichtigste Aussage</p>
           </div>
-          <p className="text-sm text-slate-700 leading-relaxed">{insight}</p>
+          <p className="text-sm leading-relaxed text-slate-700">{insight}</p>
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="flex items-center gap-2 text-slate-800">
             <ArrowRightCircle className="w-4 h-4 text-blue-600" />
-            <p className="text-sm font-semibold">Was jetzt sinnvoll ist</p>
+            <p className="text-sm font-semibold">Nächste sinnvolle Aktion</p>
           </div>
-          <p className="text-sm text-slate-700 leading-relaxed">{nextAction}</p>
+          <p className="text-sm leading-relaxed text-slate-700">{nextAction}</p>
         </div>
       </div>
     </div>

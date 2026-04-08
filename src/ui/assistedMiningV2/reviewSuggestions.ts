@@ -93,6 +93,9 @@ function splitIntoParts(label: string, allowSoftSplit = false): string[] {
 
 export function getCanonicalLabelSuggestion(observation: ProcessMiningObservation): string | null {
   if (observation.kind !== 'step') return null;
+  if (/^\|/.test((observation.evidenceSnippet ?? '').trim()) && observation.label.trim().length >= 8) {
+    return null;
+  }
   const suggested = canonicalizeProcessStepLabel({
     title: observation.label,
     body: observation.evidenceSnippet,
@@ -108,7 +111,7 @@ export function getCanonicalLabelSuggestion(observation: ProcessMiningObservatio
 
 export function getSplitSuggestion(observation: ProcessMiningObservation, allowSoftSplit = true): string[] | null {
   if (observation.kind !== 'step') return null;
-  if (inferStepFamily(observation.label) && !/[/;]/.test(observation.label)) return null;
+  if (inferStepFamily(observation.label) && !/[\/;]/.test(observation.label)) return null;
   const parts = splitIntoParts(observation.label, allowSoftSplit);
   return parts.length >= 2 ? parts : null;
 }
@@ -180,7 +183,7 @@ export function repairDerivedObservations(observations: ProcessMiningObservation
   };
 
   for (const [caseId, caseObservations] of grouped.entries()) {
-    const nextCase: ProcessMiningObservation[] = [];
+    let nextCase: ProcessMiningObservation[] = [];
     for (const observation of sortCaseObservations(caseObservations)) {
       const splitParts = getSplitSuggestion(observation, false);
       if (splitParts && splitParts.length >= 2) {

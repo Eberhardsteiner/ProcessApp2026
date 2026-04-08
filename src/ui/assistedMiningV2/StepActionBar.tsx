@@ -25,16 +25,18 @@ export function StepActionBar({
   nextIcon,
 }: StepActionBarProps) {
   return (
-    <div className="sticky bottom-3 z-10 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-lg backdrop-blur">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="sticky bottom-3 z-10 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-md backdrop-blur">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0 space-y-2 lg:max-w-[70%]">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{summaryTitle}</p>
             {statusBadge}
           </div>
-          <div className="text-sm leading-relaxed text-slate-700">{summary}</div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm leading-relaxed text-slate-700">
+            {summary}
+          </div>
         </div>
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {onBack && (
             <button
               type="button"

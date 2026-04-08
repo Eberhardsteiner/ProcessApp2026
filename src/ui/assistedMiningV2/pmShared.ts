@@ -37,6 +37,13 @@ export function getCaseIdsFromObservations(observations: ProcessMiningObservatio
   return Array.from(new Set(observations.map(o => o.sourceCaseId).filter((id): id is string => Boolean(id))));
 }
 
+function getRealTimeCoverage(observations: ProcessMiningObservation[]): number {
+  const stepObservations = observations.filter(observation => observation.kind === 'step');
+  if (stepObservations.length === 0) return 0;
+  const realTimeCount = stepObservations.filter(observation => observation.timestampQuality === 'real').length;
+  return realTimeCount / stepObservations.length;
+}
+
 export function detectProcessMiningAnalysisMode(params: {
   cases?: ProcessMiningObservationCase[];
   observations?: ProcessMiningObservation[];
@@ -49,17 +56,69 @@ export function detectProcessMiningAnalysisMode(params: {
   }
 
   const caseCount = Math.max(cases.length, getCaseIdsFromObservations(observations).length);
-  const realTimeCount = observations.filter(o => o.timestampQuality === 'real').length;
+  const stepObservations = observations.filter(observation => observation.kind === 'step');
+  const realTimeCoverage = getRealTimeCoverage(stepObservations);
+  const procedureDocument = lastDerivationSummary?.documentKind === 'procedure-document';
 
   if (caseCount <= 1) return 'process-draft';
-  if (caseCount < 5 || realTimeCount === 0) return 'exploratory-mining';
-  return 'true-mining';
+  if (procedureDocument && caseCount <= 2) return 'process-draft';
+
+  const enoughCasesForMining = caseCount >= 8;
+  const enoughTimeForMining = realTimeCoverage >= 0.6;
+  const enoughEventsForMining = stepObservations.length >= Math.max(24, caseCount * 3);
+
+  if (enoughCasesForMining && enoughTimeForMining && enoughEventsForMining) {
+    return 'true-mining';
+  }
+
+  return 'exploratory-mining';
 }
 
 export function getAnalysisModeLabel(mode: ProcessMiningAnalysisMode): string {
-  if (mode === 'process-draft') return 'Dokumentbasierter Prozessentwurf';
-  if (mode === 'exploratory-mining') return 'Explorative Prozessanalyse';
-  return 'Belastbares Process Mining';
+  if (mode === 'process-draft') return 'Prozessentwurf';
+  if (mode === 'exploratory-mining') return 'Fallvergleich';
+  return 'Echtes Process Mining';
+}
+
+export function canUseStrongPercentages(mode: ProcessMiningAnalysisMode, caseCount: number): boolean {
+  return mode === 'true-mining' && caseCount >= 8;
+}
+
+export function formatCaseCountShare(params: {
+  count: number;
+  total: number;
+  mode?: ProcessMiningAnalysisMode;
+}): string {
+  const { count, total, mode } = params;
+  if (total <= 0) return 'noch keine belastbare Basis';
+  if (!canUseStrongPercentages(mode ?? 'exploratory-mining', total)) {
+    return `${count} von ${total} ${total === 1 ? 'Quelle' : 'Fällen/Quellen'}`;
+  }
+  return `${Math.round((count / Math.max(total, 1)) * 100)} %`;
+}
+
+
+export type AnalysisClaimStrength = 'draft-only' | 'cautious-comparison' | 'strong-mining';
+
+export function getAnalysisClaimStrength(mode: ProcessMiningAnalysisMode, caseCount: number): AnalysisClaimStrength {
+  if (mode === 'process-draft') return 'draft-only';
+  if (canUseStrongPercentages(mode, caseCount)) return 'strong-mining';
+  return 'cautious-comparison';
+}
+
+export function buildAnalysisClaimNote(params: {
+  mode: ProcessMiningAnalysisMode;
+  caseCount: number;
+}): string {
+  const { mode, caseCount } = params;
+  const strength = getAnalysisClaimStrength(mode, caseCount);
+  if (strength === 'draft-only') {
+    return 'Die App sollte hier nur von einem Prozessentwurf sprechen. Prozentwerte und Standardquoten wären zu stark.';
+  }
+  if (strength === 'cautious-comparison') {
+    return `Die App darf ${caseCount} Fälle vorsichtig vergleichen, sollte Mengen- und Prozentangaben aber nur zurückhaltend verwenden.`;
+  }
+  return 'Die Datenbasis ist stark genug für deutlich belastbarere Mengen- und Prozentangaben.';
 }
 
 export function buildAnalysisModeNotice(params: {
@@ -69,23 +128,23 @@ export function buildAnalysisModeNotice(params: {
 }): string {
   const { mode, caseCount, documentKind } = params;
   if (mode === 'process-draft') {
-    if (documentKind === 'procedure-document' || documentKind === 'semi-structured-procedure-document') {
-      return 'Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.';
+    if (documentKind === 'procedure-document') {
+      return 'Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse sind daher als Prozessentwurf zu lesen, nicht als belastbare Mengen- oder Quotenanalyse.';
     }
-    if (documentKind === 'mixed-document') {
-      return 'Aktuell liegt ein Mischdokument vor. Die Ergebnisse zeigen einen vorsichtigen Prozessentwurf mit getrennten Struktur- und Narrativanteilen.';
-    }
-    return 'Aktuell liegt nur ein einzelner Fall vor. Die Ergebnisse zeigen einen Prozessentwurf aus diesem Fall, noch kein belastbares Mining-Muster.';
+    return 'Aktuell liegt nur ein einzelner Fall oder eine einzelne Quelle vor. Die Ergebnisse zeigen einen Prozessentwurf, aber noch keine belastbare Aussage über typische Häufigkeiten.';
   }
   if (mode === 'exploratory-mining') {
-    return `Es liegen ${caseCount} Fälle vor. Das reicht für eine erste explorative Auswertung, aber noch nicht für belastbare Standardquoten wie in einem echten Eventlog.`;
+    return `Es liegen ${caseCount} Fälle oder Quellen vor. Das reicht für einen vorsichtigen Fallvergleich, aber noch nicht für harte Standardquoten wie in einem echten Eventlog.`;
   }
-  return `Es liegen ${caseCount} Fälle mit ausreichend Struktur für ein belastbares Mining vor.`;
+  return `Es liegen ${caseCount} strukturierte Fälle mit ausreichender Zeitbasis vor. Prozentwerte und Vergleichsaussagen sind damit deutlich belastbarer.`;
 }
 
-export function sampleAwarePercentLabel(count: number, total: number): string {
+export function sampleAwarePercentLabel(count: number, total: number, mode?: ProcessMiningAnalysisMode): string {
   if (total <= 1) {
     return count === 1 ? 'im ausgewerteten Fall' : 'im ausgewerteten Material';
+  }
+  if (!canUseStrongPercentages(mode ?? 'exploratory-mining', total)) {
+    return `in ${count} von ${total} Fällen`;
   }
   return `in ${Math.round((count / Math.max(total, 1)) * 100)} % der Fälle`;
 }

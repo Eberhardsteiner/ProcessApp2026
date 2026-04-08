@@ -33,9 +33,9 @@ export function StepMetricGrid({ items, className = '' }: StepMetricGridProps) {
       {items.map(item => {
         const tone = item.tone ?? 'slate';
         return (
-          <div key={item.label} className={`rounded-xl border p-3 shadow-sm ${TONE_CLASSES[tone]}`}>
-            <p className="text-[11px] font-medium uppercase tracking-wide opacity-80">{item.label}</p>
-            <p className="mt-1 text-2xl font-bold leading-none">{item.value}</p>
+          <div key={item.label} className={`rounded-xl border px-3 py-3.5 shadow-sm ${TONE_CLASSES[tone]}`}>
+            <p className="text-[11px] font-semibold uppercase tracking-wide opacity-75">{item.label}</p>
+            <p className="mt-1.5 text-xl font-bold leading-none sm:text-2xl">{item.value}</p>
             {item.detail ? <div className="mt-2 text-xs leading-relaxed opacity-80">{item.detail}</div> : null}
           </div>
         );

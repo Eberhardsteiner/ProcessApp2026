@@ -17,7 +17,7 @@ import type { CaptureDraftStep } from '../../domain/capture';
 import { computeV2Conformance } from './conformance';
 import type { V2ConformanceResult } from './conformance';
 import { DeviationCard, NoDeviationsMessage } from './DeviationCard';
-import { getAnalysisModeLabel } from './pmShared';
+import { formatCaseCountShare, getAnalysisModeLabel } from './pmShared';
 import { buildConformanceNarrative } from './stepNarratives';
 import { StepNarrativePanel } from './StepNarrativePanel';
 import { StepInsightPanel } from './StepInsightPanel';
@@ -139,6 +139,7 @@ export function ConformanceStep({ state, version, onChange, onNext, onBack }: Pr
       : coreProcess;
 
   const isProcessDraft = displayResult?.analysisMode === 'process-draft';
+  const isExploratory = displayResult?.analysisMode === 'exploratory-mining';
   const primaryDeviation = displayResult?.topDeviations[0];
   const insightText = displayResult
     ? primaryDeviation
@@ -159,6 +160,13 @@ export function ConformanceStep({ state, version, onChange, onNext, onBack }: Pr
           { label: 'Erkannte Schritte', value: stepObservations.length },
           { label: 'Abweichungstypen', value: displayResult.topDeviations.length },
           { label: 'Vergleichsart', value: 'Entwurf vs Soll' },
+        ]
+      : isExploratory
+      ? [
+          { label: 'Fälle verglichen', value: displayResult.totalCases },
+          { label: 'Passend zum Soll', value: `${displayResult.conformantCases} von ${Math.max(displayResult.totalCases, 1)}` },
+          { label: 'Mit Abweichung', value: `${displayResult.nonConformantCases} von ${Math.max(displayResult.totalCases, 1)}` },
+          { label: 'Abweichungstypen', value: displayResult.topDeviations.length },
         ]
       : [
           { label: 'Fälle verglichen', value: displayResult.totalCases },
@@ -289,6 +297,8 @@ export function ConformanceStep({ state, version, onChange, onNext, onBack }: Pr
                     ? (displayResult.conformantCases > 0
                         ? 'Der aktuell ausgewertete Entwurf deckt sich an diesen Stellen mit dem Soll-Prozess.'
                         : 'Im ausgewerteten Entwurf gibt es keine vollständig passenden Fälle.')
+                    : isExploratory
+                    ? `${formatCaseCountShare({ count: displayResult.conformantCases, total: displayResult.totalCases, mode: displayResult.analysisMode })} folgen dem Soll-Prozess vollständig.`
                     : (displayResult.conformantPct === 100
                         ? 'Alle Fälle stimmen mit dem Soll überein.'
                         : `${displayResult.conformantPct} % der beobachteten Fälle folgen dem Soll-Prozess vollständig.`)}
@@ -306,6 +316,8 @@ export function ConformanceStep({ state, version, onChange, onNext, onBack }: Pr
                     ? 'Keine Abweichungen erkannt.'
                     : isProcessDraft
                     ? 'Der ausgewertete Dokument- oder Fallentwurf weicht in einzelnen Punkten vom Soll-Prozess ab.'
+                    : isExploratory
+                    ? `${formatCaseCountShare({ count: displayResult.nonConformantCases, total: displayResult.totalCases, mode: displayResult.analysisMode })} weichen vom Soll ab.`
                     : `${displayResult.nonConformantPct} % der Fälle weichen vom Soll ab.`}
                 </p>
               </div>
@@ -324,6 +336,7 @@ export function ConformanceStep({ state, version, onChange, onNext, onBack }: Pr
                     deviation={deviation}
                     rank={index + 1}
                     totalCases={displayResult.totalCases}
+                    analysisMode={displayResult.analysisMode}
                   />
                 ))}
               </div>

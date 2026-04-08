@@ -119,8 +119,8 @@ function checkCase(caseLabels: string[], targetLabels: string[]): Array<{ type: 
   return deviations;
 }
 
-function buildDeviationLabel(type: DeviationType, step: string, count: number, totalCases: number): string {
-  const lead = sampleAwarePercentLabel(count, totalCases);
+function buildDeviationLabel(type: DeviationType, step: string, count: number, totalCases: number, analysisMode: ProcessMiningAnalysisMode): string {
+  const lead = sampleAwarePercentLabel(count, totalCases, analysisMode);
   if (type === 'missing_step') {
     return totalCases <= 1
       ? `Im ausgewerteten Fall fehlt „${step}".`
@@ -224,7 +224,7 @@ export function computeV2Conformance(params: {
       const pct = Math.round((count / Math.max(totalCases, 1)) * 100);
       return {
         type: entry.type,
-        description: buildDeviationLabel(entry.type, entry.step, count, totalCases),
+        description: buildDeviationLabel(entry.type, entry.step, count, totalCases, analysisMode),
         affectedStep: entry.step,
         caseIds: Array.from(entry.caseIds),
         count,

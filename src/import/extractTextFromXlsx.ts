@@ -130,7 +130,7 @@ export async function extractTablesFromXlsx(file: File): Promise<XlsxImportResul
   const sheetNames = sheetEls.map(s => s.getAttribute('name') ?? 'Tabelle');
   const sheetRIds = sheetEls.map(s => s.getAttribute('r:id') ?? s.getAttribute('id') ?? '');
 
-  const relsMap = new Map<string, string>();
+  let relsMap = new Map<string, string>();
   const relsFile = zip.file('xl/_rels/workbook.xml.rels');
   if (relsFile) {
     try {

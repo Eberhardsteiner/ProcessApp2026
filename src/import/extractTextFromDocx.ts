@@ -4,6 +4,7 @@ function extractParagraphText(p: Element): string {
   return Array.from(p.getElementsByTagName('w:t'))
     .map(t => t.textContent ?? '')
     .join('')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -44,7 +45,6 @@ export async function extractTextFromDocx(file: File): Promise<{ text: string; w
   }
 
   const body = parsed.getElementsByTagName('w:body')[0];
-
   let text: string;
 
   if (body) {
@@ -60,7 +60,7 @@ export async function extractTextFromDocx(file: File): Promise<{ text: string; w
         if (t) blocks.push(t);
       }
     }
-    text = blocks.join('\n').replace(/\r\n/g, '\n').trim();
+    text = blocks.join('\n\n').replace(/\r\n/g, '\n').trim();
   } else {
     const paragraphs = Array.from(parsed.getElementsByTagName('w:p'));
     const parts: string[] = [];
@@ -75,7 +75,7 @@ export async function extractTextFromDocx(file: File): Promise<{ text: string; w
         if (content) parts.push(content);
       });
     }
-    text = parts.join('\n').replace(/\r\n/g, '\n').trim();
+    text = parts.join('\n\n').replace(/\r\n/g, '\n').trim();
   }
 
   if (!text) {
