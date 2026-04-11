@@ -47,6 +47,19 @@ npm run dev
 - Export und Review-Transparenz liegen im operativen Zustand unter `lastDerivationSummary.tablePipeline`:
   `pipelineMode`, `tableProfile`, `acceptedColumnMappings`, `rejectedColumnMappings`, `mappingConfidence`, `eventlogEligibility`, `normalizedEvents`, `weakTableSignals`.
 
+## Modusabhängiges Qualitätsmodell (Phase 5)
+
+- Die Qualitätsbewertung läuft nicht mehr über ein einheitliches Dokumentprofil, sondern über explizite Bewertungsprofile in [src/ui/assistedMiningV2/qualityScoring.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ui/assistedMiningV2/qualityScoring.ts):
+  `process-draft`, `comparison`, `eventlog-table`, `weak-raw-table`.
+- `stepClarity` bewertet jetzt semantische Brauchbarkeit statt bloß glatter Labels: Aktivitätscharakter, Fragmentfreiheit, Kontext- und Evidenzbezug, geringe Kommunikations- und Notizlast.
+- `evidenceCoverage` wird modusabhängig gerechnet:
+  Dokumentmodus über Text- und Kontextanker, Vergleich über Mehrfall-/Episodenstützen, Tabellenmodus über Zeilen-/Zellanker, Mappingkonfidenz, Trace-Abdeckung und Event-Normalisierung.
+- `cautionWithWeakMaterial` ist an Routing, Claim-Stärke, Fallbacks, Widersprüche und reale Datenbasis gekoppelt; schwaches Material wird nicht mehr pauschal freundlich bewertet.
+- Claim-Stärke wird jetzt kalibriert:
+  nominale Positionierung aus dem Analysemodus, effektive Claim-Stärke aus der realen Evidenzlage; Overclaiming und unnötige Untertreibung werden sichtbar.
+- Der Export bleibt rückwärtskompatibel nutzbar und ergänzt die neue Transparenz in [src/ui/assistedMiningV2/qualityExport.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ui/assistedMiningV2/qualityExport.ts):
+  `qualityAssessment.scoringProfile`, `analysisPositioning.nominalClaimStrength`, `analysisPositioning.claimStrength`, `analysisPositioning.claimCalibration`, `analysisPositioning.nominalClaimNote`, `analysisPositioning.claimNote`.
+
 ## Standardprüfung
 
 ```bash
