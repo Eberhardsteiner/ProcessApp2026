@@ -16,6 +16,7 @@ interface Props {
 
 export function QualityExportPanel({ process, version, state, settings, integrity }: Props) {
   const [copied, setCopied] = useState(false);
+  const [showMoreActions, setShowMoreActions] = useState(false);
   const exportFile = useMemo(
     () => buildQualityExportFile({ process, version, state, settings, integrity }),
     [process, version, state, settings, integrity],
@@ -56,25 +57,42 @@ export function QualityExportPanel({ process, version, state, settings, integrit
             Im Export: {state.cases.length} {state.cases.length === 1 ? 'Quelle' : 'Quellen'} · {stepCount} erkannte Schritte · {issueCount} Reibungssignale · 8 Qualitätsdimensionen
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+        <div className="flex flex-col items-start gap-2 lg:items-end">
           <button
             type="button"
             onClick={() => downloadQualityExportFile({ file: exportFile, processTitle: process.title })}
             disabled={!hasMaterial}
+<<<<<<< ours
+<<<<<<< ours
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+=======
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+>>>>>>> theirs
+=======
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+>>>>>>> theirs
           >
             <Download className="h-4 w-4" />
             Qualitätscheck JSON exportieren
           </button>
           <button
             type="button"
-            onClick={handleCopy}
-            disabled={!hasMaterial}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={() => setShowMoreActions(open => !open)}
+            className="text-xs text-slate-500 underline underline-offset-2 hover:text-slate-700"
           >
-            <Copy className="h-4 w-4" />
-            {copied ? 'JSON kopiert' : 'JSON kopieren'}
+            {showMoreActions ? 'Zusatzaktionen ausblenden' : 'Zusatzaktionen anzeigen'}
           </button>
+          {showMoreActions && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              disabled={!hasMaterial}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Copy className="h-4 w-4" />
+              {copied ? 'JSON kopiert' : 'JSON kopieren'}
+            </button>
+          )}
         </div>
       </div>
       {!hasMaterial && (

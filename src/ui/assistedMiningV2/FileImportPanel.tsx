@@ -63,7 +63,10 @@ function MethodBadge({ method }: { method: DerivationResult['method'] }) {
 
 function DocKindBadge({ kind }: { kind: DerivationResult['documentKind'] }) {
   if (kind === 'procedure-document') return <span className="text-xs font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded">Verfahrensbeschreibung erkannt</span>;
+  if (kind === 'semi-structured-procedure-document') return <span className="text-xs font-medium bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">Semistrukturiertes Verfahrensdokument</span>;
   if (kind === 'case-narrative') return <span className="text-xs font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Fallbeschreibung erkannt</span>;
+  if (kind === 'mixed-document') return <span className="text-xs font-medium bg-violet-50 text-violet-700 px-2 py-0.5 rounded">Mischdokument erkannt</span>;
+  if (kind === 'weak-material') return <span className="text-xs font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded">Schwaches Ausgangsmaterial</span>;
   return <span className="text-xs font-medium bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Unbekannter Dokumenttyp</span>;
 }
 

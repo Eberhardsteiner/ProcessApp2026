@@ -37,6 +37,8 @@ const STEP_CODE_RE = /^([A-Z]{1,3}-\d{1,3})\s*$/;
 const STEP_CODE_INLINE_RE = /^([A-Z]{1,3}-\d{1,3})\b/;
 const DUE_RE = /T[+-]\s*\d+\s*(Tag(e)?|Woche[n]?|Monat(e)?|KW|Std\.?|h\b)/i;
 const SECTION_RE = /^\s*(\d+)\.\s+/;
+<<<<<<< ours
+<<<<<<< ours
 const NAMED_SECTION_RE = /^\s*(\d{1,2})\.\s+(.+?)\s*$/;
 const DIGIT_ONLY_RE = /^\d{1,2}$/;
 const PIPE_SEPARATOR_RE = /^\|[-\s|]+\|?\s*$/;
@@ -102,6 +104,14 @@ const ROLE_KEYWORD_HINTS: Array<{ pattern: RegExp; role: string }> = [
   { pattern: /fachliche bewertung|stellungnahme|leistungsnachweis/i, role: 'Fachbereich' },
   { pattern: /entscheidung treffen|gutschrift|storno|teilzahlung|zahlung/i, role: 'Teamleitung' },
 ];
+=======
+const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
+const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
+>>>>>>> theirs
+=======
+const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
+const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
+>>>>>>> theirs
 
 function splitSections(text: string): Map<string, string> {
   const sections = new Map<string, string>();
@@ -418,11 +428,68 @@ function parsePipeTableBlocks(text: string): ParsedTableBlock[] {
       .replace(/^\|/, '')
       .replace(/\|$/, '')
       .split('|')
+<<<<<<< ours
       .map(cell => cleanCell(cell) ?? '')
       .filter(cell => cell.length > 0 || trimmed.includes('||'));
     if (cells.length < 2) {
       flush(index);
       return;
+=======
+      .map(c => c.trim());
+    if (cells.length >= 2) rows.push(cells);
+  }
+  return rows;
+}
+
+function parseDelimitedTableRows(sectionText: string): string[][] {
+  const rows: string[][] = [];
+  for (const line of sectionText.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.length < 5) continue;
+    if (trimmed.startsWith('|')) continue;
+    if (!TABLE_HEADER_HINT_RE.test(trimmed) && !/[;\t]/.test(trimmed) && !/\s{2,}/.test(trimmed)) continue;
+
+    let cells: string[] = [];
+    if (trimmed.includes(';')) {
+      cells = trimmed.split(';').map(cell => cell.trim());
+    } else if (trimmed.includes('\t')) {
+      cells = trimmed.split('\t').map(cell => cell.trim());
+    } else {
+      cells = trimmed.split(/\s{2,}/).map(cell => cell.trim());
+    }
+    cells = cells.filter(Boolean);
+    if (cells.length >= 2) rows.push(cells);
+  }
+  return rows;
+}
+
+function detectPipeTableHeaders(rows: string[][]): number {
+  if (!rows.length) return -1;
+  const first = rows[0].map(c => c.toLowerCase());
+  const headerKeywords = ['schritt', 'nr', 'code', 'verantwortlich', 'termin', 'ergebnis', 'beschreibung', 'prozessschritt'];
+  const matches = first.filter(c => headerKeywords.some(k => c.includes(k)));
+  return matches.length >= 2 ? 0 : -1;
+}
+
+function mapPipeTableHeaders(headerRow: string[]): Record<string, number> {
+  const map: Record<string, number> = {};
+  headerRow.forEach((cell, i) => {
+    const lc = cell.toLowerCase();
+    if (STEP_CODE_INLINE_RE.test(cell)) {
+      map['code'] = i;
+    } else if (lc.includes('prozessschritt') || lc.includes('schritt') || lc.includes('aktivität') || lc.includes('tätigkeit')) {
+      map['label'] = i;
+    } else if (lc.includes('verantwortlich') || lc.includes('zuständig') || lc.includes('rolle')) {
+      map['responsible'] = i;
+    } else if (lc.includes('beschreibung') || lc.includes('inhalt')) {
+      map['description'] = i;
+    } else if (lc.includes('termin') || lc.includes('frist') || lc.includes('zeitpunkt')) {
+      map['due'] = i;
+    } else if (lc.includes('ergebnis') || lc.includes('nachweis') || lc.includes('output')) {
+      map['result'] = i;
+    } else if (lc.includes('nr') || lc.includes('code') || lc === 'id') {
+      map['code'] = i;
+>>>>>>> theirs
     }
     if (!current) current = { rows: [], startLine: index };
     current.rows.push(cells);
@@ -455,6 +522,8 @@ function mapHeaderRow(row: string[]): Partial<Record<HeaderKey, number>> {
   return map;
 }
 
+<<<<<<< ours
+<<<<<<< ours
 function buildStepFromHeaderMappedRow(row: string[], headerMap: Partial<Record<HeaderKey, number>>): StructuredProcedureStep | null {
   const get = (key: HeaderKey): string | undefined => {
     const idx = headerMap[key];
@@ -498,12 +567,31 @@ function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
   if (!bestBlock || bestBlock.rows.length < 2) return [];
   const headerMap = mapHeaderRow(bestBlock.rows[0]);
   if (headerMap.label === undefined && headerMap.code === undefined) return [];
+=======
+=======
+>>>>>>> theirs
+function sanitizeStepLabel(label: string | undefined): string | undefined {
+  if (!label) return undefined;
+  const normalized = label.replace(/\s+/g, ' ').trim();
+  if (!normalized || normalized.length < 4) return undefined;
+  if (PSEUDO_LABEL_RE.test(normalized)) return undefined;
+  if (/^\d+\.?\s*$/.test(normalized)) return undefined;
+  return normalized;
+}
+
+function parseTableStepsFromRows(rows: string[][]): StructuredProcedureStep[] {
+  if (!rows.length) return [];
+  const headerIdx = detectPipeTableHeaders(rows);
+  if (headerIdx < 0) return [];
+  const colMap = mapPipeTableHeaders(rows[headerIdx]);
+>>>>>>> theirs
 
   const steps = bestBlock.rows
     .slice(1)
     .map(row => buildStepFromHeaderMappedRow(row, headerMap))
     .filter((step): step is StructuredProcedureStep => Boolean(step));
 
+<<<<<<< ours
   return dedupeSteps(steps);
 }
 
@@ -549,6 +637,20 @@ function parseFlatSequentialTableSteps(sectionText: string): StructuredProcedure
     while (cursor < lines.length && rowValues.length < headerLines.length && !DIGIT_ONLY_RE.test(lines[cursor]) && !NAMED_SECTION_RE.test(lines[cursor])) {
       rowValues.push(lines[cursor]);
       cursor += 1;
+=======
+    let codeVal = get('code');
+    let labelVal = sanitizeStepLabel(get('label'));
+    if (!labelVal && codeVal && !STEP_CODE_INLINE_RE.test(codeVal)) {
+      labelVal = sanitizeStepLabel(codeVal);
+      codeVal = undefined;
+    }
+    if (!labelVal) {
+      const firstFilled = row.find(c => c.length > 2 && !STEP_CODE_INLINE_RE.test(c));
+      labelVal = sanitizeStepLabel(firstFilled);
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
     }
 
     const step = buildStepFromHeaderMappedRow(rowValues, headerMap);
@@ -556,6 +658,26 @@ function parseFlatSequentialTableSteps(sectionText: string): StructuredProcedure
   }
 
   return dedupeSteps(steps);
+}
+
+function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
+  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
+}
+
+function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
+  const pipeSteps = parsePipeTableSteps(sectionText);
+  if (pipeSteps.length >= 2) return pipeSteps;
+  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
+}
+
+function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
+  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
+}
+
+function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
+  const pipeSteps = parsePipeTableSteps(sectionText);
+  if (pipeSteps.length >= 2) return pipeSteps;
+  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
 }
 
 function parseFlatStepBlocks(sectionText: string): StructuredProcedureStep[] {
@@ -619,7 +741,15 @@ function parseFlatStepBlocks(sectionText: string): StructuredProcedureStep[] {
       }
     }
 
+<<<<<<< ours
+<<<<<<< ours
     if (!isMeaningfulStepLabel(label)) continue;
+=======
+=======
+>>>>>>> theirs
+    label = sanitizeStepLabel(label) ?? '';
+    if (!label) continue;
+>>>>>>> theirs
 
     steps.push({
       stepCode,
@@ -744,6 +874,8 @@ export function extractStructuredProcedureFromText(
   let steps: StructuredProcedureStep[] = [];
 
   if (stepsSection) {
+<<<<<<< ours
+<<<<<<< ours
     steps = parsePipeTableSteps(stepsSection);
     if (!steps.length) steps = parseFlatSequentialTableSteps(stepsSection);
     if (!steps.length) steps = parseFlatStepBlocks(stepsSection);
@@ -754,6 +886,24 @@ export function extractStructuredProcedureFromText(
     if (!steps.length) steps = parseFlatSequentialTableSteps(text);
     if (!steps.length) steps = parseFlatStepBlocks(text);
     if (steps.length) warnings.push('Prozessschritte wurden nicht im erwarteten Ablaufblock gefunden – Ganztext-Fallback verwendet.');
+=======
+=======
+>>>>>>> theirs
+    steps = parseFlexibleTableSteps(stepsSection);
+    if (!steps.length) {
+      steps = parseFlatStepBlocks(stepsSection);
+    }
+  }
+
+  if (!steps.length) {
+    steps = parseFlexibleTableSteps(text);
+    if (!steps.length) {
+      steps = parseFlatStepBlocks(text);
+    }
+    if (steps.length) {
+      warnings.push('Prozessschritte wurden nicht in Abschnitt 4 gefunden – ganztext-Fallback verwendet.');
+    }
+>>>>>>> theirs
   }
 
   const roles = [

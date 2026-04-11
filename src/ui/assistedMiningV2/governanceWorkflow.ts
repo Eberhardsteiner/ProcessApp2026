@@ -373,6 +373,7 @@ export function approveGovernance(params: {
 
 export function clearGovernanceApproval(governance: ProcessMiningGovernanceState | undefined): ProcessMiningGovernanceState {
   const base = governance ?? createEmptyGovernanceState();
-  const { approval: _approval, ...rest } = base;
+  const rest: ProcessMiningGovernanceState = { ...base };
+  delete (rest as { approval?: ProcessMiningGovernanceState['approval'] }).approval;
   return rest;
 }
