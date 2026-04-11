@@ -730,6 +730,84 @@ export interface DerivationMultiCaseSummary {
 }
 
 export type ProcessDocumentType = 'procedure-document' | 'semi-structured-procedure-document' | 'case-narrative' | 'mixed-document' | 'weak-material' | 'unknown';
+export type TableColumnSemanticType =
+  | 'case-id'
+  | 'activity'
+  | 'timestamp'
+  | 'start-timestamp'
+  | 'end-timestamp'
+  | 'order-index'
+  | 'resource'
+  | 'role'
+  | 'system'
+  | 'status'
+  | 'lifecycle'
+  | 'comment'
+  | 'note'
+  | 'amount'
+  | 'location'
+  | 'free-text-support'
+  | 'unknown';
+
+export interface TableColumnProfile {
+  columnIndex: number;
+  header: string;
+  nonEmptyShare: number;
+  emptyShare: number;
+  averageCellLength: number;
+  repetitionRate: number;
+  cardinalityRatio: number;
+  parseableTimestampShare: number;
+  numericShare: number;
+  shortLabelShare: number;
+  longFreeTextShare: number;
+  semanticDistribution: Array<{ signal: string; share: number }>;
+  typeDistribution: {
+    empty: number;
+    numeric: number;
+    timestamp: number;
+    boolean: number;
+    shortText: number;
+    longText: number;
+  };
+}
+
+export interface TableColumnMapping {
+  columnIndex: number;
+  header: string;
+  inferredSemanticType: TableColumnSemanticType;
+  confidence: number;
+  supportingSignals: string[];
+  conflictingSignals: string[];
+  accepted: boolean;
+  fallbackUse?: string;
+  mappingOrigin?: string[];
+}
+
+export interface EventlogEligibilityCriterion {
+  key: string;
+  passed: boolean;
+  detail: string;
+}
+
+export interface NormalizedTableEvent {
+  eventId: string;
+  caseId: string;
+  activity: string;
+  timestampRaw?: string;
+  timestampIso?: string;
+  orderAnchor?: string;
+  resource?: string;
+  role?: string;
+  system?: string;
+  status?: string;
+  lifecycle?: string;
+  rowEvidenceAnchor: string;
+  confidence: number;
+  mappingOrigin: string[];
+  sourceRowIndex: number;
+  sourceCellRefs?: string[];
+}
 
 export interface DerivationSummary {
   sourceLabel: string;
@@ -753,57 +831,42 @@ export interface DerivationSummary {
     tableProfile: {
       rowCount: number;
       columnCount: number;
+      consistentWidthShare?: number;
       emptyValueShare: number;
       timestampParseShare: number;
       numericValueShare: number;
       shortValueShare: number;
       longValueShare: number;
+      averageTextLengthPerCell?: number;
       rowOrderCoherence: number;
       caseCoherence: number;
+      columnProfiles?: TableColumnProfile[];
     };
-    inferredSchema: Array<{
-      columnIndex: number;
-      header: string;
-      inferredSemanticType:
-        | 'case-id'
-        | 'activity'
-        | 'timestamp'
-        | 'start-timestamp'
-        | 'end-timestamp'
-        | 'order-index'
-        | 'resource'
-        | 'role'
-        | 'system'
-        | 'status'
-        | 'lifecycle'
-        | 'comment'
-        | 'note'
-        | 'amount'
-        | 'location'
-        | 'free-text-support'
-        | 'unknown';
-      confidence: number;
-      supportingSignals: string[];
-      conflictingSignals: string[];
-      accepted: boolean;
-      fallbackUse?: string;
-    }>;
+    inferredSchema: TableColumnMapping[];
+    acceptedColumnMappings?: TableColumnMapping[];
+    rejectedColumnMappings?: TableColumnMapping[];
+    mappingConfidence?: number;
     eventlogEligibility: {
       eligible: boolean;
       reasons: string[];
       fallbackReason?: string;
+      minimumCriteria?: EventlogEligibilityCriterion[];
     };
     rowEvidenceStats: {
       rowsWithEvidence: number;
       eventsCreated: number;
       weakSignalsCreated: number;
+      rowsWithAcceptedCoreMapping?: number;
+      rowsWithMissingCoreData?: number;
     };
     traceStats?: {
       caseCount: number;
       averageEventsPerCase: number;
       orderedTraceShare: number;
+      reconstructedSingleCase?: boolean;
     };
-    weakTableSignals?: string[];
+    normalizedEvents?: NormalizedTableEvent[];
+    weakTableSignals?: Array<{ label: string; snippet: string }>;
   };
   multiCaseSummary?: DerivationMultiCaseSummary;
   repairNotes?: string[];

@@ -35,6 +35,18 @@ npm run dev
 - Narrative Restableitung in [src/ui/assistedMiningV2/narrativeParsing.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ui/assistedMiningV2/narrativeParsing.ts) führt Nicht-Schritte nicht mehr direkt in den Kernprozess, sondern als Support-/Signalspur.
 - Der operative Export enthält die Evidenztransparenz jetzt explizit über `lastDerivationSummary.extractionCandidates`, `lastDerivationSummary.candidateReview` und `sourceMaterial.extractionCandidates`.
 
+## Tabellen- und Eventlog-Pipeline (Phase 4)
+
+- CSV/XLSX laufen im Standardpfad nicht mehr in eine manuelle Narrative-vs.-Eventlog-Abzweigung und auch nicht mehr zurück in die Dokumentableitung.
+- Die eigenständige Tabellenanalyse sitzt in [src/import/tableSourceAnalysis.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/import/tableSourceAnalysis.ts):
+  Tabellenprofil, Schema-Inferenz, Mindeststrukturprüfung, Event-Normalisierung und weak-raw-table-Fallback.
+- Der operative Tabellenpfad in [src/ui/assistedMiningV2/tableEventPipeline.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ui/assistedMiningV2/tableEventPipeline.ts) verarbeitet nur noch zwei Endzustände:
+  `eventlog-table` oder `weak-raw-table`.
+- Echtes Eventlog-Mining startet nur bei belastbaren Kernkanälen für `activity`, `case-id` oder defensiver Single-Case-Rekonstruktion, plus Zeit-/Sequenzanker und ausreichender Kernabdeckung.
+- Schwache Tabellen werden defensiv als `weak-raw-table` gehalten und liefern nur evidenzverankerte Signale statt scheinpräziser Kernschritte.
+- Export und Review-Transparenz liegen im operativen Zustand unter `lastDerivationSummary.tablePipeline`:
+  `pipelineMode`, `tableProfile`, `acceptedColumnMappings`, `rejectedColumnMappings`, `mappingConfidence`, `eventlogEligibility`, `normalizedEvents`, `weakTableSignals`.
+
 ## Standardprüfung
 
 ```bash

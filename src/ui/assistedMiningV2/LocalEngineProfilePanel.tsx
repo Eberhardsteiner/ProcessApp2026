@@ -31,13 +31,14 @@ function sectionLabel(key: string): string {
 
 export function LocalEngineProfilePanel({ summary }: Props) {
   const profile = summary?.sourceProfile;
-  if (!profile) return null;
+  const tablePipeline = summary?.tablePipeline;
+  if (!profile && !summary?.routingContext && !tablePipeline && !summary?.candidateReview) return null;
 
-  const stability = labelForStability(profile.stability);
-  const sectionHighlights = Object.entries(profile.sectionCounts)
+  const stability = profile ? labelForStability(profile.stability) : null;
+  const sectionHighlights = profile ? Object.entries(profile.sectionCounts)
     .filter(([, value]) => value > 0)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 4);
+    .slice(0, 4) : [];
   const multiCase = summary?.multiCaseSummary;
   const candidateReview = summary?.candidateReview;
 
@@ -51,32 +52,43 @@ export function LocalEngineProfilePanel({ summary }: Props) {
             <HelpPopover helpKey="pmv2.engineProfile" ariaLabel="Hilfe: Lokales Engine-Profil" />
           </div>
           <p className="text-sm leading-relaxed text-slate-600">
-            {profile.documentClassLabel ? `${profile.documentClassLabel}. ` : ''}{profile.inputProfileLabel}. {profile.extractionFocus}
+            {profile
+              ? <>{profile.documentClassLabel ? `${profile.documentClassLabel}. ` : ''}{profile.inputProfileLabel}. {profile.extractionFocus}</>
+              : <>{tablePipeline?.pipelineMode === 'eventlog-table'
+                ? 'Eigenständige Tabellen- und Eventlog-Pipeline mit Schema-Inferenz und Event-Normalisierung.'
+                : 'Defensive Tabellenanalyse im weak-raw-table-Modus mit evidenzverankerten Signalspuren statt scheinpräziser Kernschritte.'}</>}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {profile.documentClassLabel && (
+          {profile?.documentClassLabel && (
             <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
               {profile.documentClassLabel}
             </span>
           )}
-          {profile.primaryDomainLabel && (
+          {profile?.primaryDomainLabel && (
             <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-medium text-violet-800">
               Primärdomäne: {profile.primaryDomainLabel}
             </span>
           )}
-          {typeof profile.processBearingSharePct === 'number' && (
+          {typeof profile?.processBearingSharePct === 'number' && (
             <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-800">
               {profile.processBearingSharePct}% prozessnahes Material
             </span>
           )}
-          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${stability.cls}`}>
-            {stability.label}
-          </span>
+          {stability && (
+            <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${stability.cls}`}>
+              {stability.label}
+            </span>
+          )}
+          {tablePipeline && (
+            <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-800">
+              {tablePipeline.pipelineMode}
+            </span>
+          )}
         </div>
       </div>
 
-      {profile.domainGateNote && (
+      {profile?.domainGateNote && (
         <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs leading-relaxed text-violet-900">
           {profile.domainGateNote}
         </div>
@@ -108,6 +120,49 @@ export function LocalEngineProfilePanel({ summary }: Props) {
               Defensive Einordnung: {summary.routingContext.fallbackReason}
             </p>
           )}
+        </div>
+      )}
+
+      {tablePipeline && (
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center gap-2 text-slate-700">
+              <ListTree className="h-4 w-4" />
+              <p className="text-sm font-semibold">Tabellen-Mapping</p>
+            </div>
+            <div className="mt-2 space-y-2 text-xs text-slate-700">
+              <p className="rounded-md border border-slate-200 bg-white px-2.5 py-2">
+                Mapping-Konfidenz: {typeof tablePipeline.mappingConfidence === 'number' ? tablePipeline.mappingConfidence.toFixed(2) : 'n/a'}
+              </p>
+              {tablePipeline.acceptedColumnMappings && tablePipeline.acceptedColumnMappings.length > 0 ? (
+                tablePipeline.acceptedColumnMappings.slice(0, 5).map(mapping => (
+                  <p key={`${mapping.columnIndex}-${mapping.inferredSemanticType}`} className="rounded-md border border-slate-200 bg-white px-2.5 py-2">
+                    {mapping.header} → {mapping.inferredSemanticType} ({mapping.confidence.toFixed(2)})
+                  </p>
+                ))
+              ) : (
+                <p className="rounded-md border border-slate-200 bg-white px-2.5 py-2">Keine belastbaren Kernmappings erkannt.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center gap-2 text-slate-700">
+              <ListChecks className="h-4 w-4" />
+              <p className="text-sm font-semibold">Eventlog-Eignung</p>
+            </div>
+            <div className="mt-2 space-y-2 text-xs text-slate-700">
+              {tablePipeline.eventlogEligibility.minimumCriteria && tablePipeline.eventlogEligibility.minimumCriteria.length > 0 ? (
+                tablePipeline.eventlogEligibility.minimumCriteria.slice(0, 6).map(criteria => (
+                  <p key={criteria.key} className={`rounded-md border px-2.5 py-2 ${criteria.passed ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+                    {criteria.detail}
+                  </p>
+                ))
+              ) : (
+                <p className="rounded-md border border-slate-200 bg-white px-2.5 py-2">Keine zusätzlichen Eignungskriterien verfügbar.</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -146,45 +201,47 @@ export function LocalEngineProfilePanel({ summary }: Props) {
         </div>
       )}
 
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <div className="flex items-center gap-2 text-slate-700">
-            <ListChecks className="h-4 w-4" />
-            <p className="text-sm font-semibold">Warum die Engine so liest</p>
+      {profile && (
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center gap-2 text-slate-700">
+              <ListChecks className="h-4 w-4" />
+              <p className="text-sm font-semibold">Warum die Engine so liest</p>
+            </div>
+            <div className="mt-2 space-y-2 text-xs leading-relaxed text-slate-700">
+              {profile.classificationReasons && profile.classificationReasons.length > 0 ? (
+                profile.classificationReasons.slice(0, 4).map(reason => (
+                  <p key={reason} className="rounded-md border border-slate-200 bg-white px-2.5 py-2">{reason}</p>
+                ))
+              ) : (
+                <p className="rounded-md border border-slate-200 bg-white px-2.5 py-2">Noch keine zusätzliche Materialbegründung verfügbar.</p>
+              )}
+            </div>
           </div>
-          <div className="mt-2 space-y-2 text-xs leading-relaxed text-slate-700">
-            {profile.classificationReasons && profile.classificationReasons.length > 0 ? (
-              profile.classificationReasons.slice(0, 4).map(reason => (
-                <p key={reason} className="rounded-md border border-slate-200 bg-white px-2.5 py-2">{reason}</p>
-              ))
-            ) : (
-              <p className="rounded-md border border-slate-200 bg-white px-2.5 py-2">Noch keine zusätzliche Materialbegründung verfügbar.</p>
-            )}
-          </div>
-        </div>
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <div className="flex items-center gap-2 text-slate-700">
-            <Sparkles className="h-4 w-4" />
-            <p className="text-sm font-semibold">Lokaler Ableitungsplan</p>
-          </div>
-          <div className="mt-2 space-y-2 text-xs leading-relaxed text-slate-700">
-            {profile.extractionPlan && profile.extractionPlan.length > 0 ? (
-              profile.extractionPlan.map(step => (
-                <p key={step} className="rounded-md border border-slate-200 bg-white px-2.5 py-2">{step}</p>
-              ))
-            ) : (
-              <p className="rounded-md border border-slate-200 bg-white px-2.5 py-2">Die Engine nutzt hier eine vorsichtige Standardlogik.</p>
-            )}
-            {typeof profile.selectedParagraphCount === 'number' && (
-              <p className="text-slate-500">
-                Genutzte Kernabschnitte: {profile.selectedParagraphCount}
-                {typeof profile.supportParagraphCount === 'number' ? ` · ergänzende Abschnitte: ${profile.supportParagraphCount}` : ''}
-              </p>
-            )}
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center gap-2 text-slate-700">
+              <Sparkles className="h-4 w-4" />
+              <p className="text-sm font-semibold">Lokaler Ableitungsplan</p>
+            </div>
+            <div className="mt-2 space-y-2 text-xs leading-relaxed text-slate-700">
+              {profile.extractionPlan && profile.extractionPlan.length > 0 ? (
+                profile.extractionPlan.map(step => (
+                  <p key={step} className="rounded-md border border-slate-200 bg-white px-2.5 py-2">{step}</p>
+                ))
+              ) : (
+                <p className="rounded-md border border-slate-200 bg-white px-2.5 py-2">Die Engine nutzt hier eine vorsichtige Standardlogik.</p>
+              )}
+              {typeof profile.selectedParagraphCount === 'number' && (
+                <p className="text-slate-500">
+                  Genutzte Kernabschnitte: {profile.selectedParagraphCount}
+                  {typeof profile.supportParagraphCount === 'number' ? ` · ergänzende Abschnitte: ${profile.supportParagraphCount}` : ''}
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {multiCase && (
         <div className="grid gap-3 lg:grid-cols-3">
