@@ -12,6 +12,10 @@ import type { SemiStructuredProcedureStep } from '../../import/semiStructuredPro
 import { extractStructuredProcedureFromText } from '../../import/structuredProcedureExtraction';
 import { classifyDocumentStructure } from '../../import/documentStructureClassifier';
 <<<<<<< ours
+<<<<<<< ours
+=======
+import { routeSourceMaterial } from '../../import/sourceRouter';
+>>>>>>> theirs
 =======
 import { routeSourceMaterial } from '../../import/sourceRouter';
 >>>>>>> theirs
@@ -570,7 +574,10 @@ function extractIssueEvidence(text: string, context?: { primary: DomainKey; seco
   return deduped.filter(entry => isIssueAllowedInDomain(entry.label, context));
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 }
@@ -672,6 +679,10 @@ function buildNarrativeDerivation(params: {
   baseConfidence?: 'high' | 'medium' | 'low';
   domainContext?: { primary: DomainKey; secondary?: DomainKey };
 <<<<<<< ours
+<<<<<<< ours
+=======
+  routingContext: SourceRoutingContext;
+>>>>>>> theirs
 =======
   routingContext: SourceRoutingContext;
 >>>>>>> theirs
@@ -687,6 +698,10 @@ function buildNarrativeDerivation(params: {
     baseConfidence = 'medium',
     domainContext,
 <<<<<<< ours
+<<<<<<< ours
+=======
+    routingContext,
+>>>>>>> theirs
 =======
     routingContext,
 >>>>>>> theirs
@@ -830,6 +845,10 @@ function buildStructuredDerivation(params: {
   documentKind?: ProcessDocumentType;
   domainContext?: { primary: DomainKey; secondary?: DomainKey };
 <<<<<<< ours
+<<<<<<< ours
+=======
+  routingContext: SourceRoutingContext;
+>>>>>>> theirs
 =======
   routingContext: SourceRoutingContext;
 >>>>>>> theirs
@@ -846,6 +865,10 @@ function buildStructuredDerivation(params: {
     documentKind = 'procedure-document',
     domainContext,
 <<<<<<< ours
+<<<<<<< ours
+=======
+    routingContext,
+>>>>>>> theirs
 =======
     routingContext,
 >>>>>>> theirs
@@ -875,8 +898,13 @@ function buildStructuredDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const systems = uniqueStrings([...steps.map(step => step.system), ...extractSystems(rawText)]);
   const issueEvidence = extractIssueEvidence(rawText);
+=======
+  const systems = extractSystems(rawText);
+  const issueEvidence = extractIssueEvidence(rawText, domainContext);
+>>>>>>> theirs
 =======
   const systems = extractSystems(rawText);
   const issueEvidence = extractIssueEvidence(rawText, domainContext);
@@ -906,8 +934,12 @@ function buildStructuredDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     issueEvidence,
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' })} ${sourceProfileNote}`.trim(),
+=======
+    documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind })} ${sourceProfileNote}`.trim(),
+>>>>>>> theirs
 =======
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind })} ${sourceProfileNote}`.trim(),
 >>>>>>> theirs
@@ -950,8 +982,14 @@ function buildSemiStructuredDerivation(params: {
   confidence: 'high' | 'medium' | 'low';
   domainContext?: { primary: DomainKey; secondary?: DomainKey };
 <<<<<<< ours
+<<<<<<< ours
 }): DerivationResult {
   const { steps, roles, warnings, title, sourceName, sourceType, rawText, confidence, domainContext } = params;
+=======
+  routingContext: SourceRoutingContext;
+}): DerivationResult {
+  const { steps, roles, warnings, title, sourceName, sourceType, rawText, confidence, domainContext, routingContext } = params;
+>>>>>>> theirs
 =======
   routingContext: SourceRoutingContext;
 }): DerivationResult {
@@ -998,8 +1036,12 @@ function buildSemiStructuredDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     issueEvidence,
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' })} ${sourceProfileNote}`.trim(),
+=======
+    documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'semi-structured-procedure-document' })} ${sourceProfileNote}`.trim(),
+>>>>>>> theirs
 =======
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'semi-structured-procedure-document' })} ${sourceProfileNote}`.trim(),
 >>>>>>> theirs
@@ -1200,11 +1242,14 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const documentSummary = uniqueStrings([
     result.summary.documentSummary ?? '',
     domainIsolation.note ?? '',
   ]).join(' ').trim();
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -1231,6 +1276,9 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
   ].filter(Boolean).join(' ');
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1271,12 +1319,17 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
       issueEvidence: keptIssueEvidence,
 =======
       documentSummary: finalDocumentSummary,
 >>>>>>> theirs
 =======
       documentSummary: finalDocumentSummary,
+>>>>>>> theirs
+=======
+      documentSummary: finalDocumentSummary,
+      routingContext: result.routingContext,
 >>>>>>> theirs
 =======
       documentSummary: finalDocumentSummary,
@@ -1302,7 +1355,12 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const sourceProfile = buildSourceExtractionPlan(rawText).profile;
+=======
+  const structureClassification = classifyDocumentStructure(rawText);
+  const classifiedDocumentKind = mapClassifierToDocumentKind(structureClassification.classType);
+>>>>>>> theirs
 =======
   const structureClassification = classifyDocumentStructure(rawText);
   const classifiedDocumentKind = mapClassifierToDocumentKind(structureClassification.classType);
@@ -1333,13 +1391,19 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     warnings.push('Mischdokument erkannt — Prozessschritte werden vor allem aus der eigentlichen Fallgeschichte oder Zeitleiste abgeleitet. Tabellen, KI-Ideen und Testfragen werden nur ergänzend genutzt.');
   }
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
   warnings.push(
     `Quellen-Router: ${routingContext.routingClass} (${routingContext.routingConfidence}) · Signale: ${routingContext.routingSignals.slice(0, 4).join(', ')}.`,
   );
   if (routingContext.fallbackReason) {
     warnings.push(`Router-Fallback: ${routingContext.fallbackReason}`);
   }
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
   warnings.push(`Dokumentklassifikation: ${structureClassification.classType} (${structureClassification.confidence}). ${structureClassification.reasons.slice(0, 2).join(' ')}`.trim());
   const domainContext = detectDomainContext(rawText);
@@ -1352,6 +1416,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   const supplementalIssueEvidence = extractIssueEvidence(rawText, domainContext);
   const supplementalIssueSignals = uniqueStrings(supplementalIssueEvidence.map(entry => entry.label));
   const storyBlocks = extractTimelineBlocks(rawText);
+<<<<<<< ours
 <<<<<<< ours
   const structuredLike = sourceProfile.documentClass === 'structured-target-procedure' || sourceProfile.documentClass === 'semi-structured-procedure';
 
@@ -1411,6 +1476,15 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 
   if (!forceDefensiveFallback && allowNarrativeFirst && isMostlyNarrative(rawText) && storyBlocks.length >= MIN_USEFUL_STEPS) {
 >>>>>>> theirs
+=======
+  const preferredPath = routingContext.routingClass;
+  const allowStructuredFirst = preferredPath === 'structured-procedure' || preferredPath === 'eventlog-table';
+  const allowSemiStructuredFirst = preferredPath === 'semi-structured-procedure' || preferredPath === 'mixed-document';
+  const allowNarrativeFirst = preferredPath === 'narrative-case';
+  const forceDefensiveFallback = preferredPath === 'weak-raw-table';
+
+  if (!forceDefensiveFallback && allowNarrativeFirst && isMostlyNarrative(rawText) && storyBlocks.length >= MIN_USEFUL_STEPS) {
+>>>>>>> theirs
     const narrativeResult = buildNarrativeDerivation({
       blocks: storyBlocks,
       sourceName,
@@ -1422,6 +1496,10 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       baseConfidence: storyBlocks.length >= 5 ? 'high' : 'medium',
       domainContext,
 <<<<<<< ours
+<<<<<<< ours
+=======
+      routingContext,
+>>>>>>> theirs
 =======
       routingContext,
 >>>>>>> theirs
@@ -1437,6 +1515,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     }
   }
 
+<<<<<<< ours
 <<<<<<< ours
   for (const candidateText of candidateTexts(rawText, sourceName)) {
     const structured = extractStructuredProcedureFromText(sourceName, candidateText);
@@ -1503,6 +1582,31 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     }
   }
 
+=======
+  if (!forceDefensiveFallback && (allowStructuredFirst || preferredPath === 'mixed-document')) {
+    for (const candidateText of candidateTexts(rawText, sourceName)) {
+      const structured = extractStructuredProcedureFromText(sourceName, candidateText);
+      if (structured && structured.steps.length >= MIN_USEFUL_STEPS) {
+        return finalizeDerivationResult(buildStructuredDerivation({
+          steps: structured.steps,
+          roles: uniqueStrings([...structured.roles.map(role => role.name), ...roles, ...structured.steps.map(step => step.responsible)]),
+          warnings: uniqueStrings([...structured.warnings, ...warnings]),
+          title: structured.title,
+          sourceName,
+          sourceType: input.sourceType,
+          rawText,
+          confidence: 'high',
+          documentKind: classifiedDocumentKind === 'semi-structured-procedure-document'
+            ? 'semi-structured-procedure-document'
+            : 'procedure-document',
+          domainContext,
+          routingContext,
+        }));
+      }
+    }
+  }
+
+>>>>>>> theirs
   if (!forceDefensiveFallback && (allowSemiStructuredFirst || preferredPath === 'eventlog-table' || preferredPath === 'structured-procedure')) {
     for (const candidateText of candidateTexts(rawText, sourceName)) {
       const semiStructured = extractSemiStructuredProcedureFromText(sourceName, candidateText);
@@ -1520,6 +1624,9 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
           routingContext,
         }));
       }
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
     }
   }
@@ -1537,6 +1644,10 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       baseConfidence: paragraphBlocks.length >= MIN_USEFUL_STEPS ? 'medium' : 'low',
       domainContext,
 <<<<<<< ours
+<<<<<<< ours
+=======
+      routingContext,
+>>>>>>> theirs
 =======
       routingContext,
 >>>>>>> theirs
@@ -1576,6 +1687,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const fallbackStepObservations = usableObservations.filter(observation => observation.kind === 'step');
   const fallbackIssueEvidence = dedupeIssueEvidence([
     ...extractIssueEvidence(rawText),
@@ -1585,6 +1697,8 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   ]);
   const fallbackIssueSignals = uniqueStrings(fallbackIssueEvidence.map(entry => entry.label));
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======

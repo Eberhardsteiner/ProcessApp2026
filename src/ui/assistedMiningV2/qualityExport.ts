@@ -1067,6 +1067,7 @@ export function buildQualityExportFile(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const analysisMode = detectProcessMiningAnalysisMode({
     cases: state.cases,
     observations: state.observations,
@@ -1100,6 +1101,8 @@ export function buildQualityExportFile(params: {
     analysisPositioning,
   });
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -1180,6 +1183,9 @@ export function buildQualityExportFile(params: {
   const overall = scoreToLevel(avg);
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs

@@ -131,11 +131,14 @@ export function buildAnalysisModeNotice(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     if (documentKind === 'procedure-document') {
       return 'Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse sind daher als Prozessentwurf zu lesen, nicht als belastbare Mengen- oder Quotenanalyse.';
     }
     return 'Aktuell liegt nur ein einzelner Fall oder eine einzelne Quelle vor. Die Ergebnisse zeigen einen Prozessentwurf, aber noch keine belastbare Aussage über typische Häufigkeiten.';
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
