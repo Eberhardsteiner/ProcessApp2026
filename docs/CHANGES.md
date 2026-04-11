@@ -482,10 +482,9 @@ Die lokale Analyse ohne KI wurde fachlich breiter und zugleich besser erklärbar
 - Qualitätsbewertung jetzt direkt im Export enthalten, damit ein einzelner Testfall für eine belastbare Detailbewertung ausreicht
 - Export-Hilfe und Export-Panel entsprechend nachgeschärft
 
-## v0.40.9 / Sanierungsstufe 7
+## v0.41.0 / Sanierungsstufe 7
 
 - Gemeinsame UI-Bausteine für Assisted Process Mining beruhigt: Schrittkopf, Bereichskarten, Schnellzugriffe, Kennzahlen und Aktionsleisten folgen jetzt einem einheitlicheren Muster.
 - Qualitäts-Export bleibt sichtbar im Hauptpfad und ist klarer als primäre Aktion platziert.
 - Der Arbeitsbereich auf einen Blick wurde reduziert: weniger visuelle Dichte im Standardzustand, mehr Einordnung nur noch bei Bedarf.
 - Einstieg in Schritt 1 konzentriert sich jetzt stärker auf den Kernpfad statt auf viele parallele Hinweise.
-
