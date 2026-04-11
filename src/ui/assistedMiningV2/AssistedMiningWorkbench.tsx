@@ -80,6 +80,9 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -112,7 +115,12 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     setShowOverviewDetails(false);
+=======
+    setShowOverviewDetails(loaded.state.observations.length === 0);
+    setShowHealthDetails(false);
+>>>>>>> theirs
 =======
     setShowOverviewDetails(loaded.state.observations.length === 0);
     setShowHealthDetails(false);
@@ -333,6 +341,7 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
       {(integrityReport.severity !== 'healthy' || showOverviewDetails) && <WorkspaceIntegrityPanel report={integrityReport} />}
 =======
 =======
@@ -355,6 +364,8 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
         )}
       </div>
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -386,6 +397,9 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs

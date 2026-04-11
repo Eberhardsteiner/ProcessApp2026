@@ -122,7 +122,10 @@ export interface ProcessMiningQualityExportFile {
     lastDerivationSummary?: ProcessMiningAssistedV2State['lastDerivationSummary'];
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
     tablePipeline?: ProcessMiningAssistedV2State['lastDerivationSummary'] extends infer T
@@ -131,6 +134,9 @@ export interface ProcessMiningQualityExportFile {
         : never
       : never;
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -143,7 +149,10 @@ export interface ProcessMiningQualityExportFile {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -165,6 +174,9 @@ export interface ProcessMiningQualityExportFile {
     };
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -177,7 +189,10 @@ export interface ProcessMiningQualityExportFile {
     handoverDrafts?: ProcessMiningAssistedV2State['handoverDrafts'];
     qualityAssessment: {
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
       scoringProfile?: {
         mode: 'process-draft' | 'comparison' | 'eventlog-table' | 'weak-raw-table';
         weights: Record<string, number>;
@@ -187,6 +202,9 @@ export interface ProcessMiningQualityExportFile {
       scoringReasons?: string[];
       blockerReasons?: string[];
       confidenceAdjustments?: string[];
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
       overall: 'high' | 'medium' | 'low';
       dimensions: Array<{
@@ -1127,6 +1145,7 @@ export function buildQualityExportFile(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const analysisMode = detectProcessMiningAnalysisMode({
     cases: state.cases,
     observations: state.observations,
@@ -1172,6 +1191,8 @@ export function buildQualityExportFile(params: {
 >>>>>>> theirs
 =======
 >>>>>>> theirs
+=======
+>>>>>>> theirs
   const lastSummary = state.lastDerivationSummary;
   const warnings = lastSummary?.warnings ?? [];
   const stepLabels = lastSummary?.stepLabels ?? [];
@@ -1180,9 +1201,12 @@ export function buildQualityExportFile(params: {
   const docKind = lastSummary?.documentKind ?? 'unknown';
   const confidence = lastSummary?.confidence ?? 'low';
 <<<<<<< ours
+<<<<<<< ours
   const evidenceCoverageScore = stepCount > 0 ? evidenceBackedSteps / stepCount : 0;
   const conservativeTriggered = warnings.some(w => /konservative auswertung aktiv|vorläufiger prozessentwurf/i.test(w));
 =======
+=======
+>>>>>>> theirs
   const conservativeTriggered = warnings.some(w => /konservative auswertung aktiv|vorläufiger prozessentwurf/i.test(w));
   const routingClass = lastSummary?.routingContext?.routingClass;
   const mode: 'process-draft' | 'comparison' | 'eventlog-table' | 'weak-raw-table' =
@@ -1241,6 +1265,9 @@ export function buildQualityExportFile(params: {
     if (mode === 'weak-raw-table') return clamp01(routingClass === 'weak-raw-table' ? 0.82 : 0.35);
     return clamp01(docKind === 'unknown' ? 0.25 : docKind === 'weak-material' ? 0.4 : 0.8);
   })();
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 
   const dimensionScores: ProcessMiningQualityExportFile['analysisResults']['qualityAssessment']['dimensions'] = [
@@ -1248,9 +1275,15 @@ export function buildQualityExportFile(params: {
       key: 'documentTypeDetection',
       label: 'Dokumenttyp-Erkennung',
 <<<<<<< ours
+<<<<<<< ours
       score: clamp01(docKind === 'unknown' ? 0.25 : docKind === 'weak-material' ? 0.4 : 0.8),
       level: scoreToLevel(docKind === 'unknown' ? 0.25 : docKind === 'weak-material' ? 0.4 : 0.8),
       reason: `Erkannter Typ: ${docKind}.`,
+=======
+      score: docTypeScore,
+      level: scoreToLevel(docTypeScore),
+      reason: `Aktiver Modus ${mode}, Routing ${routingClass ?? 'unbekannt'}, Dokumenttyp ${docKind}.`,
+>>>>>>> theirs
 =======
       score: docTypeScore,
       level: scoreToLevel(docTypeScore),
@@ -1261,10 +1294,13 @@ export function buildQualityExportFile(params: {
       key: 'structureFidelity',
       label: 'Strukturtreue',
 <<<<<<< ours
+<<<<<<< ours
       score: clamp01(stepLabels.length >= 6 ? 0.85 : stepLabels.length >= 3 ? 0.6 : 0.3),
       level: scoreToLevel(stepLabels.length >= 6 ? 0.85 : stepLabels.length >= 3 ? 0.6 : 0.3),
       reason: `${stepLabels.length} belastbare Schrittlabels in der letzten Ableitung.`,
 =======
+=======
+>>>>>>> theirs
       score: structureScore,
       level: scoreToLevel(structureScore),
       reason: mode === 'eventlog-table'
@@ -1272,15 +1308,24 @@ export function buildQualityExportFile(params: {
         : mode === 'weak-raw-table'
         ? 'Defensive Strukturbewertung für schwache Tabellenquellen.'
         : `${stepLabels.length} belastbare Schrittlabels in der letzten Ableitung.`,
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
     },
     {
       key: 'stepClarity',
       label: 'Schrittklarheit',
 <<<<<<< ours
+<<<<<<< ours
       score: clamp01(stepLabels.length > 0 ? stepLabels.filter(label => label.trim().length >= 8).length / stepLabels.length : 0),
       level: scoreToLevel(stepLabels.length > 0 ? stepLabels.filter(label => label.trim().length >= 8).length / stepLabels.length : 0),
       reason: 'Bewertung anhand Länge und Nutzbarkeit der Schrittlabels.',
+=======
+      score: clamp01(semanticStepShare),
+      level: scoreToLevel(semanticStepShare),
+      reason: 'Semantische Prüfung auf Aktivitätscharakter, Fragmentfreiheit und Ausschluss schwacher Kanal-/Notizlabels.',
+>>>>>>> theirs
 =======
       score: clamp01(semanticStepShare),
       level: scoreToLevel(semanticStepShare),
@@ -1316,18 +1361,25 @@ export function buildQualityExportFile(params: {
       score: clamp01(evidenceCoverageScore),
       level: scoreToLevel(evidenceCoverageScore),
 <<<<<<< ours
+<<<<<<< ours
       reason: `${evidenceBackedSteps}/${stepCount} Schritte haben Evidenzsnippets.`,
 =======
+=======
+>>>>>>> theirs
       reason: mode === 'eventlog-table'
         ? 'Eventlog-Modus: Zeilenanker, Mapping-Konfidenz und Eventabdeckung kombiniert.'
         : mode === 'weak-raw-table'
         ? 'Weak-Table-Modus: Evidenz für Signale/Cluster statt erzwungener Prozessschritte.'
         : `${evidenceBackedSteps}/${stepCount} Schritte haben Evidenzsnippets.`,
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
     },
     {
       key: 'conservativeHandling',
       label: 'Vorsicht bei schwachem Material',
+<<<<<<< ours
 <<<<<<< ours
       score: clamp01(conservativeTriggered ? 0.9 : confidence === 'low' ? 0.7 : 0.5),
       level: scoreToLevel(conservativeTriggered ? 0.9 : confidence === 'low' ? 0.7 : 0.5),
@@ -1355,6 +1407,8 @@ export function buildQualityExportFile(params: {
 =======
 >>>>>>> theirs
 =======
+=======
+>>>>>>> theirs
       score: clamp01(cautionScore),
       level: scoreToLevel(cautionScore),
       reason: cautionScore >= 0.75
@@ -1403,6 +1457,9 @@ export function buildQualityExportFile(params: {
     ...(cautionScore < 0.4 ? ['Unzureichende Vorsicht gegenüber schwacher Materiallage.'] : []),
   ];
   const overall = scoreToLevel(avg);
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 
   return {
@@ -1497,6 +1554,10 @@ export function buildQualityExportFile(params: {
       lastDerivationSummary: state.lastDerivationSummary,
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+      tablePipeline: lastSummary?.tablePipeline,
+>>>>>>> theirs
 =======
       tablePipeline: lastSummary?.tablePipeline,
 >>>>>>> theirs
@@ -1514,7 +1575,10 @@ export function buildQualityExportFile(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -1537,6 +1601,9 @@ export function buildQualityExportFile(params: {
         : undefined,
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1549,7 +1616,10 @@ export function buildQualityExportFile(params: {
       handoverDrafts: state.handoverDrafts,
       qualityAssessment: {
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
         scoringProfile: {
           mode,
           weights: activeProfile.weights,
@@ -1563,6 +1633,9 @@ export function buildQualityExportFile(params: {
         ],
         blockerReasons,
         confidenceAdjustments,
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
         overall,
         dimensions: dimensionScores,
