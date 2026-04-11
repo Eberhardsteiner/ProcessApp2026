@@ -121,12 +121,18 @@ export interface ProcessMiningQualityExportFile {
     qualitySummary?: ProcessMiningAssistedV2State['qualitySummary'];
     lastDerivationSummary?: ProcessMiningAssistedV2State['lastDerivationSummary'];
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
     tablePipeline?: ProcessMiningAssistedV2State['lastDerivationSummary'] extends infer T
       ? T extends { tablePipeline?: infer U }
         ? U
         : never
       : never;
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
     routing?: {
       routingClass: string;
@@ -136,7 +142,10 @@ export interface ProcessMiningQualityExportFile {
     };
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
     extractionEvidence?: {
@@ -155,6 +164,9 @@ export interface ProcessMiningQualityExportFile {
       }>;
     };
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -164,6 +176,18 @@ export interface ProcessMiningQualityExportFile {
     reportSnapshot?: ProcessMiningAssistedV2State['reportSnapshot'];
     handoverDrafts?: ProcessMiningAssistedV2State['handoverDrafts'];
     qualityAssessment: {
+<<<<<<< ours
+=======
+      scoringProfile?: {
+        mode: 'process-draft' | 'comparison' | 'eventlog-table' | 'weak-raw-table';
+        weights: Record<string, number>;
+        evidenceTypes: string[];
+        blockerRules: string[];
+      };
+      scoringReasons?: string[];
+      blockerReasons?: string[];
+      confidenceAdjustments?: string[];
+>>>>>>> theirs
       overall: 'high' | 'medium' | 'low';
       dimensions: Array<{
         key:
@@ -1102,6 +1126,7 @@ export function buildQualityExportFile(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const analysisMode = detectProcessMiningAnalysisMode({
     cases: state.cases,
     observations: state.observations,
@@ -1145,6 +1170,8 @@ export function buildQualityExportFile(params: {
 >>>>>>> theirs
 =======
 >>>>>>> theirs
+=======
+>>>>>>> theirs
   const lastSummary = state.lastDerivationSummary;
   const warnings = lastSummary?.warnings ?? [];
   const stepLabels = lastSummary?.stepLabels ?? [];
@@ -1152,30 +1179,113 @@ export function buildQualityExportFile(params: {
   const systems = lastSummary?.systems ?? [];
   const docKind = lastSummary?.documentKind ?? 'unknown';
   const confidence = lastSummary?.confidence ?? 'low';
+<<<<<<< ours
   const evidenceCoverageScore = stepCount > 0 ? evidenceBackedSteps / stepCount : 0;
   const conservativeTriggered = warnings.some(w => /konservative auswertung aktiv|vorläufiger prozessentwurf/i.test(w));
+=======
+  const conservativeTriggered = warnings.some(w => /konservative auswertung aktiv|vorläufiger prozessentwurf/i.test(w));
+  const routingClass = lastSummary?.routingContext?.routingClass;
+  const mode: 'process-draft' | 'comparison' | 'eventlog-table' | 'weak-raw-table' =
+    routingClass === 'weak-raw-table'
+      ? 'weak-raw-table'
+      : routingClass === 'eventlog-table'
+      ? 'eventlog-table'
+      : state.cases.length > 1
+      ? 'comparison'
+      : 'process-draft';
+  const tablePipeline = lastSummary?.tablePipeline;
+  const weakStepRe = /^(mail|e-?mail|chat|kommentar|notiz|hinweis|offen|ticket|frage|status|todo)$/i;
+  const activityRe = /\b(pr[üu]fen|bearbeiten|anlegen|validieren|freigeben|abstimmen|dokumentieren|versenden|zuordnen|abschlie[ßs]en|eskalieren|bereitstellen|bestellen|recherchieren|koordinieren)\b/i;
+  const semanticStepShare = stepLabels.length > 0
+    ? stepLabels.filter(label => label.length >= 6 && !weakStepRe.test(label) && activityRe.test(label)).length / stepLabels.length
+    : 0;
+  const evidenceCoverageScore = (() => {
+    if (mode === 'eventlog-table') {
+      const rowEvidence = tablePipeline?.rowEvidenceStats?.rowsWithEvidence ?? 0;
+      const eventsCreated = tablePipeline?.rowEvidenceStats?.eventsCreated ?? 0;
+      const mappingConfidence = (() => {
+        const accepted = tablePipeline?.inferredSchema?.filter(item => item.accepted) ?? [];
+        if (accepted.length === 0) return 0;
+        return accepted.reduce((sum, item) => sum + item.confidence, 0) / accepted.length;
+      })();
+      return clamp01((rowEvidence / Math.max(stepCount, 1)) * 0.45 + (eventsCreated / Math.max(stepCount, 1)) * 0.25 + mappingConfidence * 0.3);
+    }
+    if (mode === 'weak-raw-table') {
+      const weakSignals = tablePipeline?.rowEvidenceStats?.weakSignalsCreated ?? issueCount;
+      const withAnchor = state.observations.filter(item => Boolean(item.evidenceSnippet?.trim())).length;
+      return clamp01((withAnchor / Math.max(state.observations.length, 1)) * 0.6 + (weakSignals > 0 ? 0.3 : 0));
+    }
+    if (mode === 'comparison') {
+      const multiCaseCoverage = state.cases.length > 1 ? Math.min(1, state.cases.length / 6) : 0;
+      return clamp01((evidenceBackedSteps / Math.max(stepCount, 1)) * 0.7 + multiCaseCoverage * 0.3);
+    }
+    return clamp01(evidenceBackedSteps / Math.max(stepCount, 1));
+  })();
+  const cautionScore = (() => {
+    const weakInput = mode === 'weak-raw-table' || docKind === 'weak-material' || warnings.some(w => /fallback|schwach|unsicher/i.test(w));
+    const overClaim = weakInput && (confidence === 'high' || (mode === 'weak-raw-table' && stepCount > 2));
+    if (weakInput) return overClaim ? 0.25 : 0.88;
+    return conservativeTriggered ? 0.82 : 0.58;
+  })();
+  const structureScore = (() => {
+    if (mode === 'eventlog-table') {
+      const order = tablePipeline?.tableProfile?.rowOrderCoherence ?? 0.2;
+      const caseC = tablePipeline?.tableProfile?.caseCoherence ?? 0.2;
+      return clamp01((order + caseC) / 2);
+    }
+    if (mode === 'weak-raw-table') return clamp01((tablePipeline?.eventlogEligibility.eligible ? 0.2 : 0.65));
+    return clamp01(stepLabels.length >= 6 ? 0.85 : stepLabels.length >= 3 ? 0.6 : 0.3);
+  })();
+  const docTypeScore = (() => {
+    if (mode === 'eventlog-table') return clamp01(routingClass === 'eventlog-table' ? 0.88 : 0.45);
+    if (mode === 'weak-raw-table') return clamp01(routingClass === 'weak-raw-table' ? 0.82 : 0.35);
+    return clamp01(docKind === 'unknown' ? 0.25 : docKind === 'weak-material' ? 0.4 : 0.8);
+  })();
+>>>>>>> theirs
 
   const dimensionScores: ProcessMiningQualityExportFile['analysisResults']['qualityAssessment']['dimensions'] = [
     {
       key: 'documentTypeDetection',
       label: 'Dokumenttyp-Erkennung',
+<<<<<<< ours
       score: clamp01(docKind === 'unknown' ? 0.25 : docKind === 'weak-material' ? 0.4 : 0.8),
       level: scoreToLevel(docKind === 'unknown' ? 0.25 : docKind === 'weak-material' ? 0.4 : 0.8),
       reason: `Erkannter Typ: ${docKind}.`,
+=======
+      score: docTypeScore,
+      level: scoreToLevel(docTypeScore),
+      reason: `Aktiver Modus ${mode}, Routing ${routingClass ?? 'unbekannt'}, Dokumenttyp ${docKind}.`,
+>>>>>>> theirs
     },
     {
       key: 'structureFidelity',
       label: 'Strukturtreue',
+<<<<<<< ours
       score: clamp01(stepLabels.length >= 6 ? 0.85 : stepLabels.length >= 3 ? 0.6 : 0.3),
       level: scoreToLevel(stepLabels.length >= 6 ? 0.85 : stepLabels.length >= 3 ? 0.6 : 0.3),
       reason: `${stepLabels.length} belastbare Schrittlabels in der letzten Ableitung.`,
+=======
+      score: structureScore,
+      level: scoreToLevel(structureScore),
+      reason: mode === 'eventlog-table'
+        ? 'Strukturtreue aus Trace-/Case-Kohärenz der Tabelle.'
+        : mode === 'weak-raw-table'
+        ? 'Defensive Strukturbewertung für schwache Tabellenquellen.'
+        : `${stepLabels.length} belastbare Schrittlabels in der letzten Ableitung.`,
+>>>>>>> theirs
     },
     {
       key: 'stepClarity',
       label: 'Schrittklarheit',
+<<<<<<< ours
       score: clamp01(stepLabels.length > 0 ? stepLabels.filter(label => label.trim().length >= 8).length / stepLabels.length : 0),
       level: scoreToLevel(stepLabels.length > 0 ? stepLabels.filter(label => label.trim().length >= 8).length / stepLabels.length : 0),
       reason: 'Bewertung anhand Länge und Nutzbarkeit der Schrittlabels.',
+=======
+      score: clamp01(semanticStepShare),
+      level: scoreToLevel(semanticStepShare),
+      reason: 'Semantische Prüfung auf Aktivitätscharakter, Fragmentfreiheit und Ausschluss schwacher Kanal-/Notizlabels.',
+>>>>>>> theirs
     },
     {
       key: 'roleQuality',
@@ -1205,11 +1315,20 @@ export function buildQualityExportFile(params: {
       label: 'Evidenzabdeckung',
       score: clamp01(evidenceCoverageScore),
       level: scoreToLevel(evidenceCoverageScore),
+<<<<<<< ours
       reason: `${evidenceBackedSteps}/${stepCount} Schritte haben Evidenzsnippets.`,
+=======
+      reason: mode === 'eventlog-table'
+        ? 'Eventlog-Modus: Zeilenanker, Mapping-Konfidenz und Eventabdeckung kombiniert.'
+        : mode === 'weak-raw-table'
+        ? 'Weak-Table-Modus: Evidenz für Signale/Cluster statt erzwungener Prozessschritte.'
+        : `${evidenceBackedSteps}/${stepCount} Schritte haben Evidenzsnippets.`,
+>>>>>>> theirs
     },
     {
       key: 'conservativeHandling',
       label: 'Vorsicht bei schwachem Material',
+<<<<<<< ours
       score: clamp01(conservativeTriggered ? 0.9 : confidence === 'low' ? 0.7 : 0.5),
       level: scoreToLevel(conservativeTriggered ? 0.9 : confidence === 'low' ? 0.7 : 0.5),
       reason: conservativeTriggered
@@ -1234,6 +1353,56 @@ export function buildQualityExportFile(params: {
 =======
 >>>>>>> theirs
 =======
+>>>>>>> theirs
+=======
+      score: clamp01(cautionScore),
+      level: scoreToLevel(cautionScore),
+      reason: cautionScore >= 0.75
+        ? 'Claims sind zur Evidenzlage passend vorsichtig.'
+        : 'Warnung: Claims wirken stärker als die belastbare Evidenzlage.',
+    },
+  ];
+  const scoringProfiles: Record<typeof mode, { weights: Record<string, number>; evidenceTypes: string[]; blockerRules: string[] }> = {
+    'process-draft': {
+      weights: { documentTypeDetection: 0.12, structureFidelity: 0.16, stepClarity: 0.2, roleQuality: 0.1, systemQuality: 0.08, domainConsistency: 0.1, evidenceCoverage: 0.14, conservativeHandling: 0.1 },
+      evidenceTypes: ['paragraph', 'list-item', 'section-block', 'table-support'],
+      blockerRules: ['zu-wenig-schritte', 'niedrige-evidenzabdeckung', 'overclaiming-bei-schwacher-lage'],
+    },
+    comparison: {
+      weights: { documentTypeDetection: 0.1, structureFidelity: 0.12, stepClarity: 0.16, roleQuality: 0.08, systemQuality: 0.06, domainConsistency: 0.14, evidenceCoverage: 0.2, conservativeHandling: 0.14 },
+      evidenceTypes: ['episode-anchor', 'cross-case-support', 'local-context-window'],
+      blockerRules: ['unzureichende-fallabdeckung', 'vergleich-ohne-evidenz', 'starke-claims-bei-niedriger-konsistenz'],
+    },
+    'eventlog-table': {
+      weights: { documentTypeDetection: 0.1, structureFidelity: 0.2, stepClarity: 0.1, roleQuality: 0.08, systemQuality: 0.08, domainConsistency: 0.06, evidenceCoverage: 0.26, conservativeHandling: 0.12 },
+      evidenceTypes: ['row-anchor', 'cell-anchor', 'trace-order', 'schema-mapping-confidence'],
+      blockerRules: ['fehlende-case-oder-activity-spalte', 'kein-ordnungsanker', 'mapping-konflikte-hoch'],
+    },
+    'weak-raw-table': {
+      weights: { documentTypeDetection: 0.14, structureFidelity: 0.14, stepClarity: 0.06, roleQuality: 0.06, systemQuality: 0.06, domainConsistency: 0.08, evidenceCoverage: 0.16, conservativeHandling: 0.3 },
+      evidenceTypes: ['row-anchor', 'signal-cluster', 'missing-data-patterns'],
+      blockerRules: ['pseudo-prozessschritte-aus-rohzeilen', 'overclaiming-bei-weak-table'],
+    },
+  };
+  const activeProfile = scoringProfiles[mode];
+  const weightedScore = dimensionScores.reduce((sum, item) => sum + item.score * (activeProfile.weights[item.key] ?? 0), 0);
+  const confidenceAdjustments: string[] = [];
+  let avg = weightedScore;
+  if (mode === 'weak-raw-table' && confidence === 'high') {
+    avg = Math.max(0, avg - 0.12);
+    confidenceAdjustments.push('Abzug wegen starker Claims trotz weak-raw-table.');
+  }
+  if (mode === 'eventlog-table' && (tablePipeline?.eventlogEligibility.eligible ?? false) && confidence === 'low') {
+    avg = Math.min(1, avg + 0.05);
+    confidenceAdjustments.push('Moderater Bonus: Eventlog-Eignung erfüllt, Claim war eher vorsichtig.');
+  }
+  const blockerReasons = [
+    ...(tablePipeline?.eventlogEligibility?.eligible === false ? [tablePipeline.eventlogEligibility.fallbackReason ?? 'Eventlog-Mindeststruktur nicht erfüllt.'] : []),
+    ...(semanticStepShare < 0.35 && mode !== 'weak-raw-table' ? ['Semantische Schrittklarheit kritisch niedrig.'] : []),
+    ...(evidenceCoverageScore < 0.35 ? ['Evidenzabdeckung im aktiven Modus zu niedrig.'] : []),
+    ...(cautionScore < 0.4 ? ['Unzureichende Vorsicht gegenüber schwacher Materiallage.'] : []),
+  ];
+  const overall = scoreToLevel(avg);
 >>>>>>> theirs
 
   return {
@@ -1327,6 +1496,10 @@ export function buildQualityExportFile(params: {
       qualitySummary: state.qualitySummary,
       lastDerivationSummary: state.lastDerivationSummary,
 <<<<<<< ours
+<<<<<<< ours
+=======
+      tablePipeline: lastSummary?.tablePipeline,
+>>>>>>> theirs
 =======
       tablePipeline: lastSummary?.tablePipeline,
 >>>>>>> theirs
@@ -1340,7 +1513,10 @@ export function buildQualityExportFile(params: {
         : undefined,
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
       extractionEvidence: lastSummary
@@ -1360,6 +1536,9 @@ export function buildQualityExportFile(params: {
           }
         : undefined,
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1369,6 +1548,22 @@ export function buildQualityExportFile(params: {
       reportSnapshot: state.reportSnapshot,
       handoverDrafts: state.handoverDrafts,
       qualityAssessment: {
+<<<<<<< ours
+=======
+        scoringProfile: {
+          mode,
+          weights: activeProfile.weights,
+          evidenceTypes: activeProfile.evidenceTypes,
+          blockerRules: activeProfile.blockerRules,
+        },
+        scoringReasons: [
+          `Mode-spezifische Gewichtung aktiv: ${mode}.`,
+          `Routing-Klasse: ${routingClass ?? 'unbekannt'}.`,
+          `Semantische Schrittklarheit: ${(semanticStepShare * 100).toFixed(0)}%.`,
+        ],
+        blockerReasons,
+        confidenceAdjustments,
+>>>>>>> theirs
         overall,
         dimensions: dimensionScores,
       },

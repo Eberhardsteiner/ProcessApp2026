@@ -543,7 +543,10 @@ export interface SourceRoutingContext {
 }
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 
@@ -577,6 +580,9 @@ export interface ExtractionCandidate {
   downgradeReason?: string;
 }
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -735,7 +741,10 @@ export interface DerivationSummary {
   routingContext?: SourceRoutingContext;
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
   extractionCandidates?: ExtractionCandidate[];
@@ -746,8 +755,11 @@ export interface DerivationSummary {
     rejected: number;
   };
 <<<<<<< ours
+<<<<<<< ours
 >>>>>>> theirs
 =======
+=======
+>>>>>>> theirs
   tablePipeline?: {
     pipelineMode: 'eventlog-table' | 'weak-raw-table';
     tableProfile: {
@@ -805,6 +817,9 @@ export interface DerivationSummary {
     };
     weakTableSignals?: string[];
   };
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
   multiCaseSummary?: DerivationMultiCaseSummary;
   repairNotes?: string[];
