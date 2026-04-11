@@ -542,7 +542,10 @@ export interface SourceRoutingContext {
   fallbackReason?: string;
 }
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 
 export type ExtractionCandidateType = 'step' | 'role' | 'system' | 'signal' | 'support';
 export type ExtractionCandidateStatus = 'candidate' | 'merged' | 'support-only' | 'rejected';
@@ -573,6 +576,9 @@ export interface ExtractionCandidate {
   rejectionReason?: string;
   downgradeReason?: string;
 }
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 
 export interface ProcessMiningObservationCase {
@@ -728,13 +734,76 @@ export interface DerivationSummary {
   sourceProfile?: DerivationSourceProfile;
   routingContext?: SourceRoutingContext;
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
   extractionCandidates?: ExtractionCandidate[];
   candidateStats?: {
     total: number;
     mergedCoreSteps: number;
     supportOnly: number;
     rejected: number;
+  };
+<<<<<<< ours
+>>>>>>> theirs
+=======
+  tablePipeline?: {
+    pipelineMode: 'eventlog-table' | 'weak-raw-table';
+    tableProfile: {
+      rowCount: number;
+      columnCount: number;
+      emptyValueShare: number;
+      timestampParseShare: number;
+      numericValueShare: number;
+      shortValueShare: number;
+      longValueShare: number;
+      rowOrderCoherence: number;
+      caseCoherence: number;
+    };
+    inferredSchema: Array<{
+      columnIndex: number;
+      header: string;
+      inferredSemanticType:
+        | 'case-id'
+        | 'activity'
+        | 'timestamp'
+        | 'start-timestamp'
+        | 'end-timestamp'
+        | 'order-index'
+        | 'resource'
+        | 'role'
+        | 'system'
+        | 'status'
+        | 'lifecycle'
+        | 'comment'
+        | 'note'
+        | 'amount'
+        | 'location'
+        | 'free-text-support'
+        | 'unknown';
+      confidence: number;
+      supportingSignals: string[];
+      conflictingSignals: string[];
+      accepted: boolean;
+      fallbackUse?: string;
+    }>;
+    eventlogEligibility: {
+      eligible: boolean;
+      reasons: string[];
+      fallbackReason?: string;
+    };
+    rowEvidenceStats: {
+      rowsWithEvidence: number;
+      eventsCreated: number;
+      weakSignalsCreated: number;
+    };
+    traceStats?: {
+      caseCount: number;
+      averageEventsPerCase: number;
+      orderedTraceShare: number;
+    };
+    weakTableSignals?: string[];
   };
 >>>>>>> theirs
   multiCaseSummary?: DerivationMultiCaseSummary;

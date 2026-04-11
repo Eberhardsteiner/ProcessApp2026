@@ -22,10 +22,10 @@ import {
   detectCsvImportMode,
   detectColumnCandidates,
   parseCsvForImport,
-  buildObservationsFromCsvEventLog,
 } from './fileImport';
 import type { FileImportMode, CsvImportConfig } from './fileImport';
 import { deriveProcessArtifactsFromText, deriveFromMultipleTexts } from './documentDerivation';
+import { runTableEventPipeline } from './tableEventPipeline';
 import { getAnalysisModeLabel } from './pmShared';
 import type { DerivationResult } from './documentDerivation';
 import { HelpPopover } from '../components/HelpPopover';
@@ -476,8 +476,13 @@ export function FileImportPanel({ onImport }: Props) {
     if (!parsedFile) return;
 
     if (mode === 'eventlog') {
-      const result = buildObservationsFromCsvEventLog(headers, rows, config);
-      onImport(result.cases, result.observations);
+      const result = runTableEventPipeline({
+        fileName: parsedFile.name,
+        headers,
+        rows,
+        config,
+      });
+      onImport(result.cases, result.observations, result.summary);
       setDoneInfo({ caseCount: result.cases.length, stepCount: result.observations.length });
       setPhase('done');
       return;

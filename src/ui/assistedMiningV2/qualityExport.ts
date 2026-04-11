@@ -120,6 +120,14 @@ export interface ProcessMiningQualityExportFile {
   analysisResults: {
     qualitySummary?: ProcessMiningAssistedV2State['qualitySummary'];
     lastDerivationSummary?: ProcessMiningAssistedV2State['lastDerivationSummary'];
+<<<<<<< ours
+=======
+    tablePipeline?: ProcessMiningAssistedV2State['lastDerivationSummary'] extends infer T
+      ? T extends { tablePipeline?: infer U }
+        ? U
+        : never
+      : never;
+>>>>>>> theirs
     routing?: {
       routingClass: string;
       routingConfidence: string;
@@ -127,7 +135,10 @@ export interface ProcessMiningQualityExportFile {
       fallbackReason?: string;
     };
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
     extractionEvidence?: {
       candidateStats?: ProcessMiningAssistedV2State['lastDerivationSummary'] extends infer T
         ? T extends { candidateStats?: infer U }
@@ -143,6 +154,9 @@ export interface ProcessMiningQualityExportFile {
         evidenceAnchor: string;
       }>;
     };
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
     discoverySummary?: ProcessMiningAssistedV2State['discoverySummary'];
     conformanceSummary?: ProcessMiningAssistedV2State['conformanceSummary'];
@@ -1087,6 +1101,7 @@ export function buildQualityExportFile(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const analysisMode = detectProcessMiningAnalysisMode({
     cases: state.cases,
     observations: state.observations,
@@ -1120,6 +1135,8 @@ export function buildQualityExportFile(params: {
     analysisPositioning,
   });
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -1206,6 +1223,9 @@ export function buildQualityExportFile(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1306,6 +1326,10 @@ export function buildQualityExportFile(params: {
     analysisResults: {
       qualitySummary: state.qualitySummary,
       lastDerivationSummary: state.lastDerivationSummary,
+<<<<<<< ours
+=======
+      tablePipeline: lastSummary?.tablePipeline,
+>>>>>>> theirs
       routing: lastSummary?.routingContext
         ? {
             routingClass: lastSummary.routingContext.routingClass,
@@ -1315,7 +1339,10 @@ export function buildQualityExportFile(params: {
           }
         : undefined,
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
       extractionEvidence: lastSummary
         ? {
             candidateStats: lastSummary.candidateStats,
@@ -1332,6 +1359,9 @@ export function buildQualityExportFile(params: {
               })),
           }
         : undefined,
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
       discoverySummary: state.discoverySummary,
       conformanceSummary: state.conformanceSummary,

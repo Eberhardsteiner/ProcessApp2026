@@ -6,6 +6,10 @@ import type {
   ProcessMiningObservationCase,
   SourceRoutingContext,
 <<<<<<< ours
+<<<<<<< ours
+=======
+  ExtractionCandidate,
+>>>>>>> theirs
 =======
   ExtractionCandidate,
 >>>>>>> theirs
@@ -18,6 +22,10 @@ import { classifyDocumentStructure } from '../../import/documentStructureClassif
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+import { routeSourceMaterial } from '../../import/sourceRouter';
+>>>>>>> theirs
 =======
 import { routeSourceMaterial } from '../../import/sourceRouter';
 >>>>>>> theirs
@@ -77,6 +85,10 @@ export interface DerivationResult {
   summary: DerivationSummary;
   routingContext: SourceRoutingContext;
 <<<<<<< ours
+<<<<<<< ours
+=======
+  extractionCandidates?: ExtractionCandidate[];
+>>>>>>> theirs
 =======
   extractionCandidates?: ExtractionCandidate[];
 >>>>>>> theirs
@@ -588,7 +600,10 @@ function extractIssueEvidence(text: string, context?: { primary: DomainKey; seco
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -696,6 +711,10 @@ function buildNarrativeDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+  routingContext: SourceRoutingContext;
+>>>>>>> theirs
 =======
   routingContext: SourceRoutingContext;
 >>>>>>> theirs
@@ -719,6 +738,10 @@ function buildNarrativeDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+    routingContext,
+>>>>>>> theirs
 =======
     routingContext,
 >>>>>>> theirs
@@ -870,6 +893,10 @@ function buildStructuredDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+  routingContext: SourceRoutingContext;
+>>>>>>> theirs
 =======
   routingContext: SourceRoutingContext;
 >>>>>>> theirs
@@ -894,6 +921,10 @@ function buildStructuredDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+    routingContext,
+>>>>>>> theirs
 =======
     routingContext,
 >>>>>>> theirs
@@ -931,8 +962,13 @@ function buildStructuredDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const systems = uniqueStrings([...steps.map(step => step.system), ...extractSystems(rawText)]);
   const issueEvidence = extractIssueEvidence(rawText);
+=======
+  const systems = extractSystems(rawText);
+  const issueEvidence = extractIssueEvidence(rawText, domainContext);
+>>>>>>> theirs
 =======
   const systems = extractSystems(rawText);
   const issueEvidence = extractIssueEvidence(rawText, domainContext);
@@ -972,8 +1008,12 @@ function buildStructuredDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     issueEvidence,
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' })} ${sourceProfileNote}`.trim(),
+=======
+    documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind })} ${sourceProfileNote}`.trim(),
+>>>>>>> theirs
 =======
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind })} ${sourceProfileNote}`.trim(),
 >>>>>>> theirs
@@ -1024,8 +1064,14 @@ function buildSemiStructuredDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 }): DerivationResult {
   const { steps, roles, warnings, title, sourceName, sourceType, rawText, confidence, domainContext } = params;
+=======
+  routingContext: SourceRoutingContext;
+}): DerivationResult {
+  const { steps, roles, warnings, title, sourceName, sourceType, rawText, confidence, domainContext, routingContext } = params;
+>>>>>>> theirs
 =======
   routingContext: SourceRoutingContext;
 }): DerivationResult {
@@ -1084,8 +1130,12 @@ function buildSemiStructuredDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     issueEvidence,
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' })} ${sourceProfileNote}`.trim(),
+=======
+    documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'semi-structured-procedure-document' })} ${sourceProfileNote}`.trim(),
+>>>>>>> theirs
 =======
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'semi-structured-procedure-document' })} ${sourceProfileNote}`.trim(),
 >>>>>>> theirs
@@ -1383,6 +1433,9 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
   const issueSignals = uniqueStrings([
     ...result.issueSignals,
     ...gatedObservations.filter(observation => observation.kind === 'issue').map(observation => observation.label),
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
   ]);
 
@@ -1413,11 +1466,14 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const documentSummary = uniqueStrings([
     result.summary.documentSummary ?? '',
     domainIsolation.note ?? '',
   ]).join(' ').trim();
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -1450,6 +1506,9 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1472,11 +1531,19 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       updatedAt: new Date().toISOString(),
     })),
 <<<<<<< ours
+<<<<<<< ours
     observations: filteredObservations,
     roles,
     systems,
     issueSignals,
     derivedSteps: filteredObservations
+=======
+    observations: gatedObservations,
+    roles,
+    systems,
+    issueSignals,
+    derivedSteps: gatedObservations
+>>>>>>> theirs
 =======
     observations: gatedObservations,
     roles,
@@ -1493,7 +1560,11 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     summary: {
       ...result.summary,
 <<<<<<< ours
+<<<<<<< ours
       observationCount: filteredObservations.length,
+=======
+      observationCount: gatedObservations.length,
+>>>>>>> theirs
 =======
       observationCount: gatedObservations.length,
 >>>>>>> theirs
@@ -1503,6 +1574,7 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       roles,
       systems,
       issueSignals,
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
@@ -1524,6 +1596,8 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       routingContext: result.routingContext,
 >>>>>>> theirs
 =======
+=======
+>>>>>>> theirs
       documentSummary: finalDocumentSummary,
       routingContext: result.routingContext,
       extractionCandidates: candidates,
@@ -1533,6 +1607,9 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
         supportOnly: candidates.filter(candidate => candidate.status === 'support-only').length,
         rejected: candidates.filter(candidate => candidate.status === 'rejected').length,
       },
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
       repairNotes,
       documentSummary,
@@ -1544,6 +1621,10 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     warnings: finalWarnings,
     confidence: finalConfidence,
 <<<<<<< ours
+<<<<<<< ours
+=======
+    extractionCandidates: candidates,
+>>>>>>> theirs
 =======
     extractionCandidates: candidates,
 >>>>>>> theirs
@@ -1560,7 +1641,12 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const sourceProfile = buildSourceExtractionPlan(rawText).profile;
+=======
+  const structureClassification = classifyDocumentStructure(rawText);
+  const classifiedDocumentKind = mapClassifierToDocumentKind(structureClassification.classType);
+>>>>>>> theirs
 =======
   const structureClassification = classifyDocumentStructure(rawText);
   const classifiedDocumentKind = mapClassifierToDocumentKind(structureClassification.classType);
@@ -1601,7 +1687,10 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -1614,6 +1703,9 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   }
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1630,6 +1722,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   const supplementalIssueEvidence = extractIssueEvidence(rawText, domainContext);
   const supplementalIssueSignals = uniqueStrings(supplementalIssueEvidence.map(entry => entry.label));
   const storyBlocks = extractTimelineBlocks(rawText);
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
@@ -1709,6 +1802,15 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 
   if (!forceDefensiveFallback && allowNarrativeFirst && isMostlyNarrative(rawText) && storyBlocks.length >= MIN_USEFUL_STEPS) {
 >>>>>>> theirs
+=======
+  const preferredPath = routingContext.routingClass;
+  const allowStructuredFirst = preferredPath === 'structured-procedure' || preferredPath === 'eventlog-table';
+  const allowSemiStructuredFirst = preferredPath === 'semi-structured-procedure' || preferredPath === 'mixed-document';
+  const allowNarrativeFirst = preferredPath === 'narrative-case';
+  const forceDefensiveFallback = preferredPath === 'weak-raw-table';
+
+  if (!forceDefensiveFallback && allowNarrativeFirst && isMostlyNarrative(rawText) && storyBlocks.length >= MIN_USEFUL_STEPS) {
+>>>>>>> theirs
     const narrativeResult = buildNarrativeDerivation({
       blocks: storyBlocks,
       sourceName,
@@ -1722,6 +1824,10 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+      routingContext,
+>>>>>>> theirs
 =======
       routingContext,
 >>>>>>> theirs
@@ -1743,6 +1849,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     }
   }
 
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
@@ -1861,6 +1968,31 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   }
 
 >>>>>>> theirs
+=======
+  if (!forceDefensiveFallback && (allowStructuredFirst || preferredPath === 'mixed-document')) {
+    for (const candidateText of candidateTexts(rawText, sourceName)) {
+      const structured = extractStructuredProcedureFromText(sourceName, candidateText);
+      if (structured && structured.steps.length >= MIN_USEFUL_STEPS) {
+        return finalizeDerivationResult(buildStructuredDerivation({
+          steps: structured.steps,
+          roles: uniqueStrings([...structured.roles.map(role => role.name), ...roles, ...structured.steps.map(step => step.responsible)]),
+          warnings: uniqueStrings([...structured.warnings, ...warnings]),
+          title: structured.title,
+          sourceName,
+          sourceType: input.sourceType,
+          rawText,
+          confidence: 'high',
+          documentKind: classifiedDocumentKind === 'semi-structured-procedure-document'
+            ? 'semi-structured-procedure-document'
+            : 'procedure-document',
+          domainContext,
+          routingContext,
+        }));
+      }
+    }
+  }
+
+>>>>>>> theirs
   if (!forceDefensiveFallback && (allowSemiStructuredFirst || preferredPath === 'eventlog-table' || preferredPath === 'structured-procedure')) {
     for (const candidateText of candidateTexts(rawText, sourceName)) {
       const semiStructured = extractSemiStructuredProcedureFromText(sourceName, candidateText);
@@ -1880,6 +2012,9 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       }
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1903,6 +2038,10 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+      routingContext,
+>>>>>>> theirs
 =======
       routingContext,
 >>>>>>> theirs
@@ -1950,6 +2089,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const fallbackStepObservations = usableObservations.filter(observation => observation.kind === 'step');
   const fallbackIssueEvidence = dedupeIssueEvidence([
     ...extractIssueEvidence(rawText),
@@ -1959,6 +2099,8 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   ]);
   const fallbackIssueSignals = uniqueStrings(fallbackIssueEvidence.map(entry => entry.label));
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
