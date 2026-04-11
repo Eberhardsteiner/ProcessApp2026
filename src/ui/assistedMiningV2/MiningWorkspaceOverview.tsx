@@ -22,6 +22,7 @@ import { buildCollaborationSummary } from './collaboration';
 import { describeReceiptStatus } from './integrationContracts';
 import { evaluateSecurityReadiness } from './securityReadiness';
 import { compareAcceptanceSnapshotToCurrent, evaluateAcceptanceReadiness } from './acceptance';
+import { QA_SURFACES_ENABLED } from '../../config/runtimeMode';
 
 interface Props {
   state: ProcessMiningAssistedV2State;
@@ -54,7 +55,7 @@ export function MiningWorkspaceOverview({
   const steps = quality?.stepObservationCount ?? state.observations.filter(item => item.kind === 'step').length;
   const issues = quality?.issueObservationCount ?? state.lastDerivationSummary?.issueSignals?.length ?? state.observations.filter(item => item.kind === 'issue').length;
   const realTimes = quality?.observationsWithRealTime ?? state.observations.filter(item => item.timestampQuality === 'real').length;
-  const releaseStability = version ? evaluateReleaseStability({ state, version, settings }) : null;
+  const releaseStability = QA_SURFACES_ENABLED && version ? evaluateReleaseStability({ state, version, settings }) : null;
   const primaryNextAction = currentStep === 'augmentation' && releaseStability
     ? releaseStability.nextActions[0] ?? readiness.nextActions[0] ?? 'Sie können im aktuellen Schritt direkt weiterarbeiten.'
     : readiness.nextActions[0] ?? 'Sie können im aktuellen Schritt direkt weiterarbeiten.';

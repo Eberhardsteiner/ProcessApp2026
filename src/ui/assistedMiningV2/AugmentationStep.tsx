@@ -51,6 +51,7 @@ import { WorkbenchSection } from './WorkbenchSection';
 import { StepStageHeader } from './StepStageHeader';
 import { StepMetricGrid } from './StepMetricGrid';
 import { noteCollaborationEvent, rememberCollaborationActor } from './collaboration';
+import { QA_SURFACES_ENABLED } from '../../config/runtimeMode';
 
 interface Props {
   process: Process;
@@ -264,7 +265,9 @@ export function AugmentationStep({
       <StepQuickJumpBar
         title="Roter Faden in Schritt 5"
         items={[
-          { id: 'release', label: 'Freigabeweg', hint: 'zeigt, was für Pilot und Freigabe noch fehlt', onClick: () => scrollToSection(releaseRef) },
+          ...(QA_SURFACES_ENABLED
+            ? [{ id: 'release', label: 'Freigabeweg', hint: 'zeigt, was für Pilot und Freigabe noch fehlt', onClick: () => scrollToSection(releaseRef) }]
+            : []),
           { id: 'report', label: 'Bericht', hint: 'Kurzfassung und Übergaben', onClick: () => scrollToSection(reportRef) },
           { id: 'governance', label: 'Governance', hint: 'Review, offene Punkte und Freigabe', onClick: () => scrollToSection(governanceRef) },
           { id: 'collaboration', label: 'Zusammenarbeit', hint: 'Kommentare, Teamnotizen und Auditspur', onClick: () => scrollToSection(collaborationRef) },
@@ -279,23 +282,25 @@ export function AugmentationStep({
         ]}
       />
 
-      <div ref={releaseRef}>
-        <ReleaseReadinessPanel
-          state={state}
-          version={version}
-          settings={settings}
-          onJump={key => {
-            if (key === 'report') scrollToSection(reportRef);
-            else if (key === 'governance') scrollToSection(governanceRef);
-            else if (key === 'security') scrollToSection(securityRef);
-            else if (key === 'pilot') scrollToSection(pilotRef);
-            else if (key === 'acceptance') scrollToSection(acceptanceRef);
-            else if (key === 'connectors') scrollToSection(connectorsRef);
-            else if (key === 'quality' || key === 'basis') scrollToSection(snapshotRef);
-            else if (key === 'analysis') scrollToSection(detailsRef);
-          }}
-        />
-      </div>
+      {QA_SURFACES_ENABLED && (
+        <div ref={releaseRef}>
+          <ReleaseReadinessPanel
+            state={state}
+            version={version}
+            settings={settings}
+            onJump={key => {
+              if (key === 'report') scrollToSection(reportRef);
+              else if (key === 'governance') scrollToSection(governanceRef);
+              else if (key === 'security') scrollToSection(securityRef);
+              else if (key === 'pilot') scrollToSection(pilotRef);
+              else if (key === 'acceptance') scrollToSection(acceptanceRef);
+              else if (key === 'connectors') scrollToSection(connectorsRef);
+              else if (key === 'quality' || key === 'basis') scrollToSection(snapshotRef);
+              else if (key === 'analysis') scrollToSection(detailsRef);
+            }}
+          />
+        </div>
+      )}
 
       <div ref={reportRef}>
         <ProcessMiningReportPanel

@@ -120,6 +120,12 @@ export interface ProcessMiningQualityExportFile {
   analysisResults: {
     qualitySummary?: ProcessMiningAssistedV2State['qualitySummary'];
     lastDerivationSummary?: ProcessMiningAssistedV2State['lastDerivationSummary'];
+    routing?: {
+      routingClass: string;
+      routingConfidence: string;
+      routingSignals: string[];
+      fallbackReason?: string;
+    };
     discoverySummary?: ProcessMiningAssistedV2State['discoverySummary'];
     conformanceSummary?: ProcessMiningAssistedV2State['conformanceSummary'];
     enhancementSummary?: ProcessMiningAssistedV2State['enhancementSummary'];
@@ -1060,6 +1066,7 @@ export function buildQualityExportFile(params: {
   const evidenceBackedSteps = state.observations.filter(item => item.kind === 'step' && Boolean(item.evidenceSnippet?.trim())).length;
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const analysisMode = detectProcessMiningAnalysisMode({
     cases: state.cases,
     observations: state.observations,
@@ -1093,6 +1100,8 @@ export function buildQualityExportFile(params: {
     analysisPositioning,
   });
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
   const lastSummary = state.lastDerivationSummary;
@@ -1170,6 +1179,9 @@ export function buildQualityExportFile(params: {
   const avg = dimensionScores.reduce((sum, item) => sum + item.score, 0) / Math.max(dimensionScores.length, 1);
   const overall = scoreToLevel(avg);
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1264,6 +1276,14 @@ export function buildQualityExportFile(params: {
     analysisResults: {
       qualitySummary: state.qualitySummary,
       lastDerivationSummary: state.lastDerivationSummary,
+      routing: lastSummary?.routingContext
+        ? {
+            routingClass: lastSummary.routingContext.routingClass,
+            routingConfidence: lastSummary.routingContext.routingConfidence,
+            routingSignals: lastSummary.routingContext.routingSignals,
+            fallbackReason: lastSummary.routingContext.fallbackReason,
+          }
+        : undefined,
       discoverySummary: state.discoverySummary,
       conformanceSummary: state.conformanceSummary,
       enhancementSummary: state.enhancementSummary,

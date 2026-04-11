@@ -527,6 +527,20 @@ export type ProcessMiningAssistedV2Step =
 export type ObservationTimestampQuality = 'real' | 'synthetic' | 'missing';
 
 export type ProcessMiningAnalysisMode = 'process-draft' | 'exploratory-mining' | 'true-mining';
+export type SourceRoutingClass =
+  | 'structured-procedure'
+  | 'semi-structured-procedure'
+  | 'narrative-case'
+  | 'mixed-document'
+  | 'eventlog-table'
+  | 'weak-raw-table';
+
+export interface SourceRoutingContext {
+  routingClass: SourceRoutingClass;
+  routingConfidence: 'high' | 'medium' | 'low';
+  routingSignals: string[];
+  fallbackReason?: string;
+}
 
 export interface ProcessMiningObservationCase {
   id: string;
@@ -542,6 +556,7 @@ export interface ProcessMiningObservationCase {
   analysisProfileLabel?: string;
   analysisProfileHint?: string;
   analysisStrategies?: string[];
+  routingContext?: SourceRoutingContext;
   createdAt: string;
   updatedAt: string;
 }
@@ -678,6 +693,7 @@ export interface DerivationSummary {
   issueEvidence?: Array<{ label: string; snippet: string }>;
   documentSummary?: string;
   sourceProfile?: DerivationSourceProfile;
+  routingContext?: SourceRoutingContext;
   multiCaseSummary?: DerivationMultiCaseSummary;
   repairNotes?: string[];
   engineVersion?: string;

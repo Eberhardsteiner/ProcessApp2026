@@ -4,12 +4,17 @@ import type {
   ProcessMiningAnalysisMode,
   ProcessMiningObservation,
   ProcessMiningObservationCase,
+  SourceRoutingContext,
 } from '../../domain/process';
 import { findDocumentProcessCandidates } from '../../import/documentProcessDiscovery';
 import { extractSemiStructuredProcedureFromText } from '../../import/semiStructuredProcedureExtraction';
 import type { SemiStructuredProcedureStep } from '../../import/semiStructuredProcedureExtraction';
 import { extractStructuredProcedureFromText } from '../../import/structuredProcedureExtraction';
 import { classifyDocumentStructure } from '../../import/documentStructureClassifier';
+<<<<<<< ours
+=======
+import { routeSourceMaterial } from '../../import/sourceRouter';
+>>>>>>> theirs
 import type { StructuredProcedureStep } from '../../import/structuredProcedureExtraction';
 import { extractObservationsFromCase } from './narrativeParsing';
 import {
@@ -58,6 +63,7 @@ export interface DerivationResult {
   systems: string[];
   issueSignals: string[];
   summary: DerivationSummary;
+  routingContext: SourceRoutingContext;
 }
 
 export const LOCAL_MINING_ENGINE_VERSION = 'pm-local-engine-v4.3';
@@ -295,6 +301,7 @@ function buildCase(params: {
   analysisProfileLabel?: string;
   analysisProfileHint?: string;
   analysisStrategies?: string[];
+  routingContext?: SourceRoutingContext;
 }): ProcessMiningObservationCase {
   const now = new Date().toISOString();
   return {
@@ -309,6 +316,7 @@ function buildCase(params: {
     analysisProfileLabel: params.analysisProfileLabel,
     analysisProfileHint: params.analysisProfileHint,
     analysisStrategies: params.analysisStrategies,
+    routingContext: params.routingContext,
     createdAt: now,
     updatedAt: now,
   };
@@ -561,7 +569,10 @@ function extractIssueEvidence(text: string, context?: { primary: DomainKey; seco
   if (!context || context.primary === 'generic') return deduped;
   return deduped.filter(entry => isIssueAllowedInDomain(entry.label, context));
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 }
 
 function buildIssueObservations(params: {
@@ -660,6 +671,10 @@ function buildNarrativeDerivation(params: {
   profile: NarrativeDocumentProfile;
   baseConfidence?: 'high' | 'medium' | 'low';
   domainContext?: { primary: DomainKey; secondary?: DomainKey };
+<<<<<<< ours
+=======
+  routingContext: SourceRoutingContext;
+>>>>>>> theirs
 }): DerivationResult | null {
   const {
     blocks,
@@ -671,6 +686,10 @@ function buildNarrativeDerivation(params: {
     profile,
     baseConfidence = 'medium',
     domainContext,
+<<<<<<< ours
+=======
+    routingContext,
+>>>>>>> theirs
   } = params;
 
   const sourceProfile = buildSourceExtractionPlan(rawText).profile;
@@ -709,6 +728,7 @@ function buildNarrativeDerivation(params: {
     analysisProfileLabel: sourceProfile.inputProfileLabel,
     analysisProfileHint: sourceProfile.extractionFocus,
     analysisStrategies,
+    routingContext,
   });
 
   const observations: ProcessMiningObservation[] = [];
@@ -776,6 +796,7 @@ function buildNarrativeDerivation(params: {
     issueEvidence: narrativeIssueEvidence,
     documentSummary,
     sourceProfile,
+    routingContext,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
@@ -793,6 +814,7 @@ function buildNarrativeDerivation(params: {
     systems,
     issueSignals,
     summary,
+    routingContext,
   };
 }
 
@@ -807,6 +829,10 @@ function buildStructuredDerivation(params: {
   confidence: 'high' | 'medium' | 'low';
   documentKind?: ProcessDocumentType;
   domainContext?: { primary: DomainKey; secondary?: DomainKey };
+<<<<<<< ours
+=======
+  routingContext: SourceRoutingContext;
+>>>>>>> theirs
 }): DerivationResult {
   const {
     steps,
@@ -819,6 +845,10 @@ function buildStructuredDerivation(params: {
     confidence,
     documentKind = 'procedure-document',
     domainContext,
+<<<<<<< ours
+=======
+    routingContext,
+>>>>>>> theirs
   } = params;
   const sourceProfile = buildSourceExtractionPlan(rawText).profile;
   const sourceProfileNote = buildSourceProfileNote(sourceProfile);
@@ -839,12 +869,18 @@ function buildStructuredDerivation(params: {
     analysisProfileLabel: sourceProfile.inputProfileLabel,
     analysisProfileHint: sourceProfile.extractionFocus,
     analysisStrategies,
+    routingContext,
   });
   const observations = toObservationsFromStructured(caseItem.id, steps);
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const systems = uniqueStrings([...steps.map(step => step.system), ...extractSystems(rawText)]);
   const issueEvidence = extractIssueEvidence(rawText);
+=======
+  const systems = extractSystems(rawText);
+  const issueEvidence = extractIssueEvidence(rawText, domainContext);
+>>>>>>> theirs
 =======
   const systems = extractSystems(rawText);
   const issueEvidence = extractIssueEvidence(rawText, domainContext);
@@ -869,6 +905,7 @@ function buildStructuredDerivation(params: {
     issueSignals,
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     issueEvidence,
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' })} ${sourceProfileNote}`.trim(),
 =======
@@ -877,7 +914,11 @@ function buildStructuredDerivation(params: {
 =======
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind })} ${sourceProfileNote}`.trim(),
 >>>>>>> theirs
+=======
+    documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind })} ${sourceProfileNote}`.trim(),
+>>>>>>> theirs
     sourceProfile,
+    routingContext,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
@@ -894,6 +935,7 @@ function buildStructuredDerivation(params: {
     systems,
     issueSignals,
     summary,
+    routingContext,
   };
 }
 
@@ -907,8 +949,14 @@ function buildSemiStructuredDerivation(params: {
   rawText: string;
   confidence: 'high' | 'medium' | 'low';
   domainContext?: { primary: DomainKey; secondary?: DomainKey };
+<<<<<<< ours
 }): DerivationResult {
   const { steps, roles, warnings, title, sourceName, sourceType, rawText, confidence, domainContext } = params;
+=======
+  routingContext: SourceRoutingContext;
+}): DerivationResult {
+  const { steps, roles, warnings, title, sourceName, sourceType, rawText, confidence, domainContext, routingContext } = params;
+>>>>>>> theirs
   const sourceProfile = buildSourceExtractionPlan(rawText).profile;
   const sourceProfileNote = buildSourceProfileNote(sourceProfile);
   const analysisStrategies = uniqueStrings([...buildAnalysisStrategies(sourceProfile.inputProfileLabel), ...(sourceProfile.extractionPlan ?? [])]).slice(0, 5);
@@ -928,6 +976,7 @@ function buildSemiStructuredDerivation(params: {
     analysisProfileLabel: sourceProfile.inputProfileLabel,
     analysisProfileHint: sourceProfile.extractionFocus,
     analysisStrategies,
+    routingContext,
   });
   const observations = toObservationsFromSemiStructured(caseItem.id, steps);
   const systems = extractSystems(rawText);
@@ -948,6 +997,7 @@ function buildSemiStructuredDerivation(params: {
     issueSignals,
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     issueEvidence,
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' })} ${sourceProfileNote}`.trim(),
 =======
@@ -956,7 +1006,11 @@ function buildSemiStructuredDerivation(params: {
 =======
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'semi-structured-procedure-document' })} ${sourceProfileNote}`.trim(),
 >>>>>>> theirs
+=======
+    documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'semi-structured-procedure-document' })} ${sourceProfileNote}`.trim(),
+>>>>>>> theirs
     sourceProfile,
+    routingContext,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
@@ -973,10 +1027,17 @@ function buildSemiStructuredDerivation(params: {
     systems,
     issueSignals,
     summary,
+    routingContext,
   };
 }
 
-function buildEmptyResult(sourceName: string, sourceType: DerivationInput['sourceType'], text: string, warning: string): DerivationResult {
+function buildEmptyResult(
+  sourceName: string,
+  sourceType: DerivationInput['sourceType'],
+  text: string,
+  warning: string,
+  routingContext: SourceRoutingContext,
+): DerivationResult {
   const sourceProfile = buildSourceExtractionPlan(text).profile;
   const caseItem = buildCase({
     name: sourceName,
@@ -988,6 +1049,7 @@ function buildEmptyResult(sourceName: string, sourceType: DerivationInput['sourc
     analysisProfileLabel: sourceProfile.inputProfileLabel,
     analysisProfileHint: sourceProfile.extractionFocus,
     analysisStrategies: buildAnalysisStrategies(sourceProfile.inputProfileLabel),
+    routingContext,
   });
   const summary: DerivationSummary = {
     sourceLabel: sourceName,
@@ -1005,6 +1067,7 @@ function buildEmptyResult(sourceName: string, sourceType: DerivationInput['sourc
     issueEvidence: [],
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'unknown' })} ${buildSourceProfileNote(sourceProfile)}`.trim(),
     sourceProfile,
+    routingContext,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
@@ -1021,6 +1084,7 @@ function buildEmptyResult(sourceName: string, sourceType: DerivationInput['sourc
     systems: [],
     issueSignals: [],
     summary,
+    routingContext,
   };
 }
 
@@ -1135,11 +1199,14 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
   const analysisStrategies = sourceProfile ? buildAnalysisStrategies(sourceProfile.inputProfileLabel) : undefined;
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const documentSummary = uniqueStrings([
     result.summary.documentSummary ?? '',
     domainIsolation.note ?? '',
   ]).join(' ').trim();
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
   const caseCount = Math.max(result.summary.caseCount, result.cases.length);
@@ -1163,6 +1230,9 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     result.summary.documentSummary ?? '',
   ].filter(Boolean).join(' ');
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1175,6 +1245,7 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       analysisProfileLabel: sourceProfile?.inputProfileLabel ?? caseItem.analysisProfileLabel,
       analysisProfileHint: sourceProfile?.extractionFocus ?? caseItem.analysisProfileHint,
       analysisStrategies: analysisStrategies ?? caseItem.analysisStrategies,
+      routingContext: result.routingContext ?? caseItem.routingContext,
       updatedAt: new Date().toISOString(),
     })),
     observations: filteredObservations,
@@ -1199,12 +1270,17 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       issueSignals,
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
       issueEvidence: keptIssueEvidence,
 =======
       documentSummary: finalDocumentSummary,
 >>>>>>> theirs
 =======
       documentSummary: finalDocumentSummary,
+>>>>>>> theirs
+=======
+      documentSummary: finalDocumentSummary,
+      routingContext: result.routingContext,
 >>>>>>> theirs
       repairNotes,
       documentSummary,
@@ -1221,7 +1297,9 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
 export function deriveProcessArtifactsFromText(input: DerivationInput): DerivationResult {
   const rawText = cleanInputText(input.text);
   const sourceName = getSourceName(input.fileName, input.sourceType);
+  const routingContext = routeSourceMaterial({ text: rawText, sourceType: input.sourceType });
   const profile = profileNarrativeDocument(rawText);
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
   const sourceProfile = buildSourceExtractionPlan(rawText).profile;
@@ -1233,15 +1311,36 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   const structureClassification = classifyDocumentStructure(rawText);
   const classifiedDocumentKind = mapClassifierToDocumentKind(structureClassification.classType);
 >>>>>>> theirs
+=======
+  const structureClassification = classifyDocumentStructure(rawText);
+  const classifiedDocumentKind = mapClassifierToDocumentKind(structureClassification.classType);
+>>>>>>> theirs
 
   if (rawText.length < 20) {
-    return finalizeDerivationResult(buildEmptyResult(sourceName, input.sourceType, rawText, 'Text zu kurz oder leer — keine Schritte erkennbar.'));
+    return finalizeDerivationResult(
+      buildEmptyResult(
+        sourceName,
+        input.sourceType,
+        rawText,
+        'Text zu kurz oder leer — keine Schritte erkennbar.',
+        routingContext,
+      ),
+    );
   }
 
   const warnings: string[] = [];
   if (profile.isMixed) {
     warnings.push('Mischdokument erkannt — Prozessschritte werden vor allem aus der eigentlichen Fallgeschichte oder Zeitleiste abgeleitet. Tabellen, KI-Ideen und Testfragen werden nur ergänzend genutzt.');
   }
+<<<<<<< ours
+=======
+  warnings.push(
+    `Quellen-Router: ${routingContext.routingClass} (${routingContext.routingConfidence}) · Signale: ${routingContext.routingSignals.slice(0, 4).join(', ')}.`,
+  );
+  if (routingContext.fallbackReason) {
+    warnings.push(`Router-Fallback: ${routingContext.fallbackReason}`);
+  }
+>>>>>>> theirs
   warnings.push(`Dokumentklassifikation: ${structureClassification.classType} (${structureClassification.confidence}). ${structureClassification.reasons.slice(0, 2).join(' ')}`.trim());
   const domainContext = detectDomainContext(rawText);
   if (domainContext.primary !== 'generic') {
@@ -1253,6 +1352,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   const supplementalIssueEvidence = extractIssueEvidence(rawText, domainContext);
   const supplementalIssueSignals = uniqueStrings(supplementalIssueEvidence.map(entry => entry.label));
   const storyBlocks = extractTimelineBlocks(rawText);
+<<<<<<< ours
   const structuredLike = sourceProfile.documentClass === 'structured-target-procedure' || sourceProfile.documentClass === 'semi-structured-procedure';
 
   if (structuredLike) {
@@ -1302,6 +1402,15 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 =======
   if ((classifiedDocumentKind === 'case-narrative' || classifiedDocumentKind === 'mixed-document') && isMostlyNarrative(rawText) && storyBlocks.length >= MIN_USEFUL_STEPS) {
 >>>>>>> theirs
+=======
+  const preferredPath = routingContext.routingClass;
+  const allowStructuredFirst = preferredPath === 'structured-procedure' || preferredPath === 'eventlog-table';
+  const allowSemiStructuredFirst = preferredPath === 'semi-structured-procedure' || preferredPath === 'mixed-document';
+  const allowNarrativeFirst = preferredPath === 'narrative-case';
+  const forceDefensiveFallback = preferredPath === 'weak-raw-table';
+
+  if (!forceDefensiveFallback && allowNarrativeFirst && isMostlyNarrative(rawText) && storyBlocks.length >= MIN_USEFUL_STEPS) {
+>>>>>>> theirs
     const narrativeResult = buildNarrativeDerivation({
       blocks: storyBlocks,
       sourceName,
@@ -1312,6 +1421,10 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       profile,
       baseConfidence: storyBlocks.length >= 5 ? 'high' : 'medium',
       domainContext,
+<<<<<<< ours
+=======
+      routingContext,
+>>>>>>> theirs
     });
     if (narrativeResult) {
       narrativeResult.roles = uniqueStrings([...narrativeResult.roles, ...roles]);
@@ -1324,6 +1437,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     }
   }
 
+<<<<<<< ours
   for (const candidateText of candidateTexts(rawText, sourceName)) {
     const structured = extractStructuredProcedureFromText(sourceName, candidateText);
     if (structured && structured.steps.length >= MIN_USEFUL_STEPS) {
@@ -1365,11 +1479,53 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
         confidence: semiStructured.confidence,
         domainContext,
       }));
+=======
+  if (!forceDefensiveFallback && (allowStructuredFirst || preferredPath === 'mixed-document')) {
+    for (const candidateText of candidateTexts(rawText, sourceName)) {
+      const structured = extractStructuredProcedureFromText(sourceName, candidateText);
+      if (structured && structured.steps.length >= MIN_USEFUL_STEPS) {
+        return finalizeDerivationResult(buildStructuredDerivation({
+          steps: structured.steps,
+          roles: uniqueStrings([...structured.roles.map(role => role.name), ...roles, ...structured.steps.map(step => step.responsible)]),
+          warnings: uniqueStrings([...structured.warnings, ...warnings]),
+          title: structured.title,
+          sourceName,
+          sourceType: input.sourceType,
+          rawText,
+          confidence: 'high',
+          documentKind: classifiedDocumentKind === 'semi-structured-procedure-document'
+            ? 'semi-structured-procedure-document'
+            : 'procedure-document',
+          domainContext,
+          routingContext,
+        }));
+      }
+    }
+  }
+
+  if (!forceDefensiveFallback && (allowSemiStructuredFirst || preferredPath === 'eventlog-table' || preferredPath === 'structured-procedure')) {
+    for (const candidateText of candidateTexts(rawText, sourceName)) {
+      const semiStructured = extractSemiStructuredProcedureFromText(sourceName, candidateText);
+      if (semiStructured && semiStructured.steps.length >= MIN_USEFUL_STEPS) {
+        return finalizeDerivationResult(buildSemiStructuredDerivation({
+          steps: semiStructured.steps,
+          roles: uniqueStrings([...semiStructured.roles, ...roles, ...semiStructured.steps.map(step => step.responsible)]),
+          warnings: uniqueStrings([...semiStructured.warnings, ...warnings]),
+          title: semiStructured.title,
+          sourceName,
+          sourceType: input.sourceType,
+          rawText,
+          confidence: semiStructured.confidence,
+          domainContext,
+          routingContext,
+        }));
+      }
+>>>>>>> theirs
     }
   }
 
   const paragraphBlocks = paragraphBlocksFromText(rawText);
-  if (paragraphBlocks.length >= 2) {
+  if ((preferredPath === 'narrative-case' || preferredPath === 'mixed-document' || preferredPath === 'weak-raw-table') && paragraphBlocks.length >= 2) {
     const narrativeResult = buildNarrativeDerivation({
       blocks: paragraphBlocks,
       sourceName,
@@ -1380,6 +1536,10 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       profile,
       baseConfidence: paragraphBlocks.length >= MIN_USEFUL_STEPS ? 'medium' : 'low',
       domainContext,
+<<<<<<< ours
+=======
+      routingContext,
+>>>>>>> theirs
     });
     if (narrativeResult) {
       narrativeResult.roles = uniqueStrings([...narrativeResult.roles, ...roles]);
@@ -1404,6 +1564,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     analysisProfileLabel: fallbackSourceProfile.inputProfileLabel,
     analysisProfileHint: fallbackSourceProfile.extractionFocus,
     analysisStrategies: uniqueStrings([...buildAnalysisStrategies(fallbackSourceProfile.inputProfileLabel), ...(fallbackSourceProfile.extractionPlan ?? [])]).slice(0, 5),
+    routingContext,
   });
   const { observations: fallbackObservations } = extractObservationsFromCase(fallbackCase);
   const usableObservations = fallbackObservations.map((observation, index) => ({
@@ -1412,6 +1573,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       ? canonicalizeProcessStepLabel({ title: observation.label, body: observation.evidenceSnippet, fallback: observation.label, index })
       : observation.label,
   }));
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
   const fallbackStepObservations = usableObservations.filter(observation => observation.kind === 'step');
@@ -1423,6 +1585,8 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   ]);
   const fallbackIssueSignals = uniqueStrings(fallbackIssueEvidence.map(entry => entry.label));
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
   const fallbackIssueEvidence = extractIssueEvidence(rawText, domainContext);
@@ -1456,6 +1620,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       buildSourceProfileNote(fallbackSourceProfile),
     ].filter(Boolean).join(' '),
     sourceProfile: fallbackSourceProfile,
+    routingContext,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
@@ -1474,6 +1639,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     systems,
     issueSignals: fallbackIssueSignals,
     summary,
+    routingContext,
   });
 }
 
@@ -1505,6 +1671,24 @@ export function deriveFromMultipleTexts(
   const analysisMode = detectProcessMiningAnalysisMode({ cases, observations });
   const sourceProfile = aggregateSourceProfiles(summaries.map(summary => summary.sourceProfile));
   const multiCaseSummary = buildMultiCaseSummary(observations);
+  const routingClasses = summaries.map(summary => summary.routingContext?.routingClass).filter(Boolean) as SourceRoutingContext['routingClass'][];
+  const dominantRoutingClass = routingClasses.length > 0
+    ? routingClasses.reduce<Record<string, number>>((acc, key) => {
+        acc[key] = (acc[key] ?? 0) + 1;
+        return acc;
+      }, {})
+    : {};
+  const routingWinner = Object.entries(dominantRoutingClass).sort((a, b) => b[1] - a[1])[0];
+  const combinedRoutingContext: SourceRoutingContext = {
+    routingClass: (inputs.length > 1 ? 'mixed-document' : (routingWinner?.[0] as SourceRoutingContext['routingClass'] | undefined)) ?? 'weak-raw-table',
+    routingConfidence: inputs.length > 1 ? 'medium' : (summaries[0]?.routingContext?.routingConfidence ?? 'low'),
+    routingSignals: [
+      `sources=${inputs.length}`,
+      `routingSpread=${uniqueStrings(routingClasses).join(',') || 'none'}`,
+      ...(summaries.flatMap(summary => summary.routingContext?.routingSignals ?? []).slice(0, 4)),
+    ],
+    fallbackReason: summaries.find(summary => summary.routingContext?.fallbackReason)?.routingContext?.fallbackReason,
+  };
   const combinedSummary: DerivationSummary = {
     sourceLabel: inputs.length === 1 ? inputs[0].name : `${inputs.length} importierte Beschreibungen`,
     method: summaries.some(summary => summary.method === 'structured')
@@ -1529,6 +1713,7 @@ export function deriveFromMultipleTexts(
       multiCaseSummary?.patternNote ?? '',
     ].filter(Boolean).join(' '),
     sourceProfile,
+    routingContext: combinedRoutingContext,
     multiCaseSummary,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',

@@ -7,6 +7,13 @@ npm ci
 npm run dev
 ```
 
+## Produktivmodus vs. QA-/Dev-Modus
+
+- **Standard (Produktivmodus):** QA-/Self-Test-/Freigabe-Surfaces sind aus dem Nutzerpfad entfernt.
+- **QA-/Dev-Modus aktivieren:** `VITE_ENABLE_QA_SURFACES=1 npm run dev`
+- **Optional per URL:** `?qa=1` (nur für gezielt aktivierte Sitzungen)
+- Der Standardpfad bleibt damit ruhig und eindeutig: **Upload → Analyse → Prüfen → Export**.
+
 ## Vor dem Weitergeben kurz prüfen
 
 ```bash
@@ -71,4 +78,3 @@ Vorgehen:
 1. eigenes Testdokument oder Fall in der App auswerten
 2. den Analysezustand als JSON exportieren oder kopieren
 3. die JSON-Datei extern zur Qualitätsbewertung weitergeben
-

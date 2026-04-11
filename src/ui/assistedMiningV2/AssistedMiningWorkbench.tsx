@@ -25,6 +25,7 @@ import { hardenWorkspaceState, type WorkspaceIntegrityReport } from './workspace
 import { WorkspaceIntegrityPanel } from './WorkspaceIntegrityPanel';
 import { HelpPopover } from '../components/HelpPopover';
 import type { HelpKey } from '../help/helpTexts';
+import { QA_SURFACES_ENABLED } from '../../config/runtimeMode';
 
 interface Props {
   process: Process;
@@ -74,6 +75,9 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
   );
   const [showHealthDetails, setShowHealthDetails] = useState(false);
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -91,7 +95,12 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
     setMiningState(loaded.state);
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     setShowOverviewDetails(false);
+=======
+    setShowOverviewDetails(loaded.state.observations.length === 0);
+    setShowHealthDetails(false);
+>>>>>>> theirs
 =======
     setShowOverviewDetails(loaded.state.observations.length === 0);
     setShowHealthDetails(false);
@@ -287,6 +296,7 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
 
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
       {(integrityReport.severity !== 'healthy' || showOverviewDetails) && <WorkspaceIntegrityPanel report={integrityReport} />}
 =======
 =======
@@ -308,6 +318,27 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
           </div>
         )}
       </div>
+=======
+      {QA_SURFACES_ENABLED && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-slate-900">Status & Integrität</p>
+            <button
+              type="button"
+              onClick={() => setShowHealthDetails(open => !open)}
+              className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              {showHealthDetails ? 'Details ausblenden' : 'Details anzeigen'}
+            </button>
+          </div>
+          {showHealthDetails && (
+            <div className="mt-3">
+              <WorkspaceIntegrityPanel report={integrityReport} />
+            </div>
+          )}
+        </div>
+      )}
+>>>>>>> theirs
 
       <QualityExportPanel
         process={process}

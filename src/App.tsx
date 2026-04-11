@@ -3,6 +3,7 @@ import { LandingPage } from './ui/LandingPage';
 import { APP_RELEASE_TITLE, APP_VERSION_LABEL } from './config/release';
 import { ReleaseRoadmapPopover } from './ui/components/ReleaseRoadmapPopover';
 import { PageLoadingState } from './ui/components/LoadingState';
+import { QA_SURFACES_ENABLED } from './config/runtimeMode';
 
 type ViewMode = 'home' | 'landscape' | 'wizard' | 'selftest';
 
@@ -16,10 +17,12 @@ const LazyWizardPlayground = lazy(async () => {
   return { default: module.WizardPlayground };
 });
 
-const LazySelfTestView = lazy(async () => {
-  const module = await import('./ui/SelfTestView');
-  return { default: module.SelfTestView };
-});
+const LazySelfTestView = QA_SURFACES_ENABLED
+  ? lazy(async () => {
+      const module = await import('./ui/SelfTestView');
+      return { default: module.SelfTestView };
+    })
+  : null;
 
 function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('home');
@@ -50,12 +53,14 @@ function App() {
           >
             Info
           </button>
-          <button
-            onClick={() => setViewMode('selftest')}
-            className="px-4 py-2 bg-white/90 backdrop-blur-sm border-2 border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 hover:shadow-xl text-sm font-medium shadow-lg transition-all"
-          >
-            Test
-          </button>
+          {QA_SURFACES_ENABLED && (
+            <button
+              onClick={() => setViewMode('selftest')}
+              className="px-4 py-2 bg-white/90 backdrop-blur-sm border-2 border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 hover:shadow-xl text-sm font-medium shadow-lg transition-all"
+            >
+              Test
+            </button>
+          )}
         </div>
       </div>
     );
@@ -97,7 +102,7 @@ function App() {
     );
   }
 
-  if (viewMode === 'selftest') {
+  if (viewMode === 'selftest' && QA_SURFACES_ENABLED && LazySelfTestView) {
     return (
       <Suspense
         fallback={
