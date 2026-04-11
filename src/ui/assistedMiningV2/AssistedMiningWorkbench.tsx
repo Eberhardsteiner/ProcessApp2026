@@ -77,6 +77,9 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -100,7 +103,12 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     setShowOverviewDetails(false);
+=======
+    setShowOverviewDetails(loaded.state.observations.length === 0);
+    setShowHealthDetails(false);
+>>>>>>> theirs
 =======
     setShowOverviewDetails(loaded.state.observations.length === 0);
     setShowHealthDetails(false);
@@ -306,6 +314,7 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
       {(integrityReport.severity !== 'healthy' || showOverviewDetails) && <WorkspaceIntegrityPanel report={integrityReport} />}
 =======
 =======
@@ -330,6 +339,8 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
 =======
 =======
 >>>>>>> theirs
+=======
+>>>>>>> theirs
       {QA_SURFACES_ENABLED && (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -350,6 +361,9 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
         </div>
       )}
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs

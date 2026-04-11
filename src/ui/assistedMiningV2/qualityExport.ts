@@ -126,6 +126,24 @@ export interface ProcessMiningQualityExportFile {
       routingSignals: string[];
       fallbackReason?: string;
     };
+<<<<<<< ours
+=======
+    extractionEvidence?: {
+      candidateStats?: ProcessMiningAssistedV2State['lastDerivationSummary'] extends infer T
+        ? T extends { candidateStats?: infer U }
+          ? U
+          : never
+        : never;
+      rejectedOrSupportCandidates?: Array<{
+        candidateType: string;
+        normalizedLabel: string;
+        status: string;
+        rejectionReason?: string;
+        downgradeReason?: string;
+        evidenceAnchor: string;
+      }>;
+    };
+>>>>>>> theirs
     discoverySummary?: ProcessMiningAssistedV2State['discoverySummary'];
     conformanceSummary?: ProcessMiningAssistedV2State['conformanceSummary'];
     enhancementSummary?: ProcessMiningAssistedV2State['enhancementSummary'];
@@ -1068,6 +1086,7 @@ export function buildQualityExportFile(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const analysisMode = detectProcessMiningAnalysisMode({
     cases: state.cases,
     observations: state.observations,
@@ -1101,6 +1120,8 @@ export function buildQualityExportFile(params: {
     analysisPositioning,
   });
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -1184,6 +1205,9 @@ export function buildQualityExportFile(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1290,6 +1314,25 @@ export function buildQualityExportFile(params: {
             fallbackReason: lastSummary.routingContext.fallbackReason,
           }
         : undefined,
+<<<<<<< ours
+=======
+      extractionEvidence: lastSummary
+        ? {
+            candidateStats: lastSummary.candidateStats,
+            rejectedOrSupportCandidates: (lastSummary.extractionCandidates ?? [])
+              .filter(candidate => candidate.status === 'rejected' || candidate.status === 'support-only')
+              .slice(0, 30)
+              .map(candidate => ({
+                candidateType: candidate.candidateType,
+                normalizedLabel: candidate.normalizedLabel,
+                status: candidate.status,
+                rejectionReason: candidate.rejectionReason,
+                downgradeReason: candidate.downgradeReason,
+                evidenceAnchor: candidate.evidenceAnchor,
+              })),
+          }
+        : undefined,
+>>>>>>> theirs
       discoverySummary: state.discoverySummary,
       conformanceSummary: state.conformanceSummary,
       enhancementSummary: state.enhancementSummary,

@@ -5,6 +5,10 @@ import type {
   ProcessMiningObservation,
   ProcessMiningObservationCase,
   SourceRoutingContext,
+<<<<<<< ours
+=======
+  ExtractionCandidate,
+>>>>>>> theirs
 } from '../../domain/process';
 import { findDocumentProcessCandidates } from '../../import/documentProcessDiscovery';
 import { extractSemiStructuredProcedureFromText } from '../../import/semiStructuredProcedureExtraction';
@@ -13,6 +17,10 @@ import { extractStructuredProcedureFromText } from '../../import/structuredProce
 import { classifyDocumentStructure } from '../../import/documentStructureClassifier';
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+import { routeSourceMaterial } from '../../import/sourceRouter';
+>>>>>>> theirs
 =======
 import { routeSourceMaterial } from '../../import/sourceRouter';
 >>>>>>> theirs
@@ -68,6 +76,10 @@ export interface DerivationResult {
   issueSignals: string[];
   summary: DerivationSummary;
   routingContext: SourceRoutingContext;
+<<<<<<< ours
+=======
+  extractionCandidates?: ExtractionCandidate[];
+>>>>>>> theirs
 }
 
 export const LOCAL_MINING_ENGINE_VERSION = 'pm-local-engine-v4.3';
@@ -575,7 +587,10 @@ function extractIssueEvidence(text: string, context?: { primary: DomainKey; seco
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -680,6 +695,10 @@ function buildNarrativeDerivation(params: {
   domainContext?: { primary: DomainKey; secondary?: DomainKey };
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+  routingContext: SourceRoutingContext;
+>>>>>>> theirs
 =======
   routingContext: SourceRoutingContext;
 >>>>>>> theirs
@@ -699,6 +718,10 @@ function buildNarrativeDerivation(params: {
     domainContext,
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+    routingContext,
+>>>>>>> theirs
 =======
     routingContext,
 >>>>>>> theirs
@@ -846,6 +869,10 @@ function buildStructuredDerivation(params: {
   domainContext?: { primary: DomainKey; secondary?: DomainKey };
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+  routingContext: SourceRoutingContext;
+>>>>>>> theirs
 =======
   routingContext: SourceRoutingContext;
 >>>>>>> theirs
@@ -866,6 +893,10 @@ function buildStructuredDerivation(params: {
     domainContext,
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+    routingContext,
+>>>>>>> theirs
 =======
     routingContext,
 >>>>>>> theirs
@@ -899,8 +930,13 @@ function buildStructuredDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const systems = uniqueStrings([...steps.map(step => step.system), ...extractSystems(rawText)]);
   const issueEvidence = extractIssueEvidence(rawText);
+=======
+  const systems = extractSystems(rawText);
+  const issueEvidence = extractIssueEvidence(rawText, domainContext);
+>>>>>>> theirs
 =======
   const systems = extractSystems(rawText);
   const issueEvidence = extractIssueEvidence(rawText, domainContext);
@@ -935,8 +971,12 @@ function buildStructuredDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     issueEvidence,
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' })} ${sourceProfileNote}`.trim(),
+=======
+    documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind })} ${sourceProfileNote}`.trim(),
+>>>>>>> theirs
 =======
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind })} ${sourceProfileNote}`.trim(),
 >>>>>>> theirs
@@ -983,8 +1023,14 @@ function buildSemiStructuredDerivation(params: {
   domainContext?: { primary: DomainKey; secondary?: DomainKey };
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 }): DerivationResult {
   const { steps, roles, warnings, title, sourceName, sourceType, rawText, confidence, domainContext } = params;
+=======
+  routingContext: SourceRoutingContext;
+}): DerivationResult {
+  const { steps, roles, warnings, title, sourceName, sourceType, rawText, confidence, domainContext, routingContext } = params;
+>>>>>>> theirs
 =======
   routingContext: SourceRoutingContext;
 }): DerivationResult {
@@ -1037,8 +1083,12 @@ function buildSemiStructuredDerivation(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     issueEvidence,
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'procedure-document' })} ${sourceProfileNote}`.trim(),
+=======
+    documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'semi-structured-procedure-document' })} ${sourceProfileNote}`.trim(),
+>>>>>>> theirs
 =======
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'semi-structured-procedure-document' })} ${sourceProfileNote}`.trim(),
 >>>>>>> theirs
@@ -1130,7 +1180,93 @@ function buildEmptyResult(
   };
 }
 
+const WEAK_STEP_LABEL_RE = /^(mail|e-?mail|chat|kommentar|notiz|hinweis|offen|ticket|frage|status|todo)$/i;
+const ACTIVITY_STEP_RE = /\b(pr[üu]fen|bearbeiten|anlegen|validieren|freigeben|abstimmen|dokumentieren|versenden|zuordnen|abschlie[ßs]en|eskalieren|bereitstellen|bestellen|recherchieren|koordinieren)\b/i;
+
+function buildExtractionCandidates(
+  observations: ProcessMiningObservation[],
+  routingContext: SourceRoutingContext,
+): ExtractionCandidate[] {
+  const candidates: ExtractionCandidate[] = [];
+  for (const observation of observations) {
+    const anchor = observation.evidenceSnippet?.trim() || '';
+    const contextWindow = normalizeWhitespace(`${observation.label} ${observation.evidenceSnippet ?? ''}`).slice(0, 320);
+    const isWeakStep = observation.kind === 'step' && (
+      anchor.length < 12 ||
+      WEAK_STEP_LABEL_RE.test(observation.label.trim()) ||
+      !ACTIVITY_STEP_RE.test(contextWindow)
+    );
+    const stepStatus: ExtractionCandidate['status'] = observation.kind === 'step'
+      ? (isWeakStep ? 'rejected' : 'merged')
+      : observation.kind === 'issue'
+      ? 'support-only'
+      : 'candidate';
+    const rejectionReason = observation.kind === 'step' && isWeakStep
+      ? anchor.length < 12
+        ? 'Kein belastbarer Evidenzanker am Schritt.'
+        : WEAK_STEP_LABEL_RE.test(observation.label.trim())
+        ? 'Nur schwaches Kurzlabel ohne belastbaren Prozessbezug.'
+        : 'Kein stabiler Aktivitätscharakter im lokalen Kontext.'
+      : undefined;
+
+    candidates.push({
+      candidateId: `${observation.id}-base`,
+      candidateType: observation.kind === 'step' ? 'step' : observation.kind === 'issue' ? 'signal' : 'support',
+      rawLabel: observation.label,
+      normalizedLabel: observation.kind === 'step' ? canonicalizeProcessStepLabel({ title: observation.label, body: observation.evidenceSnippet, fallback: observation.label, index: observation.sequenceIndex }) : observation.label,
+      evidenceAnchor: anchor || observation.label,
+      contextWindow,
+      confidence: observation.kind === 'step' && !isWeakStep ? 'medium' : 'low',
+      originChannel: 'imported-observation',
+      sourceFragmentType: anchor.includes('|') ? 'table-row' : 'sentence',
+      routingClass: routingContext.routingClass,
+      sourceRef: observation.id,
+      status: stepStatus,
+      rejectionReason,
+      downgradeReason: stepStatus === 'support-only' ? 'Signal oder Hinweis, kein Kernschritt.' : undefined,
+    });
+
+    if (observation.kind === 'step' && observation.role) {
+      candidates.push({
+        candidateId: `${observation.id}-role`,
+        candidateType: 'role',
+        rawLabel: observation.role,
+        normalizedLabel: sentenceCase(observation.role),
+        evidenceAnchor: anchor || observation.role,
+        contextWindow,
+        confidence: anchor ? 'medium' : 'low',
+        originChannel: 'imported-observation',
+        sourceFragmentType: anchor.includes('|') ? 'table-row' : 'sentence',
+        routingClass: routingContext.routingClass,
+        sourceRef: observation.id,
+        status: anchor ? 'candidate' : 'support-only',
+        downgradeReason: anchor ? undefined : 'Rolle nur schwach ohne lokalen Evidenzanker.',
+      });
+    }
+
+    if (observation.kind === 'step' && observation.system) {
+      candidates.push({
+        candidateId: `${observation.id}-system`,
+        candidateType: 'system',
+        rawLabel: observation.system,
+        normalizedLabel: sentenceCase(observation.system),
+        evidenceAnchor: anchor || observation.system,
+        contextWindow,
+        confidence: anchor ? 'medium' : 'low',
+        originChannel: 'imported-observation',
+        sourceFragmentType: anchor.includes('|') ? 'table-row' : 'sentence',
+        routingClass: routingContext.routingClass,
+        sourceRef: observation.id,
+        status: anchor ? 'candidate' : 'support-only',
+        downgradeReason: anchor ? undefined : 'System nur schwach ohne lokalen Evidenzanker.',
+      });
+    }
+  }
+  return candidates;
+}
+
 function finalizeDerivationResult(result: DerivationResult): DerivationResult {
+<<<<<<< ours
   const repaired = result.method === 'structured'
     ? {
         observations: result.observations,
@@ -1215,6 +1351,39 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
   const repairNotes = uniqueStrings([
     ...(repaired.report.notes.length > 0 ? repaired.report.notes : result.summary.repairNotes ?? []),
     ...domainNotes,
+=======
+  const repaired = repairDerivedObservations(result.observations);
+  const candidates = buildExtractionCandidates(repaired.observations, result.routingContext);
+  const acceptedStepIds = new Set(
+    candidates
+      .filter(candidate => candidate.candidateType === 'step' && candidate.status === 'merged')
+      .map(candidate => candidate.sourceRef)
+      .filter(Boolean),
+  );
+  const gatedObservations = repaired.observations.filter(observation => (
+    observation.kind !== 'step' || acceptedStepIds.has(observation.id)
+  ));
+  const stepLabels = uniqueStrings(
+    gatedObservations
+      .filter(observation => observation.kind === 'step')
+      .map(observation => observation.label),
+  );
+  const roles = uniqueStrings([
+    ...result.roles,
+    ...candidates
+      .filter(candidate => candidate.candidateType === 'role' && candidate.status !== 'rejected')
+      .map(candidate => candidate.normalizedLabel),
+  ]);
+  const systems = uniqueStrings([
+    ...result.systems,
+    ...candidates
+      .filter(candidate => candidate.candidateType === 'system' && candidate.status !== 'rejected')
+      .map(candidate => candidate.normalizedLabel),
+  ]);
+  const issueSignals = uniqueStrings([
+    ...result.issueSignals,
+    ...gatedObservations.filter(observation => observation.kind === 'issue').map(observation => observation.label),
+>>>>>>> theirs
   ]);
 
   const sourceProfile = result.summary.sourceProfile
@@ -1243,11 +1412,14 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const documentSummary = uniqueStrings([
     result.summary.documentSummary ?? '',
     domainIsolation.note ?? '',
   ]).join(' ').trim();
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -1277,6 +1449,9 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1296,11 +1471,19 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       routingContext: result.routingContext ?? caseItem.routingContext,
       updatedAt: new Date().toISOString(),
     })),
+<<<<<<< ours
     observations: filteredObservations,
     roles,
     systems,
     issueSignals,
     derivedSteps: filteredObservations
+=======
+    observations: gatedObservations,
+    roles,
+    systems,
+    issueSignals,
+    derivedSteps: gatedObservations
+>>>>>>> theirs
       .filter(observation => observation.kind === 'step')
       .map(observation => ({
         label: observation.label,
@@ -1309,13 +1492,18 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       })),
     summary: {
       ...result.summary,
+<<<<<<< ours
       observationCount: filteredObservations.length,
+=======
+      observationCount: gatedObservations.length,
+>>>>>>> theirs
       stepLabels,
       warnings: finalWarnings,
       confidence: finalConfidence,
       roles,
       systems,
       issueSignals,
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
@@ -1335,6 +1523,17 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       documentSummary: finalDocumentSummary,
       routingContext: result.routingContext,
 >>>>>>> theirs
+=======
+      documentSummary: finalDocumentSummary,
+      routingContext: result.routingContext,
+      extractionCandidates: candidates,
+      candidateStats: {
+        total: candidates.length,
+        mergedCoreSteps: candidates.filter(candidate => candidate.candidateType === 'step' && candidate.status === 'merged').length,
+        supportOnly: candidates.filter(candidate => candidate.status === 'support-only').length,
+        rejected: candidates.filter(candidate => candidate.status === 'rejected').length,
+      },
+>>>>>>> theirs
       repairNotes,
       documentSummary,
       sourceProfile,
@@ -1344,6 +1543,10 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     },
     warnings: finalWarnings,
     confidence: finalConfidence,
+<<<<<<< ours
+=======
+    extractionCandidates: candidates,
+>>>>>>> theirs
   };
 }
 
@@ -1356,7 +1559,12 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const sourceProfile = buildSourceExtractionPlan(rawText).profile;
+=======
+  const structureClassification = classifyDocumentStructure(rawText);
+  const classifiedDocumentKind = mapClassifierToDocumentKind(structureClassification.classType);
+>>>>>>> theirs
 =======
   const structureClassification = classifyDocumentStructure(rawText);
   const classifiedDocumentKind = mapClassifierToDocumentKind(structureClassification.classType);
@@ -1392,7 +1600,10 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   }
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
   warnings.push(
@@ -1402,6 +1613,9 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     warnings.push(`Router-Fallback: ${routingContext.fallbackReason}`);
   }
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1416,6 +1630,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   const supplementalIssueEvidence = extractIssueEvidence(rawText, domainContext);
   const supplementalIssueSignals = uniqueStrings(supplementalIssueEvidence.map(entry => entry.label));
   const storyBlocks = extractTimelineBlocks(rawText);
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
   const structuredLike = sourceProfile.documentClass === 'structured-target-procedure' || sourceProfile.documentClass === 'semi-structured-procedure';
@@ -1485,6 +1700,15 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 
   if (!forceDefensiveFallback && allowNarrativeFirst && isMostlyNarrative(rawText) && storyBlocks.length >= MIN_USEFUL_STEPS) {
 >>>>>>> theirs
+=======
+  const preferredPath = routingContext.routingClass;
+  const allowStructuredFirst = preferredPath === 'structured-procedure' || preferredPath === 'eventlog-table';
+  const allowSemiStructuredFirst = preferredPath === 'semi-structured-procedure' || preferredPath === 'mixed-document';
+  const allowNarrativeFirst = preferredPath === 'narrative-case';
+  const forceDefensiveFallback = preferredPath === 'weak-raw-table';
+
+  if (!forceDefensiveFallback && allowNarrativeFirst && isMostlyNarrative(rawText) && storyBlocks.length >= MIN_USEFUL_STEPS) {
+>>>>>>> theirs
     const narrativeResult = buildNarrativeDerivation({
       blocks: storyBlocks,
       sourceName,
@@ -1497,6 +1721,10 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       domainContext,
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+      routingContext,
+>>>>>>> theirs
 =======
       routingContext,
 >>>>>>> theirs
@@ -1515,6 +1743,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     }
   }
 
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
   for (const candidateText of candidateTexts(rawText, sourceName)) {
@@ -1607,6 +1836,31 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   }
 
 >>>>>>> theirs
+=======
+  if (!forceDefensiveFallback && (allowStructuredFirst || preferredPath === 'mixed-document')) {
+    for (const candidateText of candidateTexts(rawText, sourceName)) {
+      const structured = extractStructuredProcedureFromText(sourceName, candidateText);
+      if (structured && structured.steps.length >= MIN_USEFUL_STEPS) {
+        return finalizeDerivationResult(buildStructuredDerivation({
+          steps: structured.steps,
+          roles: uniqueStrings([...structured.roles.map(role => role.name), ...roles, ...structured.steps.map(step => step.responsible)]),
+          warnings: uniqueStrings([...structured.warnings, ...warnings]),
+          title: structured.title,
+          sourceName,
+          sourceType: input.sourceType,
+          rawText,
+          confidence: 'high',
+          documentKind: classifiedDocumentKind === 'semi-structured-procedure-document'
+            ? 'semi-structured-procedure-document'
+            : 'procedure-document',
+          domainContext,
+          routingContext,
+        }));
+      }
+    }
+  }
+
+>>>>>>> theirs
   if (!forceDefensiveFallback && (allowSemiStructuredFirst || preferredPath === 'eventlog-table' || preferredPath === 'structured-procedure')) {
     for (const candidateText of candidateTexts(rawText, sourceName)) {
       const semiStructured = extractSemiStructuredProcedureFromText(sourceName, candidateText);
@@ -1625,6 +1879,9 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
         }));
       }
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1645,6 +1902,10 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       domainContext,
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+      routingContext,
+>>>>>>> theirs
 =======
       routingContext,
 >>>>>>> theirs
@@ -1688,6 +1949,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const fallbackStepObservations = usableObservations.filter(observation => observation.kind === 'step');
   const fallbackIssueEvidence = dedupeIssueEvidence([
     ...extractIssueEvidence(rawText),
@@ -1697,6 +1959,8 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   ]);
   const fallbackIssueSignals = uniqueStrings(fallbackIssueEvidence.map(entry => entry.label));
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======

@@ -541,6 +541,39 @@ export interface SourceRoutingContext {
   routingSignals: string[];
   fallbackReason?: string;
 }
+<<<<<<< ours
+=======
+
+export type ExtractionCandidateType = 'step' | 'role' | 'system' | 'signal' | 'support';
+export type ExtractionCandidateStatus = 'candidate' | 'merged' | 'support-only' | 'rejected';
+
+export interface ExtractionCandidate {
+  candidateId: string;
+  candidateType: ExtractionCandidateType;
+  rawLabel: string;
+  normalizedLabel: string;
+  evidenceAnchor: string;
+  contextWindow: string;
+  confidence: 'high' | 'medium' | 'low';
+  originChannel:
+    | 'heading'
+    | 'paragraph'
+    | 'sentence'
+    | 'bullet-list'
+    | 'table-row'
+    | 'table-cell'
+    | 'event-row'
+    | 'metadata'
+    | 'narrative-context'
+    | 'imported-observation';
+  sourceFragmentType: 'text-span' | 'sentence' | 'paragraph' | 'list-item' | 'table-cell' | 'table-row' | 'event-row' | 'heading';
+  routingClass?: SourceRoutingClass;
+  sourceRef?: string;
+  status: ExtractionCandidateStatus;
+  rejectionReason?: string;
+  downgradeReason?: string;
+}
+>>>>>>> theirs
 
 export interface ProcessMiningObservationCase {
   id: string;
@@ -694,6 +727,16 @@ export interface DerivationSummary {
   documentSummary?: string;
   sourceProfile?: DerivationSourceProfile;
   routingContext?: SourceRoutingContext;
+<<<<<<< ours
+=======
+  extractionCandidates?: ExtractionCandidate[];
+  candidateStats?: {
+    total: number;
+    mergedCoreSteps: number;
+    supportOnly: number;
+    rejected: number;
+  };
+>>>>>>> theirs
   multiCaseSummary?: DerivationMultiCaseSummary;
   repairNotes?: string[];
   engineVersion?: string;
