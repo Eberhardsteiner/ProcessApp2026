@@ -36,8 +36,6 @@ export function applyConsistentPatch(
   const conformanceChanged = 'conformanceSummary' in patch && patch.conformanceSummary !== state.conformanceSummary;
   const enhancementChanged = 'enhancementSummary' in patch && patch.enhancementSummary !== state.enhancementSummary;
   const reportChanged = 'reportSnapshot' in patch && patch.reportSnapshot !== state.reportSnapshot;
-  const governanceChanged = 'governance' in patch && patch.governance !== state.governance;
-  const handoversChanged = 'handoverDrafts' in patch && patch.handoverDrafts !== state.handoverDrafts;
 
   if (upstreamChanged) {
     const hadAnalyses = Boolean(state.discoverySummary || state.conformanceSummary || state.enhancementSummary);
@@ -50,9 +48,6 @@ export function applyConsistentPatch(
     next.reportSnapshot = undefined;
     next.handoverDrafts = undefined;
     next.aiRefinement = undefined;
-    if (next.pilotToolkit) next.pilotToolkit = { ...next.pilotToolkit, lastExportedAt: undefined };
-    if (next.connectorToolkit) next.connectorToolkit = { ...next.connectorToolkit, lastExportedAt: undefined };
-    if (next.acceptance) next.acceptance = { ...next.acceptance, lastExportedAt: undefined };
 
     if (hadAnalyses) {
       notes.push('Nach Änderungen an Quellen oder erkannten Schritten wurden Discovery, Soll-Abgleich und Verbesserungsanalyse zurückgesetzt, damit keine veralteten Ergebnisse stehen bleiben.');
@@ -79,9 +74,6 @@ export function applyConsistentPatch(
     next.reportSnapshot = undefined;
     next.handoverDrafts = undefined;
     next.aiRefinement = undefined;
-    if (next.pilotToolkit) next.pilotToolkit = { ...next.pilotToolkit, lastExportedAt: undefined };
-    if (next.connectorToolkit) next.connectorToolkit = { ...next.connectorToolkit, lastExportedAt: undefined };
-    if (next.acceptance) next.acceptance = { ...next.acceptance, lastExportedAt: undefined };
 
     if (hadDownstream) {
       notes.push('Nach einer neuen Discovery wurden nachgelagerte Analysen und Berichte zurückgesetzt, damit alles auf derselben Hauptlinie aufbaut.');
@@ -98,9 +90,6 @@ export function applyConsistentPatch(
     next.reportSnapshot = undefined;
     next.handoverDrafts = undefined;
     next.aiRefinement = undefined;
-    if (next.pilotToolkit) next.pilotToolkit = { ...next.pilotToolkit, lastExportedAt: undefined };
-    if (next.connectorToolkit) next.connectorToolkit = { ...next.connectorToolkit, lastExportedAt: undefined };
-    if (next.acceptance) next.acceptance = { ...next.acceptance, lastExportedAt: undefined };
 
     if (hadReport) {
       notes.push('Bericht und Übergabetexte wurden zurückgesetzt, weil sich Soll-Abgleich oder Verbesserungsanalyse geändert haben.');
@@ -112,18 +101,6 @@ export function applyConsistentPatch(
 
   if (!upstreamChanged && !discoveryChanged && !conformanceChanged && !enhancementChanged && reportChanged) {
     next.handoverDrafts = patch.handoverDrafts ?? next.handoverDrafts;
-  }
-
-  if ((governanceChanged || reportChanged || handoversChanged) && next.pilotToolkit?.lastExportedAt) {
-    next.pilotToolkit = { ...next.pilotToolkit, lastExportedAt: undefined };
-  }
-
-  if ((governanceChanged || reportChanged || handoversChanged || upstreamChanged || discoveryChanged || conformanceChanged || enhancementChanged) && next.connectorToolkit?.lastExportedAt) {
-    next.connectorToolkit = { ...next.connectorToolkit, lastExportedAt: undefined };
-  }
-
-  if ((governanceChanged || reportChanged || handoversChanged || upstreamChanged || discoveryChanged || conformanceChanged || enhancementChanged) && next.acceptance?.lastExportedAt) {
-    next.acceptance = { ...next.acceptance, lastExportedAt: undefined };
   }
 
   if (stepCountOf(next) === 0 && next.currentStep !== 'observations') {

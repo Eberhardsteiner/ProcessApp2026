@@ -1,5 +1,6 @@
 import type { ProcessVersion } from '../../domain/process';
 import type { ProcessMiningAssistedV2State, ProcessMiningAssistedV2Step } from './types';
+import { stripQaFields } from './qaState';
 import { hardenWorkspaceState, type WorkspaceIntegrityReport } from './workspaceIntegrity';
 
 export interface LoadedV2StateResult {
@@ -19,23 +20,6 @@ export function createEmptyV2State(): ProcessMiningAssistedV2State {
       repairJournal: [],
     },
     reportHistory: [],
-    benchmarkSnapshots: [],
-    governance: {
-      decisions: [],
-      teamPlan: {},
-      history: [],
-    },
-    collaboration: {
-      comments: [],
-      auditTrail: [],
-    },
-    pilotToolkit: {},
-    connectorToolkit: { history: [], contractHistory: [], receipts: [] },
-    security: {},
-    acceptance: {
-      checklist: {},
-      history: [],
-    },
     updatedAt: new Date().toISOString(),
   };
 }
@@ -43,53 +27,17 @@ export function createEmptyV2State(): ProcessMiningAssistedV2State {
 export function loadV2State(version: ProcessVersion): LoadedV2StateResult {
   const existing = version.sidecar.processMiningAssistedV2;
   if (existing?.schemaVersion === 'process-mining-assisted-v2') {
+    const coreExisting = stripQaFields(existing);
+
     const candidate: ProcessMiningAssistedV2State = {
       ...createEmptyV2State(),
-      ...existing,
-      operatingMode: existing.operatingMode ?? 'standard',
+      ...coreExisting,
+      operatingMode: coreExisting.operatingMode ?? 'standard',
       reviewState: {
-        normalizationRules: existing.reviewState?.normalizationRules ?? [],
-        repairJournal: existing.reviewState?.repairJournal ?? [],
+        normalizationRules: coreExisting.reviewState?.normalizationRules ?? [],
+        repairJournal: coreExisting.reviewState?.repairJournal ?? [],
       },
-      reportHistory: existing.reportHistory ?? [],
-      benchmarkSnapshots: existing.benchmarkSnapshots ?? [],
-      governance: {
-        decisions: existing.governance?.decisions ?? [],
-        teamPlan: existing.governance?.teamPlan ?? {},
-        approval: existing.governance?.approval,
-        history: existing.governance?.history ?? [],
-      },
-      collaboration: {
-        lastActor: existing.collaboration?.lastActor,
-        comments: existing.collaboration?.comments ?? [],
-        auditTrail: existing.collaboration?.auditTrail ?? [],
-      },
-      pilotToolkit: existing.pilotToolkit ?? {},
-      connectorToolkit: {
-        history: existing.connectorToolkit?.history ?? [],
-        contractHistory: existing.connectorToolkit?.contractHistory ?? [],
-        receipts: existing.connectorToolkit?.receipts ?? [],
-        preferredBundleKey: existing.connectorToolkit?.preferredBundleKey,
-        operator: existing.connectorToolkit?.operator,
-        endpointNote: existing.connectorToolkit?.endpointNote,
-        lastExportedAt: existing.connectorToolkit?.lastExportedAt,
-        lastReceiptAt: existing.connectorToolkit?.lastReceiptAt,
-      },
-      security: existing.security ?? {},
-      acceptance: {
-        checklist: existing.acceptance?.checklist ?? {},
-        history: existing.acceptance?.history ?? [],
-        decision: existing.acceptance?.decision,
-        decidedBy: existing.acceptance?.decidedBy,
-        decidedAt: existing.acceptance?.decidedAt,
-        scope: existing.acceptance?.scope,
-        targetWindow: existing.acceptance?.targetWindow,
-        successCriteria: existing.acceptance?.successCriteria,
-        knownRisks: existing.acceptance?.knownRisks,
-        trainingNote: existing.acceptance?.trainingNote,
-        note: existing.acceptance?.note,
-        lastExportedAt: existing.acceptance?.lastExportedAt,
-      },
+      reportHistory: coreExisting.reportHistory ?? [],
     };
     const hardened = hardenWorkspaceState(candidate);
     return {
@@ -127,5 +75,5 @@ export function setV2Step(
 }
 
 export function buildSidecarPatch(state: ProcessMiningAssistedV2State) {
-  return { processMiningAssistedV2: state };
+  return { processMiningAssistedV2: stripQaFields(state) };
 }

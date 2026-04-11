@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Layers,
@@ -30,28 +30,22 @@ import {
 import { buildProcessMiningReport } from './reporting';
 import { StepAnnotationEditor } from './StepAnnotationEditor';
 import { ProcessMiningReportPanel } from './ProcessMiningReportPanel';
-import { GovernancePanel } from './GovernancePanel';
-import { CollaborationPanel } from './CollaborationPanel';
-import { PilotToolkitPanel } from './PilotToolkitPanel';
-import { PilotReadinessPanel } from './PilotReadinessPanel';
-import { evaluatePilotReadiness } from './pilotReadiness';
-import { WorkspaceSnapshotPanel } from './WorkspaceSnapshotPanel';
-import { IntegrationReadinessPanel } from './IntegrationReadinessPanel';
-import { ConnectorBundlesPanel } from './ConnectorBundlesPanel';
-import { IntegrationWorkbenchPanel } from './IntegrationWorkbenchPanel';
-import { SecurityPrivacyPanel } from './SecurityPrivacyPanel';
-import { AcceptancePanel } from './AcceptancePanel';
 import { HelpPopover } from '../components/HelpPopover';
 import { pushReportSnapshot } from './reportHistory';
 import { StepGuardCard } from './StepGuardCard';
 import { getOperatingModeProfile } from './operatingMode';
-import { ReleaseReadinessPanel } from './ReleaseReadinessPanel';
 import { StepQuickJumpBar } from './StepQuickJumpBar';
 import { WorkbenchSection } from './WorkbenchSection';
 import { StepStageHeader } from './StepStageHeader';
 import { StepMetricGrid } from './StepMetricGrid';
-import { noteCollaborationEvent, rememberCollaborationActor } from './collaboration';
 import { QA_SURFACES_ENABLED } from '../../config/runtimeMode';
+
+const LazyAssistedMiningQaSection = QA_SURFACES_ENABLED
+  ? lazy(async () => {
+      const module = await import('./AssistedMiningQaSection');
+      return { default: module.AssistedMiningQaSection };
+    })
+  : null;
 
 interface Props {
   process: Process;
@@ -111,18 +105,10 @@ export function AugmentationStep({
   const coreSteps = state.discoverySummary?.topSteps ?? [];
   const deviations = state.conformanceSummary?.deviationNotes ?? [];
   const hotspotIssues = state.enhancementSummary?.issues ?? [];
-  const pilotReadiness = evaluatePilotReadiness({ state, version });
 
-  const releaseRef = useRef<HTMLDivElement>(null);
   const reportRef = useRef<HTMLDivElement>(null);
-  const governanceRef = useRef<HTMLDivElement>(null);
-  const collaborationRef = useRef<HTMLDivElement>(null);
-  const securityRef = useRef<HTMLDivElement>(null);
-  const pilotRef = useRef<HTMLDivElement>(null);
-  const acceptanceRef = useRef<HTMLDivElement>(null);
-  const connectorsRef = useRef<HTMLDivElement>(null);
-  const snapshotRef = useRef<HTMLDivElement>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
+  const qaRef = useRef<HTMLDivElement>(null);
 
   function scrollToSection(ref: { current: HTMLDivElement | null }) {
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -192,19 +178,10 @@ export function AugmentationStep({
 
   function handleGenerateReport() {
     const generated = buildProcessMiningReport({ process, version, state });
-    let collaboration = noteCollaborationEvent(state.collaboration, {
-      action: 'report-generated',
-      actor: state.collaboration?.lastActor,
-      targetType: 'report',
-      targetLabel: generated.snapshot.title,
-      detail: `Bericht mit ${generated.snapshot.keyFindings.length} Hauptbefunden erzeugt.`,
-    });
-    collaboration = rememberCollaborationActor(collaboration, state.collaboration?.lastActor);
     onChange({
       reportSnapshot: generated.snapshot,
       reportHistory: pushReportSnapshot(state.reportHistory, generated.snapshot),
       handoverDrafts: generated.handovers,
-      collaboration,
     });
     if (!summary.trim()) {
       setSummary(generated.snapshot.executiveSummary);
@@ -237,7 +214,7 @@ export function AugmentationStep({
         title="Ergebnisse anreichern und weitergeben"
         description="Reichere die Analyseergebnisse mit zusätzlichem Kontext an, formuliere eine gut lesbare Zusammenfassung und leite daraus konkrete Übergaben für Management, Prozessverantwortung, operatives Team oder Workshop ab."
         helpKey="pmv2.augmentation"
-        tone={pilotReadiness.level === 'pilot-ready' ? 'emerald' : pilotReadiness.level === 'workshop-ready' ? 'cyan' : pilotReadiness.level === 'internal-review' ? 'amber' : 'violet'}
+        tone={state.reportSnapshot ? 'cyan' : 'violet'}
         badges={(
           <>
             <span className="rounded-full border border-white/90 bg-white/90 px-2.5 py-1 text-[11px] font-medium text-slate-700">
@@ -247,7 +224,7 @@ export function AugmentationStep({
               {stepCount} erkannte Schritte
             </span>
             <span className="rounded-full border border-white/90 bg-white/90 px-2.5 py-1 text-[11px] font-medium text-slate-700">
-              Pilot-Stand: {pilotReadiness.levelLabel}
+              {state.reportSnapshot ? 'Bericht liegt vor' : 'Bericht noch offen'}
             </span>
           </>
         )}
@@ -265,42 +242,15 @@ export function AugmentationStep({
       <StepQuickJumpBar
         title="Roter Faden in Schritt 5"
         items={[
-          ...(QA_SURFACES_ENABLED
-            ? [{ id: 'release', label: 'Freigabeweg', hint: 'zeigt, was für Pilot und Freigabe noch fehlt', onClick: () => scrollToSection(releaseRef) }]
-            : []),
           { id: 'report', label: 'Bericht', hint: 'Kurzfassung und Übergaben', onClick: () => scrollToSection(reportRef) },
-          { id: 'governance', label: 'Governance', hint: 'Review, offene Punkte und Freigabe', onClick: () => scrollToSection(governanceRef) },
-          { id: 'collaboration', label: 'Zusammenarbeit', hint: 'Kommentare, Teamnotizen und Auditspur', onClick: () => scrollToSection(collaborationRef) },
-          { id: 'security', label: 'Sicherheit & Deployment', hint: 'Datenschutz, Betriebsrahmen und Exportprofil', onClick: () => scrollToSection(securityRef) },
-          { id: 'pilot', label: 'Pilot-Paket', hint: 'Briefing, Workshop und Paketexport', onClick: () => scrollToSection(pilotRef) },
-          { id: 'acceptance', label: 'Formale Abnahme', hint: 'Entscheidung, Checkliste und Abnahmevorlage', onClick: () => scrollToSection(acceptanceRef) },
-          { id: 'connectors', label: 'Connectoren', hint: 'optionale Exportprofile', onClick: () => scrollToSection(connectorsRef) },
-          { id: 'snapshot', label: 'Arbeitsstand sichern', hint: 'JSON-Snapshot für sichere Zwischenstände', onClick: () => scrollToSection(snapshotRef) },
           ...(coreSteps.length > 0 || deviations.length > 0 || hotspotIssues.length > 0
             ? [{ id: 'details', label: 'Details anreichern', hint: 'Ursachen, Risiken, Rollen und Evidenz ergänzen', onClick: () => scrollToSection(detailsRef) }]
             : []),
+          ...(QA_SURFACES_ENABLED
+            ? [{ id: 'qa', label: 'QA-Bereich', hint: 'separat nachgeladene Review- und Freigabeflächen', onClick: () => scrollToSection(qaRef) }]
+            : []),
         ]}
       />
-
-      {QA_SURFACES_ENABLED && (
-        <div ref={releaseRef}>
-          <ReleaseReadinessPanel
-            state={state}
-            version={version}
-            settings={settings}
-            onJump={key => {
-              if (key === 'report') scrollToSection(reportRef);
-              else if (key === 'governance') scrollToSection(governanceRef);
-              else if (key === 'security') scrollToSection(securityRef);
-              else if (key === 'pilot') scrollToSection(pilotRef);
-              else if (key === 'acceptance') scrollToSection(acceptanceRef);
-              else if (key === 'connectors') scrollToSection(connectorsRef);
-              else if (key === 'quality' || key === 'basis') scrollToSection(snapshotRef);
-              else if (key === 'analysis') scrollToSection(detailsRef);
-            }}
-          />
-        </div>
-      )}
 
       <div ref={reportRef}>
         <ProcessMiningReportPanel
@@ -314,87 +264,6 @@ export function AugmentationStep({
             setSummary(text);
             setSummaryGenerated(true);
           }}
-        />
-      </div>
-
-      <div ref={governanceRef}>
-        <GovernancePanel
-          state={state}
-          version={version}
-          onChange={onChange}
-          onSaveEvidence={saveAsEvidence}
-        />
-      </div>
-
-      <div ref={collaborationRef}>
-        <CollaborationPanel
-          state={state}
-          version={version}
-          onChange={onChange}
-          onSaveEvidence={saveAsEvidence}
-        />
-      </div>
-
-      <div ref={securityRef}>
-        <SecurityPrivacyPanel
-          version={version}
-          state={state}
-          settings={settings}
-          onChange={onChange}
-        />
-      </div>
-
-      <div ref={pilotRef} className="space-y-4">
-        <PilotReadinessPanel state={state} version={version} />
-        <PilotToolkitPanel
-          process={process}
-          version={version}
-          state={state}
-          onChange={onChange}
-          onSaveEvidence={saveAsEvidence}
-        />
-      </div>
-
-      <div ref={acceptanceRef}>
-        <AcceptancePanel
-          process={process}
-          version={version}
-          settings={settings}
-          state={state}
-          onChange={onChange}
-          onSaveEvidence={saveAsEvidence}
-        />
-      </div>
-
-      <div ref={connectorsRef} className="space-y-4">
-        <IntegrationReadinessPanel
-          state={state}
-          version={version}
-          settings={settings}
-        />
-        <ConnectorBundlesPanel
-          process={process}
-          version={version}
-          state={state}
-          settings={settings}
-          onChange={onChange}
-        />
-        <IntegrationWorkbenchPanel
-          process={process}
-          version={version}
-          state={state}
-          settings={settings}
-          onChange={onChange}
-        />
-      </div>
-
-      <div ref={snapshotRef}>
-        <WorkspaceSnapshotPanel
-          process={process}
-          version={version}
-          state={state}
-          readiness={pilotReadiness}
-          onRestoreState={onRestoreState}
         />
       </div>
 
@@ -579,6 +448,28 @@ export function AugmentationStep({
       )}
       </WorkbenchSection>
       </div>
+
+      {QA_SURFACES_ENABLED && LazyAssistedMiningQaSection && (
+        <div ref={qaRef}>
+          <Suspense
+            fallback={
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
+                QA- und Freigabeflächen werden geladen.
+              </div>
+            }
+          >
+            <LazyAssistedMiningQaSection
+              process={process}
+              version={version}
+              settings={settings}
+              state={state}
+              onChange={onChange}
+              onSaveEvidence={saveAsEvidence}
+              onRestoreState={onRestoreState}
+            />
+          </Suspense>
+        </div>
+      )}
 
 
       <div className="border border-slate-200 rounded-xl p-5 space-y-4 bg-white">

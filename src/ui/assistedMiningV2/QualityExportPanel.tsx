@@ -50,7 +50,7 @@ export function QualityExportPanel({ process, version, state, settings, integrit
             <p className="text-sm font-semibold text-slate-900">Analysezustand als JSON exportieren</p>
             <p className="text-sm leading-relaxed text-slate-600">
               Exportieren Sie den aktuellen Analysezustand des gerade geprüften Materials. Der Export enthält acht feste Qualitätsdimensionen,
-              sodass ein einzelner Testfall extern präzise bewertet werden kann.
+              sodass ein einzelner Analysezustand extern präzise bewertet werden kann.
             </p>
           </div>
           <p className="text-xs text-slate-500">
@@ -62,43 +62,7 @@ export function QualityExportPanel({ process, version, state, settings, integrit
             type="button"
             onClick={() => downloadQualityExportFile({ file: exportFile, processTitle: process.title })}
             disabled={!hasMaterial}
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-=======
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> theirs
-=======
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> theirs
-=======
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> theirs
-=======
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> theirs
-=======
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> theirs
-=======
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> theirs
-=======
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> theirs
-=======
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> theirs
-=======
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> theirs
           >
             <Download className="h-4 w-4" />
             Qualitätscheck JSON exportieren

@@ -541,20 +541,6 @@ export interface SourceRoutingContext {
   routingSignals: string[];
   fallbackReason?: string;
 }
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 
 export type ExtractionCandidateType = 'step' | 'role' | 'system' | 'signal' | 'support';
 export type ExtractionCandidateStatus = 'candidate' | 'merged' | 'support-only' | 'rejected';
@@ -585,19 +571,6 @@ export interface ExtractionCandidate {
   rejectionReason?: string;
   downgradeReason?: string;
 }
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 
 export interface ProcessMiningObservationCase {
   id: string;
@@ -751,39 +724,6 @@ export interface DerivationSummary {
   documentSummary?: string;
   sourceProfile?: DerivationSourceProfile;
   routingContext?: SourceRoutingContext;
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-  extractionCandidates?: ExtractionCandidate[];
-  candidateStats?: {
-    total: number;
-    mergedCoreSteps: number;
-    supportOnly: number;
-    rejected: number;
-  };
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
   tablePipeline?: {
     pipelineMode: 'eventlog-table' | 'weak-raw-table';
     tableProfile: {
@@ -841,16 +781,6 @@ export interface DerivationSummary {
     };
     weakTableSignals?: string[];
   };
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
   multiCaseSummary?: DerivationMultiCaseSummary;
   repairNotes?: string[];
   engineVersion?: string;
@@ -1278,6 +1208,18 @@ export interface ProcessMiningAssistedV2State {
   updatedAt: string;
 }
 
+export interface ProcessMiningAssistedV2QaState {
+  schemaVersion: 'process-mining-assisted-v2-qa';
+  benchmarkSnapshots?: ProcessMiningBenchmarkSnapshot[];
+  governance?: ProcessMiningGovernanceState;
+  collaboration?: ProcessMiningCollaborationState;
+  pilotToolkit?: ProcessMiningPilotToolkitState;
+  connectorToolkit?: ProcessMiningConnectorToolkitState;
+  security?: ProcessMiningSecurityState;
+  acceptance?: ProcessMiningAcceptanceState;
+  updatedAt: string;
+}
+
 export interface ProcessMiningAssistedState {
   schemaVersion: 'process-mining-assisted-v1';
 
@@ -1363,6 +1305,7 @@ export interface ProcessSidecar {
   processMining?: RawProcessMiningState;
   processMiningAssisted?: ProcessMiningAssistedState;
   processMiningAssistedV2?: ProcessMiningAssistedV2State;
+  processMiningAssistedV2Qa?: ProcessMiningAssistedV2QaState;
   assistedOptimizationBrief?: AssistedOptimizationBrief;
 }
 

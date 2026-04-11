@@ -128,36 +128,6 @@ export function buildAnalysisModeNotice(params: {
 }): string {
   const { mode, caseCount, documentKind } = params;
   if (mode === 'process-draft') {
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-    if (documentKind === 'procedure-document') {
-      return 'Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse sind daher als Prozessentwurf zu lesen, nicht als belastbare Mengen- oder Quotenanalyse.';
-    }
-    return 'Aktuell liegt nur ein einzelner Fall oder eine einzelne Quelle vor. Die Ergebnisse zeigen einen Prozessentwurf, aber noch keine belastbare Aussage über typische Häufigkeiten.';
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
     if (documentKind === 'procedure-document' || documentKind === 'semi-structured-procedure-document') {
       return 'Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.';
     }
@@ -165,7 +135,6 @@ export function buildAnalysisModeNotice(params: {
       return 'Aktuell liegt ein Mischdokument vor. Die Ergebnisse zeigen einen vorsichtigen Prozessentwurf mit getrennten Struktur- und Narrativanteilen.';
     }
     return 'Aktuell liegt nur ein einzelner Fall vor. Die Ergebnisse zeigen einen Prozessentwurf aus diesem Fall, noch kein belastbares Mining-Muster.';
->>>>>>> theirs
   }
   if (mode === 'exploratory-mining') {
     return `Es liegen ${caseCount} Fälle oder Quellen vor. Das reicht für einen vorsichtigen Fallvergleich, aber noch nicht für harte Standardquoten wie in einem echten Eventlog.`;

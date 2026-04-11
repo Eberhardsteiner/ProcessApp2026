@@ -46,19 +46,6 @@ function createBareState(): ProcessMiningAssistedV2State {
       repairJournal: [],
     },
     reportHistory: [],
-    benchmarkSnapshots: [],
-    governance: {
-      decisions: [],
-      teamPlan: {},
-      history: [],
-    },
-    collaboration: {
-      comments: [],
-      auditTrail: [],
-    },
-    pilotToolkit: {},
-    connectorToolkit: { history: [], contractHistory: [], receipts: [] },
-    acceptance: { checklist: {}, history: [] },
     updatedAt: new Date().toISOString(),
   };
 }
@@ -77,12 +64,6 @@ function safeIso(value: unknown, fallback: string): string {
     if (!Number.isNaN(parsed)) return new Date(parsed).toISOString();
   }
   return fallback;
-}
-
-function safeDateOnly(value: unknown): string | undefined {
-  if (typeof value !== 'string' || value.trim().length === 0) return undefined;
-  const trimmed = value.trim();
-  return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : undefined;
 }
 
 function dedupeById<T extends { id?: string }>(items: T[]): T[] {
@@ -306,7 +287,6 @@ export function hardenWorkspaceState(input: unknown): { state: ProcessMiningAssi
     observations,
     qualitySummary,
     reportHistory: Array.isArray(candidate.reportHistory) ? candidate.reportHistory.filter(Boolean) : [],
-    benchmarkSnapshots: Array.isArray(candidate.benchmarkSnapshots) ? candidate.benchmarkSnapshots.filter(Boolean) : [],
     handoverDrafts: Array.isArray(candidate.handoverDrafts) && candidate.handoverDrafts.length > 0 ? candidate.handoverDrafts.filter(Boolean) : undefined,
     updatedAt: safeIso(candidate.updatedAt, now),
     reviewState: {
@@ -317,140 +297,6 @@ export function hardenWorkspaceState(input: unknown): { state: ProcessMiningAssi
         ? dedupeById(candidate.reviewState.repairJournal.filter(Boolean))
         : [],
     },
-    governance: {
-      decisions: Array.isArray(candidate.governance?.decisions)
-        ? dedupeById(candidate.governance.decisions.filter(Boolean)).map(decision => ({
-            ...decision,
-            owner: optionalString(decision.owner),
-            dueDate: safeDateOnly(decision.dueDate),
-            createdAt: safeIso(decision.createdAt, now),
-            updatedAt: safeIso(decision.updatedAt, now),
-          }))
-        : [],
-      teamPlan: candidate.governance?.teamPlan && typeof candidate.governance.teamPlan === 'object'
-        ? {
-            ...candidate.governance.teamPlan,
-            nextReviewAt: safeDateOnly(candidate.governance.teamPlan.nextReviewAt),
-            reviewStartedAt: candidate.governance.teamPlan.reviewStartedAt ? safeIso(candidate.governance.teamPlan.reviewStartedAt, now) : undefined,
-          }
-        : {},
-      approval: candidate.governance?.approval && typeof candidate.governance.approval === 'object'
-        ? {
-            ...candidate.governance.approval,
-            approvedAt: candidate.governance.approval.approvedAt ? safeIso(candidate.governance.approval.approvedAt, now) : undefined,
-          }
-        : undefined,
-      history: Array.isArray(candidate.governance?.history)
-        ? dedupeById(candidate.governance.history.filter(Boolean)).map(entry => ({
-            ...entry,
-            capturedAt: safeIso(entry.capturedAt, now),
-          }))
-        : [],
-    },
-    collaboration: candidate.collaboration && typeof candidate.collaboration === 'object'
-      ? {
-          lastActor: optionalString(candidate.collaboration.lastActor),
-          comments: Array.isArray(candidate.collaboration.comments)
-            ? dedupeById(candidate.collaboration.comments.filter(Boolean)).map(comment => ({
-                ...comment,
-                targetRef: optionalString(comment.targetRef),
-                author: optionalString(comment.author),
-                nextAction: optionalString(comment.nextAction),
-                text: safeString(comment.text),
-                targetLabel: safeString(comment.targetLabel, 'Allgemeiner Kommentar'),
-                status: (comment.status === 'resolved' ? 'resolved' : comment.status === 'in_review' ? 'in_review' : 'open') as 'open' | 'in_review' | 'resolved',
-                createdAt: safeIso(comment.createdAt, now),
-                updatedAt: safeIso(comment.updatedAt, now),
-              })).filter(comment => comment.text.trim().length > 0)
-            : [],
-          auditTrail: Array.isArray(candidate.collaboration.auditTrail)
-            ? dedupeById(candidate.collaboration.auditTrail.filter(Boolean)).map(entry => ({
-                ...entry,
-                actor: optionalString(entry.actor),
-                detail: optionalString(entry.detail),
-                targetLabel: safeString(entry.targetLabel, 'Arbeitsstand'),
-                createdAt: safeIso(entry.createdAt, now),
-              }))
-            : [],
-        }
-      : { comments: [], auditTrail: [] },
-    pilotToolkit: candidate.pilotToolkit && typeof candidate.pilotToolkit === 'object'
-      ? {
-          ...candidate.pilotToolkit,
-          plannedAt: safeDateOnly(candidate.pilotToolkit.plannedAt),
-          lastExportedAt: candidate.pilotToolkit.lastExportedAt ? safeIso(candidate.pilotToolkit.lastExportedAt, now) : undefined,
-        }
-      : {},
-    connectorToolkit: candidate.connectorToolkit && typeof candidate.connectorToolkit === 'object'
-      ? {
-          ...candidate.connectorToolkit,
-          lastExportedAt: candidate.connectorToolkit.lastExportedAt ? safeIso(candidate.connectorToolkit.lastExportedAt, now) : undefined,
-          lastReceiptAt: candidate.connectorToolkit.lastReceiptAt ? safeIso(candidate.connectorToolkit.lastReceiptAt, now) : undefined,
-          history: Array.isArray(candidate.connectorToolkit.history)
-            ? dedupeById(candidate.connectorToolkit.history.filter(Boolean)).map(entry => ({
-                ...entry,
-                exportedAt: safeIso(entry.exportedAt, now),
-              }))
-            : [],
-          contractHistory: Array.isArray(candidate.connectorToolkit.contractHistory)
-            ? dedupeById(candidate.connectorToolkit.contractHistory.filter(Boolean)).map(entry => ({
-                ...entry,
-                builtAt: safeIso(entry.builtAt, now),
-                missingRequiredFields: Array.isArray(entry.missingRequiredFields)
-                  ? entry.missingRequiredFields.filter(Boolean).map((item: unknown) => safeString(item, 'Pflichtfeld'))
-                  : [],
-                completenessScore: Number.isFinite(entry.completenessScore) ? Math.max(0, Math.min(100, Number(entry.completenessScore))) : 0,
-              }))
-            : [],
-          receipts: Array.isArray(candidate.connectorToolkit.receipts)
-            ? dedupeById(candidate.connectorToolkit.receipts.filter(Boolean)).map(entry => ({
-                ...entry,
-                importedAt: safeIso(entry.importedAt, now),
-                status:
-                  entry.status === 'accepted' || entry.status === 'queued' || entry.status === 'rejected' || entry.status === 'completed'
-                    ? entry.status
-                    : 'queued',
-                source: entry.source === 'file' ? 'file' : 'paste',
-                externalRef: optionalString(entry.externalRef),
-                endpoint: optionalString(entry.endpoint),
-                note: optionalString(entry.note),
-                basisFingerprint: optionalString(entry.basisFingerprint),
-              }))
-            : [],
-        }
-      : { history: [], contractHistory: [], receipts: [] },
-    acceptance: candidate.acceptance && typeof candidate.acceptance === 'object'
-      ? {
-          ...candidate.acceptance,
-          decidedBy: optionalString(candidate.acceptance.decidedBy),
-          decidedAt: candidate.acceptance.decidedAt ? safeIso(candidate.acceptance.decidedAt, now) : undefined,
-          scope: optionalString(candidate.acceptance.scope),
-          targetWindow: optionalString(candidate.acceptance.targetWindow),
-          successCriteria: optionalString(candidate.acceptance.successCriteria),
-          knownRisks: optionalString(candidate.acceptance.knownRisks),
-          trainingNote: optionalString(candidate.acceptance.trainingNote),
-          note: optionalString(candidate.acceptance.note),
-          lastExportedAt: candidate.acceptance.lastExportedAt ? safeIso(candidate.acceptance.lastExportedAt, now) : undefined,
-          checklist: candidate.acceptance.checklist && typeof candidate.acceptance.checklist === 'object'
-            ? {
-                benchmarkReviewed: Boolean(candidate.acceptance.checklist.benchmarkReviewed),
-                reportReviewed: Boolean(candidate.acceptance.checklist.reportReviewed),
-                governanceReviewed: Boolean(candidate.acceptance.checklist.governanceReviewed),
-                securityReviewed: Boolean(candidate.acceptance.checklist.securityReviewed),
-                pilotPrepared: Boolean(candidate.acceptance.checklist.pilotPrepared),
-                enablementPrepared: Boolean(candidate.acceptance.checklist.enablementPrepared),
-              }
-            : {},
-          history: Array.isArray(candidate.acceptance.history)
-            ? dedupeById(candidate.acceptance.history.filter(Boolean)).map(entry => ({
-                ...entry,
-                createdAt: safeIso(entry.createdAt, now),
-                basisFingerprint: optionalString(entry.basisFingerprint),
-                decidedBy: optionalString(entry.decidedBy),
-              }))
-            : [],
-        }
-      : { checklist: {}, history: [] },
   };
 
   if (needsStepFallback(next)) {

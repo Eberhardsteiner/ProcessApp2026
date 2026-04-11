@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type {
   Process,
+  ProcessMiningAssistedV2QaState,
   ProcessVersion,
   ImprovementBacklogItem,
   EvidenceSource,
@@ -9,6 +10,14 @@ import type { AppSettings } from '../../settings/appSettings';
 import type { ProcessMiningAssistedV2State, ProcessMiningAssistedV2Step } from './types';
 import { MINING_STEPS } from './types';
 import { createEmptyV2State, loadV2State, setV2Step, buildSidecarPatch } from './storage';
+import {
+  buildQaSidecarPatch,
+  loadV2QaState,
+  mergeCoreAndQaState,
+  patchV2QaState,
+  splitCompositeState,
+  splitV2StatePatch,
+} from './qaState';
 import { AssistedMiningStepper } from './AssistedMiningStepper';
 import { ObservationsStep } from './ObservationsStep';
 import { DiscoveryStep } from './DiscoveryStep';
@@ -20,9 +29,9 @@ import { LocalAnalysisDigestPanel } from './LocalAnalysisDigestPanel';
 import { DataMaturityWorkshopPanel } from './DataMaturityWorkshopPanel';
 import { buildReviewOverview } from './reviewSuggestions';
 import { MiningWorkspaceOverview } from './MiningWorkspaceOverview';
+import { QualityExportPanel } from './QualityExportPanel';
 import { applyConsistentPatch } from './stateConsistency';
 import { hardenWorkspaceState, type WorkspaceIntegrityReport } from './workspaceIntegrity';
-import { WorkspaceIntegrityPanel } from './WorkspaceIntegrityPanel';
 import { HelpPopover } from '../components/HelpPopover';
 import type { HelpKey } from '../help/helpTexts';
 import { QA_SURFACES_ENABLED } from '../../config/runtimeMode';
@@ -61,111 +70,54 @@ const EMPTY_INTEGRITY: WorkspaceIntegrityReport = {
 
 export function AssistedMiningWorkbench({ process, version, settings, onSave }: Props) {
   const initialLoad = useMemo(() => loadV2State(version), [version]);
+  const initialQaLoad = useMemo(
+    () => (QA_SURFACES_ENABLED ? loadV2QaState(version) : null),
+    [version],
+  );
   const [miningState, setMiningState] = useState<ProcessMiningAssistedV2State>(() => initialLoad.state);
   const latestStateRef = useRef(miningState);
+  const [qaState, setQaState] = useState<ProcessMiningAssistedV2QaState | null>(() => initialQaLoad);
+  const latestQaStateRef = useRef(qaState);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>('');
   const [consistencyNotice, setConsistencyNotice] = useState<string[]>([]);
   const [integrityReport, setIntegrityReport] = useState<WorkspaceIntegrityReport>(initialLoad.integrity);
-<<<<<<< ours
-  const [showOverviewDetails, setShowOverviewDetails] = useState(false);
-=======
   const [showOverviewDetails, setShowOverviewDetails] = useState(
     miningState.observations.length === 0,
   );
-  const [showHealthDetails, setShowHealthDetails] = useState(false);
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 
   useEffect(() => {
     latestStateRef.current = miningState;
   }, [miningState]);
 
   useEffect(() => {
+    latestQaStateRef.current = qaState;
+  }, [qaState]);
+
+  useEffect(() => {
     const loaded = loadV2State(version);
+    const loadedQa = QA_SURFACES_ENABLED ? loadV2QaState(version) : null;
     latestStateRef.current = loaded.state;
+    latestQaStateRef.current = loadedQa;
     setSaveError('');
     setConsistencyNotice(loaded.integrity.issues.map(issue => issue.message));
     setIntegrityReport(loaded.integrity);
     setMiningState(loaded.state);
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-    setShowOverviewDetails(false);
-=======
+    setQaState(loadedQa);
     setShowOverviewDetails(loaded.state.observations.length === 0);
-    setShowHealthDetails(false);
->>>>>>> theirs
-=======
-    setShowOverviewDetails(loaded.state.observations.length === 0);
-    setShowHealthDetails(false);
->>>>>>> theirs
-=======
-    setShowOverviewDetails(loaded.state.observations.length === 0);
-    setShowHealthDetails(false);
->>>>>>> theirs
-=======
-    setShowOverviewDetails(loaded.state.observations.length === 0);
-    setShowHealthDetails(false);
->>>>>>> theirs
-=======
-    setShowOverviewDetails(loaded.state.observations.length === 0);
-    setShowHealthDetails(false);
->>>>>>> theirs
-=======
-    setShowOverviewDetails(loaded.state.observations.length === 0);
-    setShowHealthDetails(false);
->>>>>>> theirs
-=======
-    setShowOverviewDetails(loaded.state.observations.length === 0);
-    setShowHealthDetails(false);
->>>>>>> theirs
-=======
-    setShowOverviewDetails(loaded.state.observations.length === 0);
-    setShowHealthDetails(false);
->>>>>>> theirs
-=======
-    setShowOverviewDetails(loaded.state.observations.length === 0);
-    setShowHealthDetails(false);
->>>>>>> theirs
   }, [version.id]);
 
-  const saveState = useCallback(
-    async (newState: ProcessMiningAssistedV2State) => {
+  const persistWorkspace = useCallback(
+    async (newState: ProcessMiningAssistedV2State, newQaState: ProcessMiningAssistedV2QaState | null) => {
       setSaving(true);
       setSaveError('');
       try {
-        const sidecarPatch = buildSidecarPatch(newState);
-        await onSave({ sidecar: { ...version.sidecar, ...sidecarPatch } });
+        const nextSidecar = {
+          ...version.sidecar,
+          ...buildSidecarPatch(newState),
+          ...(newQaState ? buildQaSidecarPatch(newQaState) : {}),
+        };
+        await onSave({ sidecar: nextSidecar });
       } catch (error) {
         setSaveError(error instanceof Error ? `Speichern fehlgeschlagen: ${error.message}` : 'Speichern fehlgeschlagen.');
       } finally {
@@ -175,6 +127,20 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
     [onSave, version.sidecar],
   );
 
+  const saveState = useCallback(
+    async (newState: ProcessMiningAssistedV2State) => {
+      await persistWorkspace(newState, latestQaStateRef.current);
+    },
+    [persistWorkspace],
+  );
+
+  const saveQaState = useCallback(
+    async (newQaState: ProcessMiningAssistedV2QaState) => {
+      await persistWorkspace(latestStateRef.current, newQaState);
+    },
+    [persistWorkspace],
+  );
+
   function applyPatch(patch: Partial<ProcessMiningAssistedV2State>) {
     const result = applyConsistentPatch(latestStateRef.current, patch);
     latestStateRef.current = result.next;
@@ -182,6 +148,24 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
     setIntegrityReport(result.integrity);
     setMiningState(result.next);
     void saveState(result.next);
+  }
+
+  function applyQaPatch(patch: Partial<ProcessMiningAssistedV2QaState>) {
+    if (!QA_SURFACES_ENABLED || !latestQaStateRef.current) return;
+    const next = patchV2QaState(latestQaStateRef.current, patch);
+    latestQaStateRef.current = next;
+    setQaState(next);
+    void saveQaState(next);
+  }
+
+  function applyCompositePatch(patch: Partial<ProcessMiningAssistedV2State>) {
+    const { corePatch, qaPatch } = splitV2StatePatch(patch);
+    if (Object.keys(corePatch).length > 0) {
+      applyPatch(corePatch);
+    }
+    if (Object.keys(qaPatch).length > 0) {
+      applyQaPatch(qaPatch as Partial<ProcessMiningAssistedV2QaState>);
+    }
   }
 
   function goToStep(step: ProcessMiningAssistedV2Step) {
@@ -205,7 +189,8 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
   }
 
   function replaceState(nextState: ProcessMiningAssistedV2State) {
-    const hardened = hardenWorkspaceState(nextState);
+    const { coreState, qaState: nextQaState } = splitCompositeState(nextState);
+    const hardened = hardenWorkspaceState(coreState);
     latestStateRef.current = hardened.state;
     setConsistencyNotice([
       'Ein gesicherter PM-Arbeitsstand wurde wiederhergestellt. Prüfen Sie kurz Bericht, Übergaben und Datenreife.',
@@ -215,6 +200,12 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
     setSaveError('');
     setMiningState(hardened.state);
     setShowOverviewDetails(false);
+    if (QA_SURFACES_ENABLED) {
+      latestQaStateRef.current = nextQaState;
+      setQaState(nextQaState);
+      void persistWorkspace(hardened.state, nextQaState);
+      return;
+    }
     void saveState(hardened.state);
   }
 
@@ -255,6 +246,10 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
   );
   const completedSteps = new Set<ProcessMiningAssistedV2Step>(
     STEP_ORDER.slice(0, STEP_ORDER.indexOf(miningState.currentStep)) as ProcessMiningAssistedV2Step[],
+  );
+  const combinedMiningState = useMemo(
+    () => mergeCoreAndQaState(miningState, qaState),
+    [miningState, qaState],
   );
 
   return (
@@ -342,87 +337,6 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
         onOperatingModeChange={mode => applyPatch({ operatingMode: mode })}
       />
 
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-      {(integrityReport.severity !== 'healthy' || showOverviewDetails) && <WorkspaceIntegrityPanel report={integrityReport} />}
-=======
-=======
->>>>>>> theirs
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-slate-900">Status & Integrität</p>
-          <button
-            type="button"
-            onClick={() => setShowHealthDetails(open => !open)}
-            className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-          >
-            {showHealthDetails ? 'Details ausblenden' : 'Details anzeigen'}
-          </button>
-        </div>
-        {showHealthDetails && (
-          <div className="mt-3">
-            <WorkspaceIntegrityPanel report={integrityReport} />
-          </div>
-        )}
-      </div>
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-      {QA_SURFACES_ENABLED && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-slate-900">Status & Integrität</p>
-            <button
-              type="button"
-              onClick={() => setShowHealthDetails(open => !open)}
-              className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              {showHealthDetails ? 'Details ausblenden' : 'Details anzeigen'}
-            </button>
-          </div>
-          {showHealthDetails && (
-            <div className="mt-3">
-              <WorkspaceIntegrityPanel report={integrityReport} />
-            </div>
-          )}
-        </div>
-      )}
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 
       <QualityExportPanel
         process={process}
@@ -431,7 +345,6 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
         settings={settings}
         integrity={integrityReport}
       />
->>>>>>> theirs
 
       {showOverviewDetails && (
         <div className="space-y-4">
@@ -491,8 +404,8 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
             process={process}
             version={version}
             settings={settings}
-            state={miningState}
-            onChange={applyPatch}
+            state={combinedMiningState}
+            onChange={applyCompositePatch}
             onSaveVersion={handleSaveVersion}
             onRestoreState={replaceState}
             onBack={goBack}

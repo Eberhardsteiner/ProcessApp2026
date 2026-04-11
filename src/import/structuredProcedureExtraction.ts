@@ -37,18 +37,22 @@ const STEP_CODE_RE = /^([A-Z]{1,3}-\d{1,3})\s*$/;
 const STEP_CODE_INLINE_RE = /^([A-Z]{1,3}-\d{1,3})\b/;
 const DUE_RE = /T[+-]\s*\d+\s*(Tag(e)?|Woche[n]?|Monat(e)?|KW|Std\.?|h\b)/i;
 const SECTION_RE = /^\s*(\d+)\.\s+/;
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-const NAMED_SECTION_RE = /^\s*(\d{1,2})\.\s+(.+?)\s*$/;
-const DIGIT_ONLY_RE = /^\d{1,2}$/;
-const PIPE_SEPARATOR_RE = /^\|[-\s|]+\|?\s*$/;
+const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
+const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
+const NAMED_SECTION_RE = /^\s*((?:\d+\.)*\d+)\s+(.+)$/;
+const PIPE_SEPARATOR_RE = /^\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?$/;
+
+type HeaderKey =
+  | 'code'
+  | 'label'
+  | 'responsible'
+  | 'description'
+  | 'due'
+  | 'result'
+  | 'system'
+  | 'decision'
+  | 'name'
+  | 'authority';
 
 interface NamedSection {
   number?: string;
@@ -63,90 +67,44 @@ interface ParsedTableBlock {
   endLine: number;
 }
 
-type HeaderKey = 'code' | 'label' | 'responsible' | 'description' | 'due' | 'result' | 'system' | 'decision' | 'name' | 'authority';
-
-
-type PreparedRoleRow = StructuredProcedureRole & {
+interface PreparedRoleRow extends StructuredProcedureRole {
   canonicalName?: string;
   canonicalSystems: string[];
   matchTokens: Set<string>;
-};
+}
 
 const ROLE_CANONICALS: Array<{ label: string; patterns: RegExp[] }> = [
-  { label: 'Servicekoordination', patterns: [/servicekoordination/i, /servicekoordinator(?:in)?/i, /service coordinator/i] },
-  { label: 'Qualitätsmanagement', patterns: [/qualit[aä]tssicherung/i, /qualit[aä]tsmanagement/i, /\bqs\b/i, /\bqm\b/i, /quality management/i] },
-  { label: 'Technik', patterns: [/\btechnik\b/i, /technischer dienst/i, /engineering/i] },
-  { label: 'Vertrieb', patterns: [/vertriebsinnendienst/i, /vertrieb/i, /key account/i, /sales/i] },
-  { label: 'Logistik', patterns: [/\blogistik\b/i, /lager/i, /versand/i, /shipping/i] },
-  { label: 'Teamleitung', patterns: [/teamleitung/i, /team lead/i, /leitung/i] },
-  { label: 'Finanzbuchhaltung', patterns: [/finanzbuchhaltung/i, /debitorenbuchhaltung/i, /kreditorenbuchhaltung/i, /finance/i] },
-  { label: 'Fachbereich', patterns: [/fachbereich/i] },
-  { label: 'Kunde', patterns: [/\bkunde\b/i] },
-  { label: 'Lieferant', patterns: [/lieferant/i] },
-  { label: 'Service', patterns: [/\bservice\b/i] },
+  { label: 'Kunde', patterns: [/\bkunde\b/i, /kund:in/i] },
+  { label: 'Vertrieb', patterns: [/vertrieb/i, /account manager/i] },
+  { label: 'Servicekoordination', patterns: [/servicekoordination/i, /dispatcher/i, /service desk/i] },
+  { label: 'Fachbereich', patterns: [/fachbereich/i, /sachbearbeitung/i, /backoffice/i] },
+  { label: 'Qualitätsmanagement', patterns: [/qualit/i, /\bqm\b/i, /\bqs\b/i] },
+  { label: 'Buchhaltung', patterns: [/buchhaltung/i, /finance/i, /kreditor/i, /debitor/i] },
+  { label: 'Logistik', patterns: [/logistik/i, /lager/i, /versand/i] },
+  { label: 'IT', patterns: [/\bit\b/i, /admin/i, /support/i] },
 ];
 
 const SYSTEM_CANONICALS: Array<{ label: string; patterns: RegExp[] }> = [
-  { label: 'CRM', patterns: [/\bcrm\b/i] },
-  { label: 'ERP', patterns: [/\berp\b/i, /\bsap\b/i] },
-  { label: 'DMS', patterns: [/\bdms\b/i, /dokumentenmanagement/i] },
-  { label: 'E-Mail', patterns: [/outlook/i, /mail/i, /e-?mail/i] },
+  { label: 'ERP', patterns: [/\berp\b/i, /sap/i] },
+  { label: 'CRM', patterns: [/\bcrm\b/i, /salesforce/i] },
+  { label: 'DMS', patterns: [/\bdms\b/i, /dokumenten/i] },
+  { label: 'E-Mail', patterns: [/mail/i, /outlook/i] },
   { label: 'Telefon', patterns: [/telefon/i, /telefonie/i] },
-  { label: 'Ticketsystem', patterns: [/service desk/i, /ticketsystem/i, /\bticket\b/i] },
-  { label: 'Rechnungsworkflow', patterns: [/rechnungsworkflow/i, /invoice workflow/i] },
-  { label: 'Workflow', patterns: [/workflow/i] },
-  { label: 'Reporting', patterns: [/\bbi\b/i, /dashboard/i, /report/i] },
-  { label: 'Leistungsnachweis-Tool', patterns: [/leistungsnachweis/i] },
+  { label: 'Workflow', patterns: [/workflow/i, /prozessportal/i] },
+  { label: 'Ticketsystem', patterns: [/ticket/i, /service desk/i] },
+  { label: 'Portal', patterns: [/portal/i, /serviceportal/i] },
+  { label: 'Reporting', patterns: [/report/i, /bi\b/i, /dashboard/i] },
 ];
 
 const ROLE_KEYWORD_HINTS: Array<{ pattern: RegExp; role: string }> = [
-  { pattern: /eingang|mindestdaten|vollst[aä]ndig|r[üu]ckfragen|basisdaten/i, role: 'Vertrieb' },
-  { pattern: /priorit[aä]t|eskalation|kulanz/i, role: 'Teamleitung' },
-  { pattern: /technische bewertung|fehlerbild|ursache/i, role: 'Qualitätsmanagement' },
-  { pattern: /sofortma[ßs]nahme|containment|ersatzteil|feldma[ßs]nahme|termin/i, role: 'Servicekoordination' },
-  { pattern: /kundenkommunikation|r[üu]ckmeldung an kunden|informieren/i, role: 'Vertrieb' },
-  { pattern: /abschluss|dokumentation|wissen sichern/i, role: 'Qualitätsmanagement' },
-  { pattern: /kl[aä]rungsfall|unterlagen|rechnungsstatus|abweichung|archiviert/i, role: 'Finanzbuchhaltung' },
-  { pattern: /preis|menge|steuerthema|rechnung|bestellung|lieferschein/i, role: 'Finanzbuchhaltung' },
-  { pattern: /fachliche bewertung|stellungnahme|leistungsnachweis/i, role: 'Fachbereich' },
-  { pattern: /entscheidung treffen|gutschrift|storno|teilzahlung|zahlung/i, role: 'Teamleitung' },
+  { pattern: /kunde|kund:in/i, role: 'Kunde' },
+  { pattern: /vertrieb|account/i, role: 'Vertrieb' },
+  { pattern: /service|dispatcher|leitstand/i, role: 'Servicekoordination' },
+  { pattern: /qualit|qm|qs/i, role: 'Qualitätsmanagement' },
+  { pattern: /buchhaltung|finance|kreditor|debitor/i, role: 'Buchhaltung' },
+  { pattern: /logistik|lager|versand/i, role: 'Logistik' },
+  { pattern: /admin|it|support/i, role: 'IT' },
 ];
-=======
-const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
-const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
->>>>>>> theirs
-=======
-const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
-const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
->>>>>>> theirs
-=======
-const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
-const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
->>>>>>> theirs
-=======
-const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
-const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
->>>>>>> theirs
-=======
-const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
-const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
->>>>>>> theirs
-=======
-const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
-const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
->>>>>>> theirs
-=======
-const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
-const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
->>>>>>> theirs
-=======
-const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
-const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
->>>>>>> theirs
-=======
-const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
-const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
->>>>>>> theirs
 
 function splitSections(text: string): Map<string, string> {
   const sections = new Map<string, string>();
@@ -455,25 +413,36 @@ function parsePipeTableBlocks(text: string): ParsedTableBlock[] {
 
   lines.forEach((line, index) => {
     const trimmed = line.trim();
-    if (!trimmed.startsWith('|') || PIPE_SEPARATOR_RE.test(trimmed)) {
+    if (!trimmed.startsWith('|')) {
       flush(index);
       return;
     }
+    if (PIPE_SEPARATOR_RE.test(trimmed)) {
+      return;
+    }
+
     const cells = trimmed
       .replace(/^\|/, '')
       .replace(/\|$/, '')
       .split('|')
-<<<<<<< ours
       .map(cell => cleanCell(cell) ?? '')
       .filter(cell => cell.length > 0 || trimmed.includes('||'));
+
     if (cells.length < 2) {
       flush(index);
       return;
-=======
-      .map(c => c.trim());
-    if (cells.length >= 2) rows.push(cells);
-  }
-  return rows;
+    }
+
+    if (!current) current = { rows: [], startLine: index + 1 };
+    current.rows.push(cells);
+  });
+
+  flush(lines.length);
+  return blocks;
+}
+
+function parsePipeTableRows(sectionText: string): string[][] {
+  return chooseBestTableBlock(parsePipeTableBlocks(sectionText), 2)?.rows ?? [];
 }
 
 function parseDelimitedTableRows(sectionText: string): string[][] {
@@ -492,50 +461,20 @@ function parseDelimitedTableRows(sectionText: string): string[][] {
     } else {
       cells = trimmed.split(/\s{2,}/).map(cell => cell.trim());
     }
+
     cells = cells.filter(Boolean);
     if (cells.length >= 2) rows.push(cells);
   }
   return rows;
 }
 
-function detectPipeTableHeaders(rows: string[][]): number {
-  if (!rows.length) return -1;
-  const first = rows[0].map(c => c.toLowerCase());
-  const headerKeywords = ['schritt', 'nr', 'code', 'verantwortlich', 'termin', 'ergebnis', 'beschreibung', 'prozessschritt'];
-  const matches = first.filter(c => headerKeywords.some(k => c.includes(k)));
-  return matches.length >= 2 ? 0 : -1;
-}
-
-function mapPipeTableHeaders(headerRow: string[]): Record<string, number> {
-  const map: Record<string, number> = {};
-  headerRow.forEach((cell, i) => {
-    const lc = cell.toLowerCase();
-    if (STEP_CODE_INLINE_RE.test(cell)) {
-      map['code'] = i;
-    } else if (lc.includes('prozessschritt') || lc.includes('schritt') || lc.includes('aktivität') || lc.includes('tätigkeit')) {
-      map['label'] = i;
-    } else if (lc.includes('verantwortlich') || lc.includes('zuständig') || lc.includes('rolle')) {
-      map['responsible'] = i;
-    } else if (lc.includes('beschreibung') || lc.includes('inhalt')) {
-      map['description'] = i;
-    } else if (lc.includes('termin') || lc.includes('frist') || lc.includes('zeitpunkt')) {
-      map['due'] = i;
-    } else if (lc.includes('ergebnis') || lc.includes('nachweis') || lc.includes('output')) {
-      map['result'] = i;
-    } else if (lc.includes('nr') || lc.includes('code') || lc === 'id') {
-      map['code'] = i;
->>>>>>> theirs
-    }
-    if (!current) current = { rows: [], startLine: index };
-    current.rows.push(cells);
-  });
-
-  flush(lines.length);
-  return blocks;
-}
-
 function headerCoverage(row: string[]): number {
   return row.filter(cell => Boolean(classifyHeaderKey(cell))).length;
+}
+
+function detectPipeTableHeaders(rows: string[][]): number {
+  if (!rows.length) return -1;
+  return headerCoverage(rows[0] ?? []) >= 2 ? 0 : -1;
 }
 
 function chooseBestTableBlock(blocks: ParsedTableBlock[], minHeaders = 2): ParsedTableBlock | undefined {
@@ -557,75 +496,6 @@ function mapHeaderRow(row: string[]): Partial<Record<HeaderKey, number>> {
   return map;
 }
 
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-function buildStepFromHeaderMappedRow(row: string[], headerMap: Partial<Record<HeaderKey, number>>): StructuredProcedureStep | null {
-  const get = (key: HeaderKey): string | undefined => {
-    const idx = headerMap[key];
-    return idx !== undefined && idx < row.length ? cleanCell(row[idx]) : undefined;
-  };
-
-  let code = get('code');
-  let label = get('label');
-  const description = get('description');
-
-  if (!label && code && !STEP_CODE_INLINE_RE.test(code)) {
-    label = code;
-    code = undefined;
-  }
-
-  if (!label) {
-    const fallback = row.find(cell => isMeaningfulStepLabel(cell));
-    if (fallback) label = fallback;
-  }
-
-  if (!isMeaningfulStepLabel(label)) return null;
-
-  const responsible = canonicalRoleLabel(get('responsible'));
-  const systems = canonicalSystemLabels(get('system'));
-
-  return {
-    stepCode: code,
-    label: normalizeLabel(label),
-    responsible,
-    description,
-    due: get('due'),
-    result: get('result'),
-    system: selectPrimarySystem(systems),
-    decision: get('decision'),
-    evidenceSnippet: row.filter(Boolean).join(' | ').slice(0, 300),
-  };
-}
-
-function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
-  const bestBlock = chooseBestTableBlock(parsePipeTableBlocks(sectionText));
-  if (!bestBlock || bestBlock.rows.length < 2) return [];
-  const headerMap = mapHeaderRow(bestBlock.rows[0]);
-  if (headerMap.label === undefined && headerMap.code === undefined) return [];
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 function sanitizeStepLabel(label: string | undefined): string | undefined {
   if (!label) return undefined;
   const normalized = label.replace(/\s+/g, ' ').trim();
@@ -635,186 +505,61 @@ function sanitizeStepLabel(label: string | undefined): string | undefined {
   return normalized;
 }
 
+function buildStepFromHeaderMappedRow(
+  row: string[],
+  headerMap: Partial<Record<HeaderKey, number>>,
+): StructuredProcedureStep | undefined {
+  const get = (key: HeaderKey): string | undefined => {
+    const index = headerMap[key];
+    return index === undefined ? undefined : cleanCell(row[index]);
+  };
+
+  let codeVal = get('code');
+  let labelVal = sanitizeStepLabel(get('label'));
+
+  if (!labelVal && codeVal && !STEP_CODE_INLINE_RE.test(codeVal)) {
+    labelVal = sanitizeStepLabel(codeVal);
+    codeVal = undefined;
+  }
+
+  if (!labelVal) {
+    const firstFilled = row.find(cell => {
+      const cleaned = cleanCell(cell);
+      return Boolean(cleaned && cleaned.length > 2 && !STEP_CODE_INLINE_RE.test(cleaned) && !isHeaderCell(cleaned));
+    });
+    labelVal = sanitizeStepLabel(firstFilled);
+  }
+
+  if (!labelVal) return undefined;
+
+  const responsible = canonicalRoleLabel(get('responsible'));
+  const systems = canonicalSystemLabels(get('system'));
+
+  return {
+    stepCode: codeVal,
+    label: labelVal,
+    responsible,
+    description: cleanCell(get('description')),
+    due: cleanCell(get('due')),
+    result: cleanCell(get('result')),
+    system: selectPrimarySystem(systems),
+    decision: cleanCell(get('decision')),
+    evidenceSnippet: row.filter(Boolean).join(' | '),
+  };
+}
+
 function parseTableStepsFromRows(rows: string[][]): StructuredProcedureStep[] {
   if (!rows.length) return [];
   const headerIdx = detectPipeTableHeaders(rows);
   if (headerIdx < 0) return [];
-  const colMap = mapPipeTableHeaders(rows[headerIdx]);
->>>>>>> theirs
 
-  const steps = bestBlock.rows
-    .slice(1)
+  const headerMap = mapHeaderRow(rows[headerIdx]);
+  const steps = rows
+    .slice(headerIdx + 1)
     .map(row => buildStepFromHeaderMappedRow(row, headerMap))
     .filter((step): step is StructuredProcedureStep => Boolean(step));
 
-<<<<<<< ours
   return dedupeSteps(steps);
-}
-
-function isLikelyStepHeaderSequence(values: string[]): boolean {
-  const mapped = values.map(classifyHeaderKey).filter(Boolean);
-  return mapped.includes('label') && mapped.length >= 2;
-}
-
-function parseFlatSequentialTableSteps(sectionText: string): StructuredProcedureStep[] {
-  const lines = normalisedLines(sectionText);
-  if (lines.length < 6) return [];
-
-  const headerStart = lines.findIndex((line, index) => {
-    if (!/^nr\.?$/i.test(line) && !/^schritt$/i.test(line) && !/^prozessschritt$/i.test(line)) return false;
-    const window = lines.slice(index, index + 7);
-    return isLikelyStepHeaderSequence(window);
-  });
-
-  if (headerStart < 0) return [];
-
-  const headerLines: string[] = [];
-  let cursor = headerStart;
-  while (cursor < lines.length && !DIGIT_ONLY_RE.test(lines[cursor]) && !NAMED_SECTION_RE.test(lines[cursor])) {
-    headerLines.push(lines[cursor]);
-    cursor += 1;
-    if (headerLines.length >= 7) break;
-  }
-
-  const headerMap = mapHeaderRow(headerLines);
-  const dataColumns = Object.keys(headerMap).length;
-  if (dataColumns < 2 || (headerMap.label === undefined && headerMap.code === undefined)) return [];
-
-  const steps: StructuredProcedureStep[] = [];
-  while (cursor < lines.length) {
-    const rowStart = lines[cursor];
-    if (!DIGIT_ONLY_RE.test(rowStart)) {
-      cursor += 1;
-      continue;
-    }
-
-    cursor += 1;
-    const rowValues: string[] = [rowStart];
-    while (cursor < lines.length && rowValues.length < headerLines.length && !DIGIT_ONLY_RE.test(lines[cursor]) && !NAMED_SECTION_RE.test(lines[cursor])) {
-      rowValues.push(lines[cursor]);
-      cursor += 1;
-=======
-    let codeVal = get('code');
-    let labelVal = sanitizeStepLabel(get('label'));
-    if (!labelVal && codeVal && !STEP_CODE_INLINE_RE.test(codeVal)) {
-      labelVal = sanitizeStepLabel(codeVal);
-      codeVal = undefined;
-    }
-    if (!labelVal) {
-      const firstFilled = row.find(c => c.length > 2 && !STEP_CODE_INLINE_RE.test(c));
-      labelVal = sanitizeStepLabel(firstFilled);
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-    }
-
-    const step = buildStepFromHeaderMappedRow(rowValues, headerMap);
-    if (step) steps.push(step);
-  }
-
-  return dedupeSteps(steps);
-}
-
-function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
-  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
-}
-
-function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
-  const pipeSteps = parsePipeTableSteps(sectionText);
-  if (pipeSteps.length >= 2) return pipeSteps;
-  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
-}
-
-function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
-  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
-}
-
-function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
-  const pipeSteps = parsePipeTableSteps(sectionText);
-  if (pipeSteps.length >= 2) return pipeSteps;
-  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
-}
-
-function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
-  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
-}
-
-function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
-  const pipeSteps = parsePipeTableSteps(sectionText);
-  if (pipeSteps.length >= 2) return pipeSteps;
-  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
-}
-
-function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
-  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
-}
-
-function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
-  const pipeSteps = parsePipeTableSteps(sectionText);
-  if (pipeSteps.length >= 2) return pipeSteps;
-  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
-}
-
-function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
-  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
-}
-
-function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
-  const pipeSteps = parsePipeTableSteps(sectionText);
-  if (pipeSteps.length >= 2) return pipeSteps;
-  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
-}
-
-function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
-  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
-}
-
-function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
-  const pipeSteps = parsePipeTableSteps(sectionText);
-  if (pipeSteps.length >= 2) return pipeSteps;
-  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
-}
-
-function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
-  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
-}
-
-function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
-  const pipeSteps = parsePipeTableSteps(sectionText);
-  if (pipeSteps.length >= 2) return pipeSteps;
-  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
-}
-
-function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
-  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
-}
-
-function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
-  const pipeSteps = parsePipeTableSteps(sectionText);
-  if (pipeSteps.length >= 2) return pipeSteps;
-  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
 }
 
 function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
@@ -888,36 +633,8 @@ function parseFlatStepBlocks(sectionText: string): StructuredProcedureStep[] {
       }
     }
 
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-    if (!isMeaningfulStepLabel(label)) continue;
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
     label = sanitizeStepLabel(label) ?? '';
     if (!label) continue;
->>>>>>> theirs
 
     steps.push({
       stepCode,
@@ -1042,42 +759,6 @@ export function extractStructuredProcedureFromText(
   let steps: StructuredProcedureStep[] = [];
 
   if (stepsSection) {
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-    steps = parsePipeTableSteps(stepsSection);
-    if (!steps.length) steps = parseFlatSequentialTableSteps(stepsSection);
-    if (!steps.length) steps = parseFlatStepBlocks(stepsSection);
-  }
-
-  if (!steps.length) {
-    steps = parsePipeTableSteps(text);
-    if (!steps.length) steps = parseFlatSequentialTableSteps(text);
-    if (!steps.length) steps = parseFlatStepBlocks(text);
-    if (steps.length) warnings.push('Prozessschritte wurden nicht im erwarteten Ablaufblock gefunden – Ganztext-Fallback verwendet.');
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
     steps = parseFlexibleTableSteps(stepsSection);
     if (!steps.length) {
       steps = parseFlatStepBlocks(stepsSection);
@@ -1092,7 +773,6 @@ export function extractStructuredProcedureFromText(
     if (steps.length) {
       warnings.push('Prozessschritte wurden nicht in Abschnitt 4 gefunden – ganztext-Fallback verwendet.');
     }
->>>>>>> theirs
   }
 
   const roles = [
