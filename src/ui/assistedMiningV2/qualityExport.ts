@@ -123,7 +123,10 @@ export interface ProcessMiningQualityExportFile {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -135,6 +138,9 @@ export interface ProcessMiningQualityExportFile {
       : never;
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -150,7 +156,10 @@ export interface ProcessMiningQualityExportFile {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -175,6 +184,9 @@ export interface ProcessMiningQualityExportFile {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -190,7 +202,10 @@ export interface ProcessMiningQualityExportFile {
     qualityAssessment: {
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
       scoringProfile?: {
@@ -203,6 +218,9 @@ export interface ProcessMiningQualityExportFile {
       blockerReasons?: string[];
       confidenceAdjustments?: string[];
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1146,6 +1164,7 @@ export function buildQualityExportFile(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const analysisMode = detectProcessMiningAnalysisMode({
     cases: state.cases,
     observations: state.observations,
@@ -1193,6 +1212,8 @@ export function buildQualityExportFile(params: {
 >>>>>>> theirs
 =======
 >>>>>>> theirs
+=======
+>>>>>>> theirs
   const lastSummary = state.lastDerivationSummary;
   const warnings = lastSummary?.warnings ?? [];
   const stepLabels = lastSummary?.stepLabels ?? [];
@@ -1202,9 +1223,12 @@ export function buildQualityExportFile(params: {
   const confidence = lastSummary?.confidence ?? 'low';
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const evidenceCoverageScore = stepCount > 0 ? evidenceBackedSteps / stepCount : 0;
   const conservativeTriggered = warnings.some(w => /konservative auswertung aktiv|vorläufiger prozessentwurf/i.test(w));
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
   const conservativeTriggered = warnings.some(w => /konservative auswertung aktiv|vorläufiger prozessentwurf/i.test(w));
@@ -1266,6 +1290,9 @@ export function buildQualityExportFile(params: {
     return clamp01(docKind === 'unknown' ? 0.25 : docKind === 'weak-material' ? 0.4 : 0.8);
   })();
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1276,9 +1303,15 @@ export function buildQualityExportFile(params: {
       label: 'Dokumenttyp-Erkennung',
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
       score: clamp01(docKind === 'unknown' ? 0.25 : docKind === 'weak-material' ? 0.4 : 0.8),
       level: scoreToLevel(docKind === 'unknown' ? 0.25 : docKind === 'weak-material' ? 0.4 : 0.8),
       reason: `Erkannter Typ: ${docKind}.`,
+=======
+      score: docTypeScore,
+      level: scoreToLevel(docTypeScore),
+      reason: `Aktiver Modus ${mode}, Routing ${routingClass ?? 'unbekannt'}, Dokumenttyp ${docKind}.`,
+>>>>>>> theirs
 =======
       score: docTypeScore,
       level: scoreToLevel(docTypeScore),
@@ -1295,10 +1328,13 @@ export function buildQualityExportFile(params: {
       label: 'Strukturtreue',
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
       score: clamp01(stepLabels.length >= 6 ? 0.85 : stepLabels.length >= 3 ? 0.6 : 0.3),
       level: scoreToLevel(stepLabels.length >= 6 ? 0.85 : stepLabels.length >= 3 ? 0.6 : 0.3),
       reason: `${stepLabels.length} belastbare Schrittlabels in der letzten Ableitung.`,
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
       score: structureScore,
@@ -1309,6 +1345,9 @@ export function buildQualityExportFile(params: {
         ? 'Defensive Strukturbewertung für schwache Tabellenquellen.'
         : `${stepLabels.length} belastbare Schrittlabels in der letzten Ableitung.`,
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1318,9 +1357,15 @@ export function buildQualityExportFile(params: {
       label: 'Schrittklarheit',
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
       score: clamp01(stepLabels.length > 0 ? stepLabels.filter(label => label.trim().length >= 8).length / stepLabels.length : 0),
       level: scoreToLevel(stepLabels.length > 0 ? stepLabels.filter(label => label.trim().length >= 8).length / stepLabels.length : 0),
       reason: 'Bewertung anhand Länge und Nutzbarkeit der Schrittlabels.',
+=======
+      score: clamp01(semanticStepShare),
+      level: scoreToLevel(semanticStepShare),
+      reason: 'Semantische Prüfung auf Aktivitätscharakter, Fragmentfreiheit und Ausschluss schwacher Kanal-/Notizlabels.',
+>>>>>>> theirs
 =======
       score: clamp01(semanticStepShare),
       level: scoreToLevel(semanticStepShare),
@@ -1362,8 +1407,11 @@ export function buildQualityExportFile(params: {
       level: scoreToLevel(evidenceCoverageScore),
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
       reason: `${evidenceBackedSteps}/${stepCount} Schritte haben Evidenzsnippets.`,
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
       reason: mode === 'eventlog-table'
@@ -1372,6 +1420,9 @@ export function buildQualityExportFile(params: {
         ? 'Weak-Table-Modus: Evidenz für Signale/Cluster statt erzwungener Prozessschritte.'
         : `${evidenceBackedSteps}/${stepCount} Schritte haben Evidenzsnippets.`,
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1379,6 +1430,7 @@ export function buildQualityExportFile(params: {
     {
       key: 'conservativeHandling',
       label: 'Vorsicht bei schwachem Material',
+<<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
       score: clamp01(conservativeTriggered ? 0.9 : confidence === 'low' ? 0.7 : 0.5),
@@ -1407,6 +1459,8 @@ export function buildQualityExportFile(params: {
 =======
 >>>>>>> theirs
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
       score: clamp01(cautionScore),
@@ -1458,6 +1512,9 @@ export function buildQualityExportFile(params: {
   ];
   const overall = scoreToLevel(avg);
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1555,6 +1612,10 @@ export function buildQualityExportFile(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+=======
+      tablePipeline: lastSummary?.tablePipeline,
+>>>>>>> theirs
 =======
       tablePipeline: lastSummary?.tablePipeline,
 >>>>>>> theirs
@@ -1576,7 +1637,10 @@ export function buildQualityExportFile(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -1602,6 +1666,9 @@ export function buildQualityExportFile(params: {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -1617,7 +1684,10 @@ export function buildQualityExportFile(params: {
       qualityAssessment: {
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
         scoringProfile: {
@@ -1634,6 +1704,9 @@ export function buildQualityExportFile(params: {
         blockerReasons,
         confidenceAdjustments,
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs

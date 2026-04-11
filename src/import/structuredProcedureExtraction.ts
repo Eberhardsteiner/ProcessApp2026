@@ -45,6 +45,7 @@ const SECTION_RE = /^\s*(\d+)\.\s+/;
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 const NAMED_SECTION_RE = /^\s*(\d{1,2})\.\s+(.+?)\s*$/;
 const DIGIT_ONLY_RE = /^\d{1,2}$/;
 const PIPE_SEPARATOR_RE = /^\|[-\s|]+\|?\s*$/;
@@ -110,6 +111,10 @@ const ROLE_KEYWORD_HINTS: Array<{ pattern: RegExp; role: string }> = [
   { pattern: /fachliche bewertung|stellungnahme|leistungsnachweis/i, role: 'Fachbereich' },
   { pattern: /entscheidung treffen|gutschrift|storno|teilzahlung|zahlung/i, role: 'Teamleitung' },
 ];
+=======
+const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
+const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
+>>>>>>> theirs
 =======
 const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
 const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
@@ -560,6 +565,7 @@ function mapHeaderRow(row: string[]): Partial<Record<HeaderKey, number>> {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 function buildStepFromHeaderMappedRow(row: string[], headerMap: Partial<Record<HeaderKey, number>>): StructuredProcedureStep | null {
   const get = (key: HeaderKey): string | undefined => {
     const idx = headerMap[key];
@@ -604,6 +610,8 @@ function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
   const headerMap = mapHeaderRow(bestBlock.rows[0]);
   if (headerMap.label === undefined && headerMap.code === undefined) return [];
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -702,6 +710,9 @@ function parseFlatSequentialTableSteps(sectionText: string): StructuredProcedure
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -724,6 +735,16 @@ function parseFlatSequentialTableSteps(sectionText: string): StructuredProcedure
   }
 
   return dedupeSteps(steps);
+}
+
+function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
+  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
+}
+
+function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
+  const pipeSteps = parsePipeTableSteps(sectionText);
+  if (pipeSteps.length >= 2) return pipeSteps;
+  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
 }
 
 function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
@@ -875,8 +896,11 @@ function parseFlatStepBlocks(sectionText: string): StructuredProcedureStep[] {
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     if (!isMeaningfulStepLabel(label)) continue;
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
@@ -1026,6 +1050,7 @@ export function extractStructuredProcedureFromText(
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     steps = parsePipeTableSteps(stepsSection);
     if (!steps.length) steps = parseFlatSequentialTableSteps(stepsSection);
     if (!steps.length) steps = parseFlatStepBlocks(stepsSection);
@@ -1037,6 +1062,8 @@ export function extractStructuredProcedureFromText(
     if (!steps.length) steps = parseFlatStepBlocks(text);
     if (steps.length) warnings.push('Prozessschritte wurden nicht im erwarteten Ablaufblock gefunden – Ganztext-Fallback verwendet.');
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
 =======
