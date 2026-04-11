@@ -39,6 +39,7 @@ export function LocalEngineProfilePanel({ summary }: Props) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4);
   const multiCase = summary?.multiCaseSummary;
+  const candidateReview = summary?.candidateReview;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
@@ -107,6 +108,30 @@ export function LocalEngineProfilePanel({ summary }: Props) {
               Defensive Einordnung: {summary.routingContext.fallbackReason}
             </p>
           )}
+        </div>
+      )}
+
+      {candidateReview && (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Kernschritte</p>
+            <p className="mt-1 text-sm font-medium text-emerald-900">{candidateReview.mergedCoreSteps} evidenzgestützt finalisiert</p>
+          </div>
+          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-700">Zurückgehalten</p>
+            <p className="mt-1 text-sm font-medium text-rose-900">{candidateReview.rejectedCoreSteps} Kernschritte verworfen</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Lokale Rollen</p>
+            <p className="mt-1 text-sm font-medium text-slate-800">{candidateReview.localRoleAssignments} lokal verankerte Zuordnungen</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Support / Fragmente</p>
+            <p className="mt-1 text-sm font-medium text-slate-800">
+              {candidateReview.supportOnlyCandidates} Support-Hinweise
+              {candidateReview.weakFragmentCount > 0 ? ` · ${candidateReview.weakFragmentCount} schwache Fragmente` : ''}
+            </p>
+          </div>
         </div>
       )}
 

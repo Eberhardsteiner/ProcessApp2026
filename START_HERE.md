@@ -27,6 +27,14 @@ npm run dev
 - Tabellen werden vor dem starken Eventlog-Pfad über [src/import/sourceRouter.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/import/sourceRouter.ts) geprüft und in [src/ui/assistedMiningV2/tableEventPipeline.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ui/assistedMiningV2/tableEventPipeline.ts) defensiv bestätigt oder abgerüstet
 - Der Export zeigt die Routing-Entscheidung direkt in `context.sourceRouting` und zusätzlich im `lastDerivationSummary.routingContext`
 
+## Evidenzbasierte Extraktion (Phase 3)
+
+- Schritte, Rollen und Systeme laufen produktiv zuerst über das gemeinsame Kandidatenmodell in [src/ui/assistedMiningV2/evidenceModel.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ui/assistedMiningV2/evidenceModel.ts).
+- Ein finaler Kernschritt braucht einen Evidenzanker und ein lokales Kontextfenster; schwache Fragmente werden als `support-only`, `issue-signal`, `friction-signal`, `governance-note` oder `weak-raw-fragment` gehalten.
+- Die Dokumentableitung in [src/ui/assistedMiningV2/documentDerivation.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ui/assistedMiningV2/documentDerivation.ts) und der Tabellenpfad in [src/ui/assistedMiningV2/tableEventPipeline.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ui/assistedMiningV2/tableEventPipeline.ts) erzeugen zuerst Kandidaten und finalisieren Kernschritte erst nach Evidenzprüfung.
+- Narrative Restableitung in [src/ui/assistedMiningV2/narrativeParsing.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ui/assistedMiningV2/narrativeParsing.ts) führt Nicht-Schritte nicht mehr direkt in den Kernprozess, sondern als Support-/Signalspur.
+- Der operative Export enthält die Evidenztransparenz jetzt explizit über `lastDerivationSummary.extractionCandidates`, `lastDerivationSummary.candidateReview` und `sourceMaterial.extractionCandidates`.
+
 ## Standardprüfung
 
 ```bash

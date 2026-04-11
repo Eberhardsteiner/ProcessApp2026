@@ -1,7 +1,19 @@
-import type { DerivationSummary, ProcessMiningObservation, ProcessMiningObservationCase } from '../../domain/process';
+import type { DerivationSummary, ExtractionCandidate, ProcessMiningObservation, ProcessMiningObservationCase } from '../../domain/process';
 import type { CsvImportConfig } from './fileImport';
 import { LOCAL_MINING_ENGINE_VERSION } from './documentDerivation';
 import { mapRoutingClassToDocumentKind, routeSourceMaterial } from '../../import/sourceRouter';
+import {
+  buildContextWindow,
+  buildEvidenceSourceRef,
+  buildExtractionCandidateReview,
+  createObservationFromStepCandidate,
+  createRoleCandidates,
+  createStepCandidate,
+  createSupportCandidate,
+  createSystemCandidates,
+  reviewExtractionCandidates,
+} from './evidenceModel';
+import { uniqueStrings } from './pmShared';
 
 type SemanticType = NonNullable<NonNullable<DerivationSummary['tablePipeline']>['inferredSchema'][number]>['inferredSemanticType'];
 
@@ -158,7 +170,9 @@ export function runTableEventPipeline(params: {
 
   const casesByRef = new Map<string, ProcessMiningObservationCase>();
   const observations: ProcessMiningObservation[] = [];
+  const extractionCandidates: ExtractionCandidate[] = [];
   const warnings: string[] = [];
+  const weakIssueEvidence: Array<{ label: string; snippet: string }> = [];
   let weakSignalsCreated = 0;
 
   rows.forEach((row, rowIndex) => {
@@ -166,6 +180,13 @@ export function runTableEventPipeline(params: {
     const caseRef = caseIdMap ? normalize(row[caseIdMap.columnIndex] ?? '') : '';
     const activity = activityMap ? normalize(row[activityMap.columnIndex] ?? '') : '';
     const timestampRaw = timeMap ? normalize(row[timeMap.columnIndex] ?? '') : '';
+    const rowContext = buildContextWindow(
+      headers.map((header, columnIndex) => {
+        const value = normalize(row[columnIndex] ?? '');
+        return value ? `${header}: ${value}` : undefined;
+      }),
+      420,
+    );
 
     if (canUseEventlog) {
       if (!caseRef || !activity) return;
@@ -189,19 +210,65 @@ export function runTableEventPipeline(params: {
       }
       const caseObj = casesByRef.get(caseRef)!;
       const seq = observations.filter(item => item.sourceCaseId === caseObj.id).length;
-      observations.push({
-        id: crypto.randomUUID(),
-        sourceCaseId: caseObj.id,
-        label: activity,
-        evidenceSnippet: `${rowAnchor} | ${activity}`,
-        role: config.roleColIdx >= 0 ? normalize(row[config.roleColIdx] ?? '') || undefined : undefined,
-        system: config.systemColIdx >= 0 ? normalize(row[config.systemColIdx] ?? '') || undefined : undefined,
-        kind: 'step',
+      const role = config.roleColIdx >= 0 ? normalize(row[config.roleColIdx] ?? '') || undefined : undefined;
+      const system = config.systemColIdx >= 0 ? normalize(row[config.systemColIdx] ?? '') || undefined : undefined;
+      const stepCandidate = createStepCandidate({
+        rawLabel: activity,
+        evidenceAnchor: `${rowAnchor} | ${activity}`,
+        contextWindow: rowContext,
+        confidence: routedTable.routingConfidence,
+        originChannel: 'event-row',
+        sourceFragmentType: 'event-row',
+        routingContext: {
+          routingClass: 'eventlog-table',
+          routingConfidence: routedTable.routingConfidence,
+          routingSignals: [...routedTable.routingSignals, 'table-pipeline:eventlog'],
+        },
+        sourceRef: buildEvidenceSourceRef(caseObj.id, `event-row:${rowIndex + 1}`),
+        index: seq,
+      });
+
+      extractionCandidates.push(stepCandidate);
+      extractionCandidates.push(...createRoleCandidates({
+        labels: role ? [role] : [],
+        evidenceAnchor: rowContext,
+        contextWindow: rowContext,
+        confidence: routedTable.routingConfidence,
+        originChannel: 'event-row',
+        sourceFragmentType: 'event-row',
+        routingContext: {
+          routingClass: 'eventlog-table',
+          routingConfidence: routedTable.routingConfidence,
+          routingSignals: [...routedTable.routingSignals, 'table-pipeline:eventlog'],
+        },
+        sourceRef: stepCandidate.sourceRef ?? buildEvidenceSourceRef(caseObj.id, `event-row:${rowIndex + 1}`),
+        relatedCandidateId: stepCandidate.candidateId,
+      }));
+      extractionCandidates.push(...createSystemCandidates({
+        labels: system ? [system] : [],
+        evidenceAnchor: rowContext,
+        contextWindow: rowContext,
+        confidence: routedTable.routingConfidence,
+        originChannel: 'event-row',
+        sourceFragmentType: 'event-row',
+        routingContext: {
+          routingClass: 'eventlog-table',
+          routingConfidence: routedTable.routingConfidence,
+          routingSignals: [...routedTable.routingSignals, 'table-pipeline:eventlog'],
+        },
+        sourceRef: stepCandidate.sourceRef ?? buildEvidenceSourceRef(caseObj.id, `event-row:${rowIndex + 1}`),
+        relatedCandidateId: stepCandidate.candidateId,
+      }));
+
+      observations.push(createObservationFromStepCandidate({
+        candidate: stepCandidate,
+        caseId: caseObj.id,
         sequenceIndex: seq,
+        role,
+        system,
         timestampRaw: timestampRaw || undefined,
         timestampQuality: timestampRaw ? 'real' : 'missing',
-        createdAt: new Date().toISOString(),
-      });
+      }));
       return;
     }
 
@@ -229,11 +296,34 @@ export function runTableEventPipeline(params: {
       });
     }
     const weakCase = casesByRef.get(weakCaseId)!;
+    const weakSignalLabel = `Tabellensignal: ${weakLabel.slice(0, 60)}`;
+    weakIssueEvidence.push({ label: weakSignalLabel, snippet: `${rowAnchor} | ${rowContext || weakLabel}` });
+    extractionCandidates.push(createSupportCandidate({
+      candidateType: 'signal',
+      rawLabel: weakSignalLabel,
+      evidenceAnchor: `${rowAnchor} | ${weakLabel}`,
+      contextWindow: rowContext || weakLabel,
+      confidence: 'low',
+      originChannel: 'table-row',
+      sourceFragmentType: 'table-row',
+      routingContext: {
+        routingClass: routedTable.routingClass === 'eventlog-table' ? 'weak-raw-table' : routedTable.routingClass,
+        routingConfidence: routedTable.routingClass === 'eventlog-table' ? 'low' : routedTable.routingConfidence,
+        routingSignals: [...routedTable.routingSignals, 'table-pipeline:defensive'],
+        fallbackReason: reasons.join(' '),
+      },
+      sourceRef: buildEvidenceSourceRef(weakCase.id, `weak-row:${rowIndex + 1}`),
+      supportClass: 'weak-raw-fragment',
+    }));
     observations.push({
       id: crypto.randomUUID(),
       sourceCaseId: weakCase.id,
-      label: `Tabellensignal: ${weakLabel.slice(0, 60)}`,
+      label: weakSignalLabel,
       evidenceSnippet: `${rowAnchor} | ${weakLabel}`,
+      evidenceAnchor: `${rowAnchor} | ${weakLabel}`,
+      contextWindow: rowContext || weakLabel,
+      originChannel: 'table-row',
+      sourceFragmentType: 'table-row',
       kind: 'issue',
       sequenceIndex: observations.length,
       timestampQuality: 'missing',
@@ -245,6 +335,18 @@ export function runTableEventPipeline(params: {
 
   const cases = [...casesByRef.values()];
   const stepCount = observations.filter(item => item.kind === 'step').length;
+  const reviewedCandidates = reviewExtractionCandidates(extractionCandidates);
+  const candidateReview = buildExtractionCandidateReview(reviewedCandidates);
+  const roles = uniqueStrings(
+    reviewedCandidates
+      .filter(candidate => candidate.candidateType === 'role' && candidate.status !== 'support-only')
+      .map(candidate => candidate.normalizedLabel),
+  );
+  const systems = uniqueStrings(
+    reviewedCandidates
+      .filter(candidate => candidate.candidateType === 'system' && candidate.status !== 'support-only')
+      .map(candidate => candidate.normalizedLabel),
+  );
   const traceStats = canUseEventlog
     ? {
         caseCount: cases.length,
@@ -263,9 +365,10 @@ export function runTableEventPipeline(params: {
     warnings,
     confidence: canUseEventlog ? routedTable.routingConfidence : 'low',
     stepLabels: observations.filter(item => item.kind === 'step').map(item => item.label),
-    roles: [],
-    systems: [],
+    roles,
+    systems,
     issueSignals: observations.filter(item => item.kind === 'issue').map(item => item.label),
+    issueEvidence: weakIssueEvidence,
     routingContext: {
       routingClass: canUseEventlog ? 'eventlog-table' : (routedTable.routingClass === 'eventlog-table' ? 'weak-raw-table' : routedTable.routingClass),
       routingConfidence: canUseEventlog ? routedTable.routingConfidence : 'low',
@@ -299,6 +402,8 @@ export function runTableEventPipeline(params: {
       traceStats,
       weakTableSignals: canUseEventlog ? undefined : observations.slice(0, 15).map(item => item.label),
     },
+    extractionCandidates: reviewedCandidates,
+    candidateReview,
     engineVersion: LOCAL_MINING_ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),

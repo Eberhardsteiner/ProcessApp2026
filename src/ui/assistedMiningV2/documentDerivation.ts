@@ -17,7 +17,6 @@ import type { StructuredProcedureStep } from '../../import/structuredProcedureEx
 import { extractObservationsFromCase } from './narrativeParsing';
 import {
   buildAnalysisModeNotice,
-  createObservation,
   detectProcessMiningAnalysisMode,
   normalizeWhitespace,
   sentenceCase,
@@ -42,6 +41,17 @@ import {
   filterRolesByDomain,
   filterSystemsByDomain,
 } from './domainIsolation';
+import {
+  buildContextWindow,
+  buildEvidenceSourceRef,
+  buildExtractionCandidateReview,
+  createObservationFromStepCandidate,
+  createRoleCandidates,
+  createStepCandidate,
+  createSupportCandidate,
+  createSystemCandidates,
+  reviewExtractionCandidates,
+} from './evidenceModel';
 
 export interface DerivationInput {
   text: string;
@@ -569,38 +579,193 @@ function extractIssueEvidence(text: string, context?: { primary: DomainKey; seco
   return deduped.filter(entry => isIssueAllowedInDomain(entry.label, context));
 }
 
-function toObservationsFromStructured(caseId: string, steps: StructuredProcedureStep[]): ProcessMiningObservation[] {
-  return steps.map((step, index) =>
-    createObservation({
-      caseId,
-      label: step.label,
-      sequenceIndex: index,
-      role: step.responsible,
-      system: step.system,
-      evidenceSnippet: step.evidenceSnippet,
-      kind: 'step',
-      timestampQuality: 'missing',
-    }),
-  );
+function collectLocalRoleLabels(parts: Array<string | undefined>): string[] {
+  const text = parts.filter(Boolean).join(' ');
+  return uniqueStrings([
+    ...parts,
+    ...extractRoles(text),
+  ]);
 }
 
-function toObservationsFromSemiStructured(caseId: string, steps: SemiStructuredProcedureStep[]): ProcessMiningObservation[] {
-  return steps.map((step, index) =>
-    createObservation({
-      caseId,
-      label: canonicalizeProcessStepLabel({ title: step.label, body: step.description || step.evidenceSnippet, fallback: step.label, index }),
-      sequenceIndex: index,
-      role: step.responsible,
-      evidenceSnippet: step.evidenceSnippet,
-      kind: 'step',
-      timestampQuality: 'missing',
-    }),
-  );
+function collectLocalSystemLabels(parts: Array<string | undefined>): string[] {
+  const text = parts.filter(Boolean).join(' ');
+  return uniqueStrings([
+    ...parts,
+    ...extractSystems(text),
+  ]);
 }
 
-function dedupeDerivedSteps(
-  steps: Array<{ label: string; role?: string; evidenceSnippet?: string; timestampRaw?: string; systems?: string[]; issueSignals?: string[] }>,
-) {
+function buildStructuredStepArtifacts(
+  caseId: string,
+  steps: StructuredProcedureStep[],
+  routingContext: SourceRoutingContext,
+): {
+  observations: ProcessMiningObservation[];
+  extractionCandidates: ExtractionCandidate[];
+  roles: string[];
+  systems: string[];
+  derivedSteps: Array<{ label: string; role?: string; evidenceSnippet?: string }>;
+} {
+  const observations: ProcessMiningObservation[] = [];
+  const extractionCandidates: ExtractionCandidate[] = [];
+  const collectedRoles: string[] = [];
+  const collectedSystems: string[] = [];
+  const derivedSteps: Array<{ label: string; role?: string; evidenceSnippet?: string }> = [];
+
+  steps.forEach((step, index) => {
+    const evidenceAnchor = step.evidenceSnippet || [step.label, step.description, step.result].filter(Boolean).join(' | ');
+    const contextWindow = buildContextWindow([step.label, step.description, step.result, step.decision, evidenceAnchor]);
+    const localRoles = collectLocalRoleLabels([step.responsible, step.label, step.description, evidenceAnchor]);
+    const localSystems = collectLocalSystemLabels([step.system, step.label, step.description, evidenceAnchor]);
+    const stepCandidate = createStepCandidate({
+      rawLabel: step.label,
+      evidenceAnchor,
+      contextWindow,
+      confidence: evidenceAnchor.length >= 28 ? 'high' : 'medium',
+      originChannel: evidenceAnchor.includes('|') ? 'table-row' : 'bullet-list',
+      sourceFragmentType: evidenceAnchor.includes('|') ? 'table-row' : 'list-item',
+      routingContext,
+      sourceRef: buildEvidenceSourceRef(caseId, `structured-step:${index + 1}`),
+      index,
+    });
+
+    extractionCandidates.push(stepCandidate);
+    extractionCandidates.push(...createRoleCandidates({
+      labels: localRoles,
+      evidenceAnchor,
+      contextWindow,
+      confidence: stepCandidate.confidence,
+      originChannel: stepCandidate.originChannel,
+      sourceFragmentType: stepCandidate.sourceFragmentType,
+      routingContext,
+      sourceRef: stepCandidate.sourceRef ?? buildEvidenceSourceRef(caseId, `structured-step:${index + 1}`),
+      relatedCandidateId: stepCandidate.candidateId,
+    }));
+    extractionCandidates.push(...createSystemCandidates({
+      labels: localSystems,
+      evidenceAnchor,
+      contextWindow,
+      confidence: stepCandidate.confidence,
+      originChannel: stepCandidate.originChannel,
+      sourceFragmentType: stepCandidate.sourceFragmentType,
+      routingContext,
+      sourceRef: stepCandidate.sourceRef ?? buildEvidenceSourceRef(caseId, `structured-step:${index + 1}`),
+      relatedCandidateId: stepCandidate.candidateId,
+    }));
+
+    observations.push(createObservationFromStepCandidate({
+      candidate: stepCandidate,
+      caseId,
+      sequenceIndex: observations.length,
+      role: localRoles[0],
+      system: localSystems[0],
+      timestampQuality: 'missing',
+    }));
+    collectedRoles.push(...localRoles);
+    collectedSystems.push(...localSystems);
+    derivedSteps.push({
+      label: stepCandidate.normalizedLabel,
+      role: localRoles[0],
+      evidenceSnippet: stepCandidate.evidenceAnchor,
+    });
+  });
+
+  return {
+    observations,
+    extractionCandidates,
+    roles: uniqueStrings(collectedRoles),
+    systems: uniqueStrings(collectedSystems),
+    derivedSteps,
+  };
+}
+
+function buildSemiStructuredStepArtifacts(
+  caseId: string,
+  steps: SemiStructuredProcedureStep[],
+  routingContext: SourceRoutingContext,
+): {
+  observations: ProcessMiningObservation[];
+  extractionCandidates: ExtractionCandidate[];
+  roles: string[];
+  systems: string[];
+  derivedSteps: Array<{ label: string; role?: string; evidenceSnippet?: string }>;
+} {
+  const observations: ProcessMiningObservation[] = [];
+  const extractionCandidates: ExtractionCandidate[] = [];
+  const collectedRoles: string[] = [];
+  const collectedSystems: string[] = [];
+  const derivedSteps: Array<{ label: string; role?: string; evidenceSnippet?: string }> = [];
+
+  steps.forEach((step, index) => {
+    const evidenceAnchor = step.evidenceSnippet || [step.label, step.description, step.sourceHeading].filter(Boolean).join(' | ');
+    const contextWindow = buildContextWindow([step.sourceHeading, step.label, step.description, evidenceAnchor]);
+    const localRoles = collectLocalRoleLabels([step.responsible, step.sourceHeading, step.label, step.description, evidenceAnchor]);
+    const localSystems = collectLocalSystemLabels([step.sourceHeading, step.label, step.description, evidenceAnchor]);
+    const stepCandidate = createStepCandidate({
+      rawLabel: step.label,
+      evidenceAnchor,
+      contextWindow,
+      confidence: step.description ? 'medium' : 'low',
+      originChannel: step.sourceHeading ? 'bullet-list' : 'paragraph',
+      sourceFragmentType: step.sourceHeading ? 'list-item' : 'paragraph',
+      routingContext,
+      sourceRef: buildEvidenceSourceRef(caseId, `semi-step:${index + 1}`),
+      index,
+    });
+
+    extractionCandidates.push(stepCandidate);
+    extractionCandidates.push(...createRoleCandidates({
+      labels: localRoles,
+      evidenceAnchor,
+      contextWindow,
+      confidence: stepCandidate.confidence,
+      originChannel: stepCandidate.originChannel,
+      sourceFragmentType: stepCandidate.sourceFragmentType,
+      routingContext,
+      sourceRef: stepCandidate.sourceRef ?? buildEvidenceSourceRef(caseId, `semi-step:${index + 1}`),
+      relatedCandidateId: stepCandidate.candidateId,
+    }));
+    extractionCandidates.push(...createSystemCandidates({
+      labels: localSystems,
+      evidenceAnchor,
+      contextWindow,
+      confidence: stepCandidate.confidence,
+      originChannel: stepCandidate.originChannel,
+      sourceFragmentType: stepCandidate.sourceFragmentType,
+      routingContext,
+      sourceRef: stepCandidate.sourceRef ?? buildEvidenceSourceRef(caseId, `semi-step:${index + 1}`),
+      relatedCandidateId: stepCandidate.candidateId,
+    }));
+
+    observations.push(createObservationFromStepCandidate({
+      candidate: stepCandidate,
+      caseId,
+      sequenceIndex: observations.length,
+      role: localRoles[0],
+      system: localSystems[0],
+      timestampQuality: 'missing',
+    }));
+    collectedRoles.push(...localRoles);
+    collectedSystems.push(...localSystems);
+    derivedSteps.push({
+      label: stepCandidate.normalizedLabel,
+      role: localRoles[0],
+      evidenceSnippet: stepCandidate.evidenceAnchor,
+    });
+  });
+
+  return {
+    observations,
+    extractionCandidates,
+    roles: uniqueStrings(collectedRoles),
+    systems: uniqueStrings(collectedSystems),
+    derivedSteps,
+  };
+}
+
+function dedupeDerivedSteps<T extends { label: string }>(
+  steps: T[],
+): T[] {
   const seen = new Set<string>();
   return steps.filter(step => {
     const key = stepSemanticKey(step.label);
@@ -643,7 +808,7 @@ function buildNarrativeDerivation(params: {
   sourceType: DerivationInput['sourceType'];
   rawText: string;
   warnings: string[];
-  supplementalIssueSignals?: string[];
+  supplementalIssueEvidence?: IssueEvidence[];
   profile: NarrativeDocumentProfile;
   baseConfidence?: 'high' | 'medium' | 'low';
   domainContext?: { primary: DomainKey; secondary?: DomainKey };
@@ -655,7 +820,7 @@ function buildNarrativeDerivation(params: {
     sourceType,
     rawText,
     warnings,
-    supplementalIssueSignals = [],
+    supplementalIssueEvidence = [],
     profile,
     baseConfidence = 'medium',
     domainContext,
@@ -665,27 +830,7 @@ function buildNarrativeDerivation(params: {
   const sourceProfile = buildSourceExtractionPlan(rawText).profile;
   const sourceProfileNote = buildSourceProfileNote(sourceProfile);
   const analysisStrategies = uniqueStrings([...buildAnalysisStrategies(sourceProfile.inputProfileLabel), ...(sourceProfile.extractionPlan ?? [])]).slice(0, 5);
-
-  const derivedStepCandidates = dedupeDerivedSteps(
-    blocks
-      .map((block, index) => {
-        const label = canonicalizeProcessStepLabel({ title: block.title, body: block.body, fallback: block.title, index });
-        const roles = extractRoles(`${block.title} ${block.body}`);
-        const systems = extractSystems(block.body);
-        const issues = extractIssueSignals(`${block.title} ${block.body}`, domainContext);
-        return {
-          label,
-          role: roles[0],
-          evidenceSnippet: normalizeWhitespace(`${block.timestampRaw ? `${block.timestampRaw} | ` : ''}${block.title}. ${block.body}`).slice(0, 320),
-          timestampRaw: block.timestampRaw,
-          systems,
-          issueSignals: issues,
-        };
-      })
-      .filter(step => step.label && step.label.length >= 4),
-  );
-
-  if (derivedStepCandidates.length < 2) return null;
+  const supplementalIssueSignals = uniqueStrings(supplementalIssueEvidence.map(entry => entry.label));
 
   const caseItem = buildCase({
     name: sourceName.replace(/\.[^.]+$/, ''),
@@ -694,47 +839,117 @@ function buildNarrativeDerivation(params: {
     sourceNote: `Import aus: ${sourceName}`,
     sourceType,
     inputKind: sourceType === 'narrative' ? 'narrative' : 'document',
-    derivedStepLabels: derivedStepCandidates.map(step => step.label),
+    derivedStepLabels: dedupeDerivedSteps(
+      blocks.map((block, index) => ({
+        label: canonicalizeProcessStepLabel({ title: block.title, body: block.body, fallback: block.title, index }),
+      })),
+    ).map(step => step.label),
     analysisProfileLabel: sourceProfile.inputProfileLabel,
     analysisProfileHint: sourceProfile.extractionFocus,
     analysisStrategies,
     routingContext,
   });
 
-  const observations: ProcessMiningObservation[] = [];
-  derivedStepCandidates.forEach((step, index) => {
-    observations.push(
-      createObservation({
-        caseId: caseItem.id,
-        label: step.label,
-        sequenceIndex: index,
-        role: step.role,
-        system: step.systems?.[0],
-        evidenceSnippet: step.evidenceSnippet,
-        timestampRaw: step.timestampRaw,
-        timestampQuality: step.timestampRaw ? 'synthetic' : 'missing',
-        kind: 'step',
-      }),
-    );
-  });
+  const narrativeArtifacts = dedupeDerivedSteps(
+    blocks
+      .map((block, index) => {
+        const evidenceAnchor = normalizeWhitespace(`${block.timestampRaw ? `${block.timestampRaw} | ` : ''}${block.title}. ${block.body}`).slice(0, 320);
+        const contextWindow = buildContextWindow([block.timestampRaw, block.title, block.body]);
+        const localRoles = collectLocalRoleLabels([block.title, block.body]);
+        const localSystems = collectLocalSystemLabels([block.title, block.body]);
+        const issueSignals = extractIssueSignals(`${block.title} ${block.body}`, domainContext);
+        const stepCandidate = createStepCandidate({
+          rawLabel: canonicalizeProcessStepLabel({ title: block.title, body: block.body, fallback: block.title, index }),
+          evidenceAnchor,
+          contextWindow,
+          confidence: block.body.length >= 80 ? 'high' : 'medium',
+          originChannel: 'narrative-context',
+          sourceFragmentType: 'paragraph',
+          routingContext,
+          sourceRef: buildEvidenceSourceRef(caseItem.id, `narrative-block:${index + 1}`),
+          index,
+        });
+        const extractionCandidates: ExtractionCandidate[] = [
+          stepCandidate,
+          ...createRoleCandidates({
+            labels: localRoles,
+            evidenceAnchor,
+            contextWindow,
+            confidence: stepCandidate.confidence,
+            originChannel: stepCandidate.originChannel,
+            sourceFragmentType: stepCandidate.sourceFragmentType,
+            routingContext,
+            sourceRef: stepCandidate.sourceRef ?? buildEvidenceSourceRef(caseItem.id, `narrative-block:${index + 1}`),
+            relatedCandidateId: stepCandidate.candidateId,
+          }),
+          ...createSystemCandidates({
+            labels: localSystems,
+            evidenceAnchor,
+            contextWindow,
+            confidence: stepCandidate.confidence,
+            originChannel: stepCandidate.originChannel,
+            sourceFragmentType: stepCandidate.sourceFragmentType,
+            routingContext,
+            sourceRef: stepCandidate.sourceRef ?? buildEvidenceSourceRef(caseItem.id, `narrative-block:${index + 1}`),
+            relatedCandidateId: stepCandidate.candidateId,
+          }),
+          ...issueSignals.map((signal, signalIndex) => createSupportCandidate({
+            candidateType: 'signal',
+            rawLabel: signal,
+            evidenceAnchor,
+            contextWindow,
+            confidence: 'medium',
+            originChannel: 'narrative-context',
+            sourceFragmentType: 'paragraph',
+            routingContext,
+            sourceRef: buildEvidenceSourceRef(caseItem.id, `narrative-block:${index + 1}:signal:${signalIndex + 1}`),
+            relatedCandidateId: stepCandidate.candidateId,
+          })),
+        ];
+        return {
+          label: stepCandidate.normalizedLabel,
+          role: localRoles[0],
+          evidenceSnippet: stepCandidate.evidenceAnchor,
+          timestampRaw: block.timestampRaw,
+          systems: localSystems,
+          issueSignals,
+          stepCandidate,
+          extractionCandidates,
+        };
+      })
+      .filter(step => step.label && step.label.length >= 4),
+  );
 
-  const roles = uniqueStrings(derivedStepCandidates.map(step => step.role));
-  const systems = uniqueStrings(derivedStepCandidates.flatMap(step => step.systems ?? []));
+  if (narrativeArtifacts.length < 2) return null;
+
+  const observations = narrativeArtifacts.map((step, index) => createObservationFromStepCandidate({
+    candidate: step.stepCandidate,
+    caseId: caseItem.id,
+    sequenceIndex: index,
+    role: step.role,
+    system: step.systems?.[0],
+    timestampRaw: step.timestampRaw,
+    timestampQuality: step.timestampRaw ? 'synthetic' : 'missing',
+  }));
+
+  const extractionCandidates = narrativeArtifacts.flatMap(step => step.extractionCandidates);
+  const roles = uniqueStrings(narrativeArtifacts.map(step => step.role));
+  const systems = uniqueStrings(narrativeArtifacts.flatMap(step => step.systems ?? []));
   const issueSignals = uniqueStrings([
-    ...derivedStepCandidates.flatMap(step => step.issueSignals ?? []),
+    ...narrativeArtifacts.flatMap(step => step.issueSignals ?? []),
     ...supplementalIssueSignals,
   ]);
 
   const narrativeIssueEvidence = dedupeIssueEvidence([
-    ...derivedStepCandidates.flatMap(step => (step.issueSignals ?? []).map(signal => ({ label: signal, snippet: step.evidenceSnippet ?? signal }))),
-    ...supplementalIssueSignals.map(signal => ({ label: signal, snippet: signal })),
+    ...narrativeArtifacts.flatMap(step => (step.issueSignals ?? []).map(signal => ({ label: signal, snippet: step.evidenceSnippet ?? signal }))),
+    ...supplementalIssueEvidence,
   ]);
 
-  const familyHits = derivedStepCandidates.filter(step => inferStepFamily(step.label)).length;
+  const familyHits = narrativeArtifacts.filter(step => inferStepFamily(step.label)).length;
   const confidence: 'high' | 'medium' | 'low' =
-    baseConfidence === 'high' || familyHits >= Math.max(3, Math.ceil(derivedStepCandidates.length * 0.6))
+    baseConfidence === 'high' || familyHits >= Math.max(3, Math.ceil(narrativeArtifacts.length * 0.6))
       ? 'high'
-      : derivedStepCandidates.length >= MIN_USEFUL_STEPS
+      : narrativeArtifacts.length >= MIN_USEFUL_STEPS
       ? 'medium'
       : 'low';
 
@@ -759,7 +974,7 @@ function buildNarrativeDerivation(params: {
     observationCount: observations.filter(observation => observation.kind === 'step').length,
     warnings,
     confidence,
-    stepLabels: derivedStepCandidates.map(step => step.label),
+    stepLabels: narrativeArtifacts.map(step => step.label),
     roles,
     systems,
     issueSignals,
@@ -767,6 +982,7 @@ function buildNarrativeDerivation(params: {
     documentSummary,
     sourceProfile,
     routingContext,
+    extractionCandidates,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
@@ -779,12 +995,13 @@ function buildNarrativeDerivation(params: {
     documentKind: 'case-narrative',
     warnings,
     confidence,
-    derivedSteps: derivedStepCandidates.map(step => ({ label: step.label, role: step.role, evidenceSnippet: step.evidenceSnippet })),
+    derivedSteps: narrativeArtifacts.map(step => ({ label: step.label, role: step.role, evidenceSnippet: step.evidenceSnippet })),
     roles,
     systems,
     issueSignals,
     summary,
     routingContext,
+    extractionCandidates,
   };
 }
 
@@ -817,11 +1034,6 @@ function buildStructuredDerivation(params: {
   const sourceProfile = buildSourceExtractionPlan(rawText).profile;
   const sourceProfileNote = buildSourceProfileNote(sourceProfile);
   const analysisStrategies = uniqueStrings([...buildAnalysisStrategies(sourceProfile.inputProfileLabel), ...(sourceProfile.extractionPlan ?? [])]).slice(0, 5);
-  const derivedSteps = steps.map(step => ({
-    label: step.label,
-    role: step.responsible,
-    evidenceSnippet: step.evidenceSnippet,
-  }));
   const caseItem = buildCase({
     name: title ?? sourceName.replace(/\.[^.]+$/, ''),
     narrative: sliceNarrative(rawText),
@@ -829,14 +1041,13 @@ function buildStructuredDerivation(params: {
     sourceNote: `Import aus: ${sourceName}`,
     sourceType,
     inputKind: sourceType === 'narrative' ? 'narrative' : 'document',
-    derivedStepLabels: derivedSteps.map(step => step.label),
+    derivedStepLabels: steps.map(step => step.label),
     analysisProfileLabel: sourceProfile.inputProfileLabel,
     analysisProfileHint: sourceProfile.extractionFocus,
     analysisStrategies,
     routingContext,
   });
-  const observations = toObservationsFromStructured(caseItem.id, steps);
-  const systems = extractSystems(rawText);
+  const structuredArtifacts = buildStructuredStepArtifacts(caseItem.id, steps, routingContext);
   const issueEvidence = extractIssueEvidence(rawText, domainContext);
   const issueSignals = uniqueStrings(issueEvidence.map(entry => entry.label));
   const summary: DerivationSummary = {
@@ -845,33 +1056,36 @@ function buildStructuredDerivation(params: {
     documentKind,
     analysisMode: 'process-draft',
     caseCount: 1,
-    observationCount: observations.length,
+    observationCount: structuredArtifacts.observations.length,
     warnings,
     confidence,
-    stepLabels: derivedSteps.map(step => step.label),
-    roles,
-    systems,
+    stepLabels: structuredArtifacts.derivedSteps.map(step => step.label),
+    roles: uniqueStrings([...roles, ...structuredArtifacts.roles]),
+    systems: structuredArtifacts.systems,
     issueSignals,
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind })} ${sourceProfileNote}`.trim(),
     sourceProfile,
     routingContext,
+    issueEvidence,
+    extractionCandidates: structuredArtifacts.extractionCandidates,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
   };
   return {
     cases: [caseItem],
-    observations,
+    observations: structuredArtifacts.observations,
     method: 'structured',
     documentKind,
     warnings,
     confidence,
-    derivedSteps,
-    roles,
-    systems,
+    derivedSteps: structuredArtifacts.derivedSteps,
+    roles: uniqueStrings([...roles, ...structuredArtifacts.roles]),
+    systems: structuredArtifacts.systems,
     issueSignals,
     summary,
     routingContext,
+    extractionCandidates: structuredArtifacts.extractionCandidates,
   };
 }
 
@@ -891,11 +1105,6 @@ function buildSemiStructuredDerivation(params: {
   const sourceProfile = buildSourceExtractionPlan(rawText).profile;
   const sourceProfileNote = buildSourceProfileNote(sourceProfile);
   const analysisStrategies = uniqueStrings([...buildAnalysisStrategies(sourceProfile.inputProfileLabel), ...(sourceProfile.extractionPlan ?? [])]).slice(0, 5);
-  const derivedSteps = steps.map((step, index) => ({
-    label: canonicalizeProcessStepLabel({ title: step.label, body: step.description || step.evidenceSnippet, fallback: step.label, index }),
-    role: step.responsible,
-    evidenceSnippet: step.evidenceSnippet,
-  }));
   const caseItem = buildCase({
     name: title ?? sourceName.replace(/\.[^.]+$/, ''),
     narrative: sliceNarrative(rawText),
@@ -903,14 +1112,13 @@ function buildSemiStructuredDerivation(params: {
     sourceNote: `Import aus: ${sourceName}`,
     sourceType,
     inputKind: sourceType === 'narrative' ? 'narrative' : 'document',
-    derivedStepLabels: derivedSteps.map(step => step.label),
+    derivedStepLabels: steps.map((step, index) => canonicalizeProcessStepLabel({ title: step.label, body: step.description || step.evidenceSnippet, fallback: step.label, index })),
     analysisProfileLabel: sourceProfile.inputProfileLabel,
     analysisProfileHint: sourceProfile.extractionFocus,
     analysisStrategies,
     routingContext,
   });
-  const observations = toObservationsFromSemiStructured(caseItem.id, steps);
-  const systems = extractSystems(rawText);
+  const semiStructuredArtifacts = buildSemiStructuredStepArtifacts(caseItem.id, steps, routingContext);
   const issueEvidence = extractIssueEvidence(rawText, domainContext);
   const issueSignals = uniqueStrings(issueEvidence.map(entry => entry.label));
   const summary: DerivationSummary = {
@@ -919,33 +1127,36 @@ function buildSemiStructuredDerivation(params: {
     documentKind: 'semi-structured-procedure-document',
     analysisMode: 'process-draft',
     caseCount: 1,
-    observationCount: observations.length,
+    observationCount: semiStructuredArtifacts.observations.length,
     warnings,
     confidence,
-    stepLabels: derivedSteps.map(step => step.label),
-    roles,
-    systems,
+    stepLabels: semiStructuredArtifacts.derivedSteps.map(step => step.label),
+    roles: uniqueStrings([...roles, ...semiStructuredArtifacts.roles]),
+    systems: semiStructuredArtifacts.systems,
     issueSignals,
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'semi-structured-procedure-document' })} ${sourceProfileNote}`.trim(),
     sourceProfile,
     routingContext,
+    issueEvidence,
+    extractionCandidates: semiStructuredArtifacts.extractionCandidates,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
   };
   return {
     cases: [caseItem],
-    observations,
+    observations: semiStructuredArtifacts.observations,
     method: 'semi-structured',
     documentKind: 'semi-structured-procedure-document',
     warnings,
     confidence,
-    derivedSteps,
-    roles,
-    systems,
+    derivedSteps: semiStructuredArtifacts.derivedSteps,
+    roles: uniqueStrings([...roles, ...semiStructuredArtifacts.roles]),
+    systems: semiStructuredArtifacts.systems,
     issueSignals,
     summary,
     routingContext,
+    extractionCandidates: semiStructuredArtifacts.extractionCandidates,
   };
 }
 
@@ -1006,94 +1217,129 @@ function buildEmptyResult(
   };
 }
 
-const WEAK_STEP_LABEL_RE = /^(mail|e-?mail|chat|kommentar|notiz|hinweis|offen|ticket|frage|status|todo)$/i;
-const ACTIVITY_STEP_RE = /\b(pr[üu]fen|bearbeiten|anlegen|validieren|freigeben|abstimmen|dokumentieren|versenden|zuordnen|abschlie[ßs]en|eskalieren|bereitstellen|bestellen|recherchieren|koordinieren)\b/i;
-
 function buildExtractionCandidates(
   observations: ProcessMiningObservation[],
   routingContext: SourceRoutingContext,
+  seedCandidates: ExtractionCandidate[] = [],
+  issueEvidence: IssueEvidence[] = [],
 ): ExtractionCandidate[] {
+  const seedCandidateById = new Map(seedCandidates.map(candidate => [candidate.candidateId, candidate]));
+  const representedSeedIds = new Set<string>();
   const candidates: ExtractionCandidate[] = [];
   for (const observation of observations) {
-    const anchor = observation.evidenceSnippet?.trim() || '';
-    const contextWindow = normalizeWhitespace(`${observation.label} ${observation.evidenceSnippet ?? ''}`).slice(0, 320);
-    const isWeakStep = observation.kind === 'step' && (
-      anchor.length < 12 ||
-      WEAK_STEP_LABEL_RE.test(observation.label.trim()) ||
-      !ACTIVITY_STEP_RE.test(contextWindow)
-    );
-    const stepStatus: ExtractionCandidate['status'] = observation.kind === 'step'
-      ? (isWeakStep ? 'rejected' : 'merged')
-      : observation.kind === 'issue'
-      ? 'support-only'
-      : 'candidate';
-    const rejectionReason = observation.kind === 'step' && isWeakStep
-      ? anchor.length < 12
-        ? 'Kein belastbarer Evidenzanker am Schritt.'
-        : WEAK_STEP_LABEL_RE.test(observation.label.trim())
-        ? 'Nur schwaches Kurzlabel ohne belastbaren Prozessbezug.'
-        : 'Kein stabiler Aktivitätscharakter im lokalen Kontext.'
-      : undefined;
+    const seed = observation.candidateId ? seedCandidateById.get(observation.candidateId) : undefined;
+    if (observation.candidateId) representedSeedIds.add(observation.candidateId);
 
-    candidates.push({
-      candidateId: `${observation.id}-base`,
-      candidateType: observation.kind === 'step' ? 'step' : observation.kind === 'issue' ? 'signal' : 'support',
+    const evidenceAnchor = normalizeWhitespace(observation.evidenceAnchor ?? observation.evidenceSnippet ?? seed?.evidenceAnchor ?? observation.label).slice(0, 320);
+    const contextWindow = normalizeWhitespace(
+      observation.contextWindow
+      ?? seed?.contextWindow
+      ?? buildContextWindow([observation.label, observation.evidenceSnippet]),
+    ).slice(0, 320);
+    const originChannel = observation.originChannel ?? seed?.originChannel ?? 'imported-observation';
+    const sourceFragmentType = observation.sourceFragmentType
+      ?? seed?.sourceFragmentType
+      ?? (evidenceAnchor.includes('|') ? 'table-row' : 'sentence');
+
+    if (observation.kind === 'step') {
+      const stepCandidateId = `${observation.id}:step`;
+      candidates.push({
+        candidateId: stepCandidateId,
+        candidateType: 'step',
+        rawLabel: observation.label,
+        normalizedLabel: canonicalizeProcessStepLabel({
+          title: observation.label,
+          body: evidenceAnchor || contextWindow,
+          fallback: observation.label,
+          index: observation.sequenceIndex,
+        }),
+        evidenceAnchor: evidenceAnchor || observation.label,
+        contextWindow,
+        confidence: seed?.confidence ?? (evidenceAnchor.length >= 24 ? 'medium' : 'low'),
+        originChannel,
+        sourceFragmentType,
+        routingClass: routingContext.routingClass,
+        sourceRef: observation.id,
+        status: 'candidate',
+        supportClass: seed?.supportClass,
+      });
+
+      if (observation.role) {
+        candidates.push(...createRoleCandidates({
+          labels: [observation.role],
+          evidenceAnchor: evidenceAnchor || observation.role,
+          contextWindow,
+          confidence: seed?.confidence ?? 'medium',
+          originChannel,
+          sourceFragmentType,
+          routingContext,
+          sourceRef: observation.id,
+          relatedCandidateId: stepCandidateId,
+        }));
+      }
+
+      if (observation.system) {
+        candidates.push(...createSystemCandidates({
+          labels: [observation.system],
+          evidenceAnchor: evidenceAnchor || observation.system,
+          contextWindow,
+          confidence: seed?.confidence ?? 'medium',
+          originChannel,
+          sourceFragmentType,
+          routingContext,
+          sourceRef: observation.id,
+          relatedCandidateId: stepCandidateId,
+        }));
+      }
+      continue;
+    }
+
+    candidates.push(createSupportCandidate({
+      candidateType: observation.kind === 'issue' ? 'signal' : 'support',
       rawLabel: observation.label,
-      normalizedLabel: observation.kind === 'step' ? canonicalizeProcessStepLabel({ title: observation.label, body: observation.evidenceSnippet, fallback: observation.label, index: observation.sequenceIndex }) : observation.label,
-      evidenceAnchor: anchor || observation.label,
+      evidenceAnchor: evidenceAnchor || observation.label,
       contextWindow,
-      confidence: observation.kind === 'step' && !isWeakStep ? 'medium' : 'low',
-      originChannel: 'imported-observation',
-      sourceFragmentType: anchor.includes('|') ? 'table-row' : 'sentence',
-      routingClass: routingContext.routingClass,
+      confidence: seed?.confidence ?? 'low',
+      originChannel,
+      sourceFragmentType,
+      routingContext,
       sourceRef: observation.id,
-      status: stepStatus,
-      rejectionReason,
-      downgradeReason: stepStatus === 'support-only' ? 'Signal oder Hinweis, kein Kernschritt.' : undefined,
-    });
-
-    if (observation.kind === 'step' && observation.role) {
-      candidates.push({
-        candidateId: `${observation.id}-role`,
-        candidateType: 'role',
-        rawLabel: observation.role,
-        normalizedLabel: sentenceCase(observation.role),
-        evidenceAnchor: anchor || observation.role,
-        contextWindow,
-        confidence: anchor ? 'medium' : 'low',
-        originChannel: 'imported-observation',
-        sourceFragmentType: anchor.includes('|') ? 'table-row' : 'sentence',
-        routingClass: routingContext.routingClass,
-        sourceRef: observation.id,
-        status: anchor ? 'candidate' : 'support-only',
-        downgradeReason: anchor ? undefined : 'Rolle nur schwach ohne lokalen Evidenzanker.',
-      });
-    }
-
-    if (observation.kind === 'step' && observation.system) {
-      candidates.push({
-        candidateId: `${observation.id}-system`,
-        candidateType: 'system',
-        rawLabel: observation.system,
-        normalizedLabel: sentenceCase(observation.system),
-        evidenceAnchor: anchor || observation.system,
-        contextWindow,
-        confidence: anchor ? 'medium' : 'low',
-        originChannel: 'imported-observation',
-        sourceFragmentType: anchor.includes('|') ? 'table-row' : 'sentence',
-        routingClass: routingContext.routingClass,
-        sourceRef: observation.id,
-        status: anchor ? 'candidate' : 'support-only',
-        downgradeReason: anchor ? undefined : 'System nur schwach ohne lokalen Evidenzanker.',
-      });
-    }
+      supportClass: seed?.supportClass,
+    }));
   }
-  return candidates;
+
+  issueEvidence.forEach((entry, index) => {
+    candidates.push(createSupportCandidate({
+      candidateType: 'signal',
+      rawLabel: entry.label,
+      evidenceAnchor: entry.snippet,
+      contextWindow: buildContextWindow([entry.label, entry.snippet]),
+      confidence: 'medium',
+      originChannel: 'paragraph',
+      sourceFragmentType: 'paragraph',
+      routingContext,
+      sourceRef: `issue-evidence:${index + 1}`,
+    }));
+  });
+
+  seedCandidates.forEach(candidate => {
+    if (representedSeedIds.has(candidate.candidateId)) return;
+    if (candidate.relatedCandidateId && representedSeedIds.has(candidate.relatedCandidateId)) return;
+    candidates.push(candidate);
+  });
+
+  return reviewExtractionCandidates(candidates);
 }
 
 function finalizeDerivationResult(result: DerivationResult): DerivationResult {
   const repaired = repairDerivedObservations(result.observations);
-  const candidates = buildExtractionCandidates(repaired.observations, result.routingContext);
+  const candidates = buildExtractionCandidates(
+    repaired.observations,
+    result.routingContext,
+    result.extractionCandidates ?? [],
+    result.summary.issueEvidence ?? [],
+  );
+  const candidateReview = buildExtractionCandidateReview(candidates);
   const acceptedStepIds = new Set(
     candidates
       .filter(candidate => candidate.candidateType === 'step' && candidate.status === 'merged')
@@ -1114,16 +1360,14 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       .map(observation => observation.label),
   );
   const provisionalRoles = uniqueStrings([
-    ...result.roles,
     ...candidates
-      .filter(candidate => candidate.candidateType === 'role' && candidate.status !== 'rejected')
+      .filter(candidate => candidate.candidateType === 'role' && candidate.status !== 'support-only' && Boolean(candidate.relatedCandidateId))
       .map(candidate => candidate.normalizedLabel),
     ...gatedObservations.map(observation => (observation.role ? rolePreferredValue(observation.role) : undefined)),
   ]);
   const provisionalSystems = uniqueStrings([
-    ...result.systems,
     ...candidates
-      .filter(candidate => candidate.candidateType === 'system' && candidate.status !== 'rejected')
+      .filter(candidate => candidate.candidateType === 'system' && candidate.status !== 'support-only' && Boolean(candidate.relatedCandidateId))
       .map(candidate => candidate.normalizedLabel),
     ...gatedObservations.map(observation => (observation.system ? systemPreferredValue(observation.system) : undefined)),
   ]);
@@ -1178,14 +1422,12 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
   );
   const roles = filterRolesByDomain(
     uniqueStrings([
-      ...result.roles,
       ...filteredSupportObservations.map(observation => observation.role),
     ]),
     domainIsolation,
   );
   const systems = filterSystemsByDomain(
     uniqueStrings([
-      ...result.systems,
       ...filteredSupportObservations.map(observation => observation.system),
     ]),
     domainIsolation,
@@ -1293,6 +1535,8 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       repairNotes,
       sourceProfile,
       multiCaseSummary,
+      extractionCandidates: candidates,
+      candidateReview,
       engineVersion: ENGINE_VERSION,
       updatedAt: new Date().toISOString(),
     },
@@ -1338,8 +1582,6 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     warnings.push(`Primärdomäne erkannt: ${domainContext.primary}${domainContext.secondary ? `, Sekundärdomäne: ${domainContext.secondary}` : ''}.`);
   }
 
-  const roles = extractRoles(rawText);
-  const systems = extractSystems(rawText);
   const supplementalIssueEvidence = extractIssueEvidence(rawText, domainContext);
   const supplementalIssueSignals = uniqueStrings(supplementalIssueEvidence.map(entry => entry.label));
   const storyBlocks = extractTimelineBlocks(rawText);
@@ -1361,18 +1603,14 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       sourceType: input.sourceType,
       rawText,
       warnings,
-      supplementalIssueSignals,
+      supplementalIssueEvidence,
       profile,
       baseConfidence: storyBlocks.length >= 5 ? 'high' : 'medium',
       domainContext,
       routingContext,
     });
     if (narrativeResult) {
-      narrativeResult.roles = uniqueStrings([...narrativeResult.roles, ...roles]);
-      narrativeResult.systems = uniqueStrings([...narrativeResult.systems, ...systems]);
       narrativeResult.issueSignals = uniqueStrings([...narrativeResult.issueSignals, ...supplementalIssueSignals]);
-      narrativeResult.summary.roles = narrativeResult.roles;
-      narrativeResult.summary.systems = narrativeResult.systems;
       narrativeResult.summary.issueSignals = narrativeResult.issueSignals;
       return finalizeDerivationResult(narrativeResult);
     }
@@ -1384,7 +1622,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       if (structured && structured.steps.length >= MIN_USEFUL_STEPS) {
         return finalizeDerivationResult(buildStructuredDerivation({
           steps: structured.steps,
-          roles: uniqueStrings([...structured.roles.map(role => role.name), ...roles, ...structured.steps.map(step => step.responsible)]),
+          roles: uniqueStrings([...structured.roles.map(role => role.name), ...structured.steps.map(step => step.responsible)]),
           warnings: uniqueStrings([...structured.warnings, ...warnings]),
           title: structured.title,
           sourceName,
@@ -1407,7 +1645,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       if (semiStructured && semiStructured.steps.length >= MIN_USEFUL_STEPS) {
         return finalizeDerivationResult(buildSemiStructuredDerivation({
           steps: semiStructured.steps,
-          roles: uniqueStrings([...semiStructured.roles, ...roles, ...semiStructured.steps.map(step => step.responsible)]),
+          roles: uniqueStrings([...semiStructured.roles, ...semiStructured.steps.map(step => step.responsible)]),
           warnings: uniqueStrings([...semiStructured.warnings, ...warnings]),
           title: semiStructured.title,
           sourceName,
@@ -1429,18 +1667,14 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       sourceType: input.sourceType,
       rawText,
       warnings: uniqueStrings([...warnings, 'Lokale Narrative-Heuristik verwendet, weil keine klare Verfahrensstruktur erkannt wurde.']),
-      supplementalIssueSignals,
+      supplementalIssueEvidence,
       profile,
       baseConfidence: paragraphBlocks.length >= MIN_USEFUL_STEPS ? 'medium' : 'low',
       domainContext,
       routingContext,
     });
     if (narrativeResult) {
-      narrativeResult.roles = uniqueStrings([...narrativeResult.roles, ...roles]);
-      narrativeResult.systems = uniqueStrings([...narrativeResult.systems, ...systems]);
       narrativeResult.issueSignals = uniqueStrings([...narrativeResult.issueSignals, ...supplementalIssueSignals]);
-      narrativeResult.summary.roles = narrativeResult.roles;
-      narrativeResult.summary.systems = narrativeResult.systems;
       narrativeResult.summary.issueSignals = narrativeResult.issueSignals;
       return finalizeDerivationResult(narrativeResult);
     }
@@ -1460,7 +1694,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     analysisStrategies: uniqueStrings([...buildAnalysisStrategies(fallbackSourceProfile.inputProfileLabel), ...(fallbackSourceProfile.extractionPlan ?? [])]).slice(0, 5),
     routingContext,
   });
-  const { observations: fallbackObservations } = extractObservationsFromCase(fallbackCase);
+  const { observations: fallbackObservations, extractionCandidates: fallbackCandidates } = extractObservationsFromCase(fallbackCase);
   const usableObservations = fallbackObservations.map((observation, index) => ({
     ...observation,
     label: observation.kind === 'step'
@@ -1475,6 +1709,16 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       .map(observation => ({ label: observation.label, snippet: observation.evidenceSnippet ?? observation.label })),
   ]);
   const fallbackIssueSignals = uniqueStrings(fallbackIssueEvidence.map(entry => entry.label));
+  const fallbackRoles = uniqueStrings(
+    fallbackCandidates
+      .filter(candidate => candidate.candidateType === 'role' && Boolean(candidate.relatedCandidateId))
+      .map(candidate => candidate.normalizedLabel),
+  );
+  const fallbackSystems = uniqueStrings(
+    fallbackCandidates
+      .filter(candidate => candidate.candidateType === 'system' && Boolean(candidate.relatedCandidateId))
+      .map(candidate => candidate.normalizedLabel),
+  );
 
   const summary: DerivationSummary = {
     sourceLabel: sourceName,
@@ -1486,8 +1730,8 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     warnings,
     confidence: 'low',
     stepLabels: fallbackStepObservations.map(observation => observation.label),
-    roles,
-    systems,
+    roles: fallbackRoles,
+    systems: fallbackSystems,
     issueSignals: fallbackIssueSignals,
     issueEvidence: fallbackIssueEvidence,
     documentSummary: [
@@ -1497,6 +1741,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     ].filter(Boolean).join(' '),
     sourceProfile: fallbackSourceProfile,
     routingContext,
+    extractionCandidates: fallbackCandidates,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),
@@ -1511,11 +1756,12 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     derivedSteps: fallbackStepObservations
       .filter(observation => observation.kind === 'step')
       .map(observation => ({ label: observation.label, evidenceSnippet: observation.evidenceSnippet })),
-    roles,
-    systems,
+    roles: fallbackRoles,
+    systems: fallbackSystems,
     issueSignals: fallbackIssueSignals,
     summary,
     routingContext,
+    extractionCandidates: fallbackCandidates,
   });
 }
 
@@ -1551,6 +1797,8 @@ export function deriveFromMultipleTexts(
   const analysisMode = detectProcessMiningAnalysisMode({ cases, observations });
   const sourceProfile = aggregateSourceProfiles(summaries.map(summary => summary.sourceProfile));
   const multiCaseSummary = buildMultiCaseSummary(observations);
+  const aggregatedCandidates = summaries.flatMap(summary => summary.extractionCandidates ?? []);
+  const aggregatedCandidateReview = buildExtractionCandidateReview(aggregatedCandidates);
   const routingClasses = summaries.map(summary => summary.routingContext?.routingClass).filter(Boolean) as SourceRoutingContext['routingClass'][];
   const dominantRoutingClass = routingClasses.length > 0
     ? routingClasses.reduce<Record<string, number>>((acc, key) => {
@@ -1607,6 +1855,8 @@ export function deriveFromMultipleTexts(
     sourceProfile,
     routingContext: combinedRoutingContext,
     multiCaseSummary,
+    extractionCandidates: aggregatedCandidates,
+    candidateReview: aggregatedCandidateReview,
     engineVersion: ENGINE_VERSION,
     provenance: 'local',
     updatedAt: new Date().toISOString(),

@@ -1,4 +1,5 @@
 import type {
+  ExtractionCandidate,
   Process,
   ProcessMiningAssistedV2State,
   ProcessMiningObservation,
@@ -127,6 +128,8 @@ export interface ProcessMiningQualityExportFile {
     cases: ProcessMiningAssistedV2State['cases'];
     observations: ProcessMiningAssistedV2State['observations'];
     supportSignals: Array<{ label: string; snippet: string }>;
+    extractionCandidates: ExtractionCandidate[];
+    candidateReview?: NonNullable<ProcessMiningAssistedV2State['lastDerivationSummary']>['candidateReview'];
     counts: {
       cases: number;
       observations: number;
@@ -851,6 +854,8 @@ export function buildQualityExportFile(params: {
       cases: state.cases,
       observations: state.observations,
       supportSignals: state.lastDerivationSummary?.issueEvidence ?? [],
+      extractionCandidates: state.lastDerivationSummary?.extractionCandidates ?? [],
+      candidateReview: state.lastDerivationSummary?.candidateReview,
       counts: {
         cases: state.cases.length,
         observations: state.observations.length,

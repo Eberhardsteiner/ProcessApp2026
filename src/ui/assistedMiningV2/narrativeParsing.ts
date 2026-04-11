@@ -1,9 +1,17 @@
 import type {
+  ExtractionCandidate,
   ProcessMiningObservation,
   ProcessMiningObservationCase,
   ObservationTimestampQuality,
   ProcessMiningQualitySummary,
 } from '../../domain/process';
+import {
+  buildContextWindow,
+  buildEvidenceSourceRef,
+  createObservationFromStepCandidate,
+  createStepCandidate,
+  createSupportCandidate,
+} from './evidenceModel';
 
 const ISO_DATE_RE = /\b(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:?\d{2})?)?)\b/;
 const DE_DATETIME_RE = /\b(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?\b/;
@@ -96,41 +104,84 @@ function buildLabel(sentence: string): string {
 
 export interface ExtractionResult {
   observations: ProcessMiningObservation[];
+  extractionCandidates: ExtractionCandidate[];
   caseObservationCount: number;
   hasOrdering: boolean;
+}
+
+function buildSentenceContext(sentences: string[], index: number): string {
+  return buildContextWindow([
+    sentences[index - 1],
+    sentences[index],
+    sentences[index + 1],
+  ]);
 }
 
 export function extractObservationsFromCase(
   caseItem: ProcessMiningObservationCase,
 ): ExtractionResult {
   const sentences = splitIntoSentences(caseItem.narrative);
-  const now = new Date().toISOString();
+  const extractionCandidates: ExtractionCandidate[] = [];
+  const observations: ProcessMiningObservation[] = [];
 
-  const observations: ProcessMiningObservation[] = sentences.map((sentence, index) => {
+  sentences.forEach((sentence, index) => {
     const ts = tryParseTimestamp(sentence);
     const kind = classifySentence(sentence);
     const label = buildLabel(sentence);
-
+    const sourceRef = buildEvidenceSourceRef(caseItem.id, `sentence:${index + 1}`);
+    const contextWindow = buildSentenceContext(sentences, index);
     const quality: ObservationTimestampQuality = ts ? ts.quality : 'missing';
 
-    return {
-      id: crypto.randomUUID(),
-      sourceCaseId: caseItem.id,
-      label,
-      evidenceSnippet: sentence,
-      kind,
-      sequenceIndex: index,
-      timestampRaw: ts?.raw,
-      timestampIso: ts?.iso || undefined,
-      timestampQuality: quality,
-      createdAt: now,
-    };
+    if (kind === 'step') {
+      const candidate = createStepCandidate({
+        rawLabel: label,
+        evidenceAnchor: sentence,
+        contextWindow,
+        confidence: quality === 'real' ? 'medium' : 'low',
+        originChannel: 'sentence',
+        sourceFragmentType: 'sentence',
+        routingContext: caseItem.routingContext ?? {
+          routingClass: 'mixed-document',
+          routingConfidence: 'low',
+          routingSignals: ['narrative-fallback:sentence'],
+        },
+        sourceRef,
+        index,
+      });
+      extractionCandidates.push(candidate);
+      observations.push(createObservationFromStepCandidate({
+        candidate,
+        caseId: caseItem.id,
+        sequenceIndex: observations.length,
+        timestampRaw: ts?.raw,
+        timestampIso: ts?.iso || undefined,
+        timestampQuality: quality,
+      }));
+      return;
+    }
+
+    extractionCandidates.push(createSupportCandidate({
+      candidateType: kind === 'issue' || kind === 'timing' || kind === 'variant' ? 'signal' : 'support',
+      rawLabel: label,
+      evidenceAnchor: sentence,
+      contextWindow,
+      confidence: kind === 'issue' ? 'medium' : 'low',
+      originChannel: 'sentence',
+      sourceFragmentType: 'sentence',
+      routingContext: caseItem.routingContext ?? {
+        routingClass: 'mixed-document',
+        routingConfidence: 'low',
+        routingSignals: ['narrative-fallback:sentence'],
+      },
+      sourceRef,
+    }));
   });
 
   const hasOrdering = sentences.length > 1;
 
   return {
     observations,
+    extractionCandidates,
     caseObservationCount: observations.length,
     hasOrdering,
   };

@@ -544,6 +544,13 @@ export interface SourceRoutingContext {
 
 export type ExtractionCandidateType = 'step' | 'role' | 'system' | 'signal' | 'support';
 export type ExtractionCandidateStatus = 'candidate' | 'merged' | 'support-only' | 'rejected';
+export type ExtractionSupportClass =
+  | 'core-step'
+  | 'support-evidence'
+  | 'issue-signal'
+  | 'friction-signal'
+  | 'governance-note'
+  | 'weak-raw-fragment';
 
 export interface ExtractionCandidate {
   candidateId: string;
@@ -568,8 +575,20 @@ export interface ExtractionCandidate {
   routingClass?: SourceRoutingClass;
   sourceRef?: string;
   status: ExtractionCandidateStatus;
+  relatedCandidateId?: string;
+  supportClass?: ExtractionSupportClass;
   rejectionReason?: string;
   downgradeReason?: string;
+}
+
+export interface ExtractionCandidateReview {
+  totalCandidates: number;
+  mergedCoreSteps: number;
+  rejectedCoreSteps: number;
+  supportOnlyCandidates: number;
+  localRoleAssignments: number;
+  localSystemAssignments: number;
+  weakFragmentCount: number;
 }
 
 export interface ProcessMiningObservationCase {
@@ -596,6 +615,11 @@ export interface ProcessMiningObservation {
   sourceCaseId?: string;
   label: string;
   evidenceSnippet?: string;
+  candidateId?: string;
+  evidenceAnchor?: string;
+  contextWindow?: string;
+  originChannel?: ExtractionCandidate['originChannel'];
+  sourceFragmentType?: ExtractionCandidate['sourceFragmentType'];
   role?: string;
   system?: string;
   kind: 'step' | 'variant' | 'timing' | 'role' | 'issue' | 'other';
@@ -783,6 +807,8 @@ export interface DerivationSummary {
   };
   multiCaseSummary?: DerivationMultiCaseSummary;
   repairNotes?: string[];
+  extractionCandidates?: ExtractionCandidate[];
+  candidateReview?: ExtractionCandidateReview;
   engineVersion?: string;
   provenance?: 'local' | 'ai';
   updatedAt: string;
