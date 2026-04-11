@@ -25,6 +25,7 @@ interface Props {
   onUpdate: (updated: ProcessMiningObservationCase) => void;
   onDelete: () => void;
   onExtract: () => void;
+  allowExtract?: boolean;
   onToggleEditor?: () => void;
   editorOpen?: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>;
@@ -37,6 +38,7 @@ export function NarrativeCaseCard({
   onUpdate,
   onDelete,
   onExtract,
+  allowExtract = true,
   onToggleEditor,
   editorOpen = false,
   dragHandleProps,
@@ -208,7 +210,7 @@ export function NarrativeCaseCard({
             <button
               type="button"
               onClick={onExtract}
-              disabled={!caseItem.narrative.trim()}
+              disabled={!allowExtract || !caseItem.narrative.trim()}
               className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <Sparkles className="w-4 h-4" />
@@ -226,6 +228,11 @@ export function NarrativeCaseCard({
             {obsCount > 0 && (
               <p className="text-xs text-teal-700 basis-full">
                 Bereits {obsCount} Schritte erkannt. Eine erneute Auswertung ersetzt dieses Ergebnis für die Quelle.
+              </p>
+            )}
+            {!allowExtract && (
+              <p className="text-xs text-slate-500 basis-full">
+                Diese Quelle läuft bereits über den Tabellenpfad und wird nicht erneut durch den Dokumentpfad ausgewertet.
               </p>
             )}
           </div>

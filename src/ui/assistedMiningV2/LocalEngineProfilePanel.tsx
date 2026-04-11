@@ -1,4 +1,4 @@
-import { Gauge, Layers3, ListChecks, ListTree, Sparkles } from 'lucide-react';
+import { Gauge, GitBranch, Layers3, ListChecks, ListTree, Sparkles } from 'lucide-react';
 import type { DerivationSummary } from '../../domain/process';
 import { HelpPopover } from '../components/HelpPopover';
 
@@ -78,6 +78,35 @@ export function LocalEngineProfilePanel({ summary }: Props) {
       {profile.domainGateNote && (
         <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs leading-relaxed text-violet-900">
           {profile.domainGateNote}
+        </div>
+      )}
+
+      {summary?.routingContext && (
+        <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-3">
+          <div className="flex items-center gap-2 text-cyan-900">
+            <GitBranch className="h-4 w-4" />
+            <p className="text-sm font-semibold">Quellen-Routing</p>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full border border-cyan-200 bg-white px-3 py-1 text-xs font-medium text-cyan-900">
+              {summary.routingContext.routingClass}
+            </span>
+            <span className="inline-flex items-center rounded-full border border-cyan-200 bg-white px-3 py-1 text-xs font-medium text-cyan-900">
+              {summary.routingContext.routingConfidence}
+            </span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {summary.routingContext.routingSignals.slice(0, 6).map(signal => (
+              <span key={signal} className="rounded-full border border-cyan-200 bg-white px-2 py-0.5 text-[11px] text-cyan-900">
+                {signal}
+              </span>
+            ))}
+          </div>
+          {summary.routingContext.fallbackReason && (
+            <p className="mt-2 text-[11px] leading-relaxed text-cyan-900">
+              Defensive Einordnung: {summary.routingContext.fallbackReason}
+            </p>
+          )}
         </div>
       )}
 

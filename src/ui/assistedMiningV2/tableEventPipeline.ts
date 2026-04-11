@@ -1,6 +1,7 @@
 import type { DerivationSummary, ProcessMiningObservation, ProcessMiningObservationCase } from '../../domain/process';
 import type { CsvImportConfig } from './fileImport';
 import { LOCAL_MINING_ENGINE_VERSION } from './documentDerivation';
+import { mapRoutingClassToDocumentKind, routeSourceMaterial } from '../../import/sourceRouter';
 
 type SemanticType = NonNullable<NonNullable<DerivationSummary['tablePipeline']>['inferredSchema'][number]>['inferredSemanticType'];
 
@@ -102,6 +103,7 @@ function inferSemanticType(header: string, values: string[], index: number, conf
 
 export function runTableEventPipeline(params: {
   fileName: string;
+  sourceType: 'csv-row' | 'xlsx-row';
   headers: string[];
   rows: string[][];
   config: CsvImportConfig;
@@ -111,7 +113,7 @@ export function runTableEventPipeline(params: {
   summary: DerivationSummary;
   warnings: string[];
 } {
-  const { fileName, headers, rows, config } = params;
+  const { fileName, sourceType, headers, rows, config } = params;
   const rowCount = rows.length;
   const columnCount = headers.length;
   const values = rows.flat();
@@ -130,14 +132,29 @@ export function runTableEventPipeline(params: {
   const activityMap = inferredSchema.find(item => item.inferredSemanticType === 'activity' && item.accepted);
   const caseIdMap = inferredSchema.find(item => item.inferredSemanticType === 'case-id' && item.accepted);
   const timeMap = inferredSchema.find(item => (item.inferredSemanticType === 'timestamp' || item.inferredSemanticType === 'order-index') && item.accepted);
+  const routedTable = routeSourceMaterial({
+    sourceType,
+    headers,
+    rows,
+  });
 
   const reasons: string[] = [];
+  if (routedTable.routingClass !== 'eventlog-table') {
+    reasons.push(
+      routedTable.fallbackReason ??
+        `Quellen-Router stuft das Material nicht als belastbare Ereignistabelle ein (${routedTable.routingClass}).`,
+    );
+  }
   if (!activityMap) reasons.push('Keine belastbare Activity-Spalte erkannt.');
   if (!caseIdMap) reasons.push('Keine belastbare Case-ID-Spalte erkannt.');
   if (!timeMap) reasons.push('Kein belastbarer Ordnungsanker (timestamp/index) erkannt.');
   if (emptyValueShare > 0.55) reasons.push('Zu hoher Leerwertanteil in der Tabelle.');
 
-  const eligible = !activityMap || !caseIdMap || !timeMap ? false : reasons.length === 0;
+  const canUseEventlog = routedTable.routingClass === 'eventlog-table'
+    && Boolean(activityMap)
+    && Boolean(caseIdMap)
+    && Boolean(timeMap)
+    && reasons.length === 0;
 
   const casesByRef = new Map<string, ProcessMiningObservationCase>();
   const observations: ProcessMiningObservation[] = [];
@@ -150,7 +167,7 @@ export function runTableEventPipeline(params: {
     const activity = activityMap ? normalize(row[activityMap.columnIndex] ?? '') : '';
     const timestampRaw = timeMap ? normalize(row[timeMap.columnIndex] ?? '') : '';
 
-    if (eligible) {
+    if (canUseEventlog) {
       if (!caseRef || !activity) return;
       if (!casesByRef.has(caseRef)) {
         const now = new Date().toISOString();
@@ -163,8 +180,8 @@ export function runTableEventPipeline(params: {
           inputKind: 'event-log',
           routingContext: {
             routingClass: 'eventlog-table',
-            routingConfidence: 'medium',
-            routingSignals: ['table-pipeline:eligible'],
+            routingConfidence: routedTable.routingConfidence,
+            routingSignals: [...routedTable.routingSignals, 'table-pipeline:eventlog'],
           },
           createdAt: now,
           updatedAt: now,
@@ -199,12 +216,12 @@ export function runTableEventPipeline(params: {
         name: 'Tabellensignale (defensiv)',
         narrative: '',
         rawText: `Quelle: ${fileName}`,
-        sourceType: 'csv-row',
+        sourceType,
         inputKind: 'table-row',
         routingContext: {
-          routingClass: 'weak-raw-table',
-          routingConfidence: 'low',
-          routingSignals: ['table-pipeline:not-eligible'],
+          routingClass: routedTable.routingClass === 'eventlog-table' ? 'weak-raw-table' : routedTable.routingClass,
+          routingConfidence: routedTable.routingClass === 'eventlog-table' ? 'low' : routedTable.routingConfidence,
+          routingSignals: [...routedTable.routingSignals, 'table-pipeline:defensive'],
           fallbackReason: reasons.join(' '),
         },
         createdAt: now,
@@ -224,11 +241,11 @@ export function runTableEventPipeline(params: {
     });
   });
 
-  if (!eligible) warnings.push(`Weak-raw-table aktiv: ${reasons.join(' ')}`);
+  if (!canUseEventlog) warnings.push(`Defensiver Tabellenpfad aktiv: ${reasons.join(' ')}`);
 
   const cases = [...casesByRef.values()];
   const stepCount = observations.filter(item => item.kind === 'step').length;
-  const traceStats = eligible
+  const traceStats = canUseEventlog
     ? {
         caseCount: cases.length,
         averageEventsPerCase: Number((stepCount / Math.max(cases.length, 1)).toFixed(2)),
@@ -238,25 +255,25 @@ export function runTableEventPipeline(params: {
 
   const summary: DerivationSummary = {
     sourceLabel: fileName,
-    method: eligible ? 'semi-structured' : 'narrative-fallback',
-    documentKind: eligible ? 'mixed-document' : 'weak-material',
-    analysisMode: eligible ? 'true-mining' : 'process-draft',
+    method: canUseEventlog ? 'semi-structured' : 'narrative-fallback',
+    documentKind: canUseEventlog ? 'mixed-document' : mapRoutingClassToDocumentKind(routedTable.routingClass),
+    analysisMode: canUseEventlog ? 'true-mining' : 'process-draft',
     caseCount: cases.length,
     observationCount: observations.length,
     warnings,
-    confidence: eligible ? 'medium' : 'low',
+    confidence: canUseEventlog ? routedTable.routingConfidence : 'low',
     stepLabels: observations.filter(item => item.kind === 'step').map(item => item.label),
     roles: [],
     systems: [],
     issueSignals: observations.filter(item => item.kind === 'issue').map(item => item.label),
     routingContext: {
-      routingClass: eligible ? 'eventlog-table' : 'weak-raw-table',
-      routingConfidence: eligible ? 'medium' : 'low',
-      routingSignals: ['table-pipeline'],
-      fallbackReason: eligible ? undefined : reasons.join(' '),
+      routingClass: canUseEventlog ? 'eventlog-table' : (routedTable.routingClass === 'eventlog-table' ? 'weak-raw-table' : routedTable.routingClass),
+      routingConfidence: canUseEventlog ? routedTable.routingConfidence : 'low',
+      routingSignals: [...routedTable.routingSignals, canUseEventlog ? 'table-pipeline:eventlog' : 'table-pipeline:defensive'],
+      fallbackReason: canUseEventlog ? undefined : reasons.join(' '),
     },
     tablePipeline: {
-      pipelineMode: eligible ? 'eventlog-table' : 'weak-raw-table',
+      pipelineMode: canUseEventlog ? 'eventlog-table' : 'weak-raw-table',
       tableProfile: {
         rowCount,
         columnCount,
@@ -270,9 +287,9 @@ export function runTableEventPipeline(params: {
       },
       inferredSchema,
       eventlogEligibility: {
-        eligible,
-        reasons: eligible ? ['Mindeststruktur erfüllt.'] : reasons,
-        fallbackReason: eligible ? undefined : 'Mindeststruktur für echtes Eventlog-Mining nicht erfüllt.',
+        eligible: canUseEventlog,
+        reasons: canUseEventlog ? ['Mindeststruktur erfüllt.'] : reasons,
+        fallbackReason: canUseEventlog ? undefined : 'Mindeststruktur für echtes Eventlog-Mining nicht erfüllt.',
       },
       rowEvidenceStats: {
         rowsWithEvidence: observations.length,
@@ -280,7 +297,7 @@ export function runTableEventPipeline(params: {
         weakSignalsCreated,
       },
       traceStats,
-      weakTableSignals: eligible ? undefined : observations.slice(0, 15).map(item => item.label),
+      weakTableSignals: canUseEventlog ? undefined : observations.slice(0, 15).map(item => item.label),
     },
     engineVersion: LOCAL_MINING_ENGINE_VERSION,
     provenance: 'local',

@@ -3,6 +3,7 @@ import type {
   ProcessMiningAssistedV2State,
   ProcessMiningObservation,
   ProcessVersion,
+  SourceRoutingContext,
 } from '../../domain/process';
 import type { AppSettings } from '../../settings/appSettings';
 import { APP_SEMVER, APP_VERSION_LABEL } from '../../config/release';
@@ -70,6 +71,9 @@ export interface ProcessMiningQualityExportFile {
       customer?: string;
       outcome?: string;
       doneCriteria?: string;
+    };
+    sourceRouting?: SourceRoutingContext & {
+      classificationReasons?: string[];
     };
   };
   qualityControlDefinition: Array<{
@@ -300,6 +304,9 @@ function assessDocumentTypeRecognition(params: {
       inputProfile: profile?.inputProfile,
       documentClass: profile?.documentClass,
       routingClass: summary?.routingContext?.routingClass,
+      routingConfidence: summary?.routingContext?.routingConfidence,
+      routingSignals: summary?.routingContext?.routingSignals,
+      fallbackReason: summary?.routingContext?.fallbackReason,
       classificationReasons,
     },
   };
@@ -759,6 +766,12 @@ export function buildQualityExportFile(params: {
         outcome: version.endToEndDefinition.outcome,
         doneCriteria: version.endToEndDefinition.doneCriteria,
       },
+      sourceRouting: state.lastDerivationSummary?.routingContext
+        ? {
+            ...state.lastDerivationSummary.routingContext,
+            classificationReasons: state.lastDerivationSummary.sourceProfile?.classificationReasons ?? [],
+          }
+        : undefined,
     },
     qualityControlDefinition: [
       {

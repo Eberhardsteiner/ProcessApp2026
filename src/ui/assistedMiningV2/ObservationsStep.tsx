@@ -437,7 +437,12 @@ export function ObservationsStep({ process, version, settings, state, integrity,
     if (expandedEditorCaseId === id) setExpandedEditorCaseId(null);
   }
 
+  function canReanalyzeCase(caseItem: ProcessMiningObservationCase): boolean {
+    return caseItem.sourceType !== 'eventlog' && caseItem.routingContext?.routingClass !== 'eventlog-table';
+  }
+
   function extractForCase(caseItem: ProcessMiningObservationCase) {
+    if (!canReanalyzeCase(caseItem)) return;
     const sourceText = (caseItem.rawText || caseItem.narrative || '').trim();
     if (!sourceText) return;
 
@@ -865,6 +870,7 @@ export function ObservationsStep({ process, version, settings, state, integrity,
                               onUpdate={updatedCase => updateCase(caseItem.id, updatedCase)}
                               onDelete={() => deleteCase(caseItem.id)}
                               onExtract={() => extractForCase(caseItem)}
+                              allowExtract={canReanalyzeCase(caseItem)}
                               onToggleEditor={() => toggleEditorForCase(caseItem.id)}
                               editorOpen={expandedEditorCaseId === caseItem.id}
                               dragHandleProps={{ onMouseDown: () => {} }}

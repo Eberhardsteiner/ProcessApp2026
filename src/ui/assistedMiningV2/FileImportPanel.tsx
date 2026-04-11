@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Upload,
   FileText,
@@ -19,6 +19,7 @@ import { extractTextFromDocx } from '../../import/extractTextFromDocx';
 import { extractTablesFromXlsx } from '../../import/extractTextFromXlsx';
 import type { XlsxSheet } from '../../import/extractTextFromXlsx';
 import {
+  buildTableRoutingContext,
   detectCsvImportMode,
   detectColumnCandidates,
   parseCsvForImport,
@@ -68,6 +69,22 @@ function DocKindBadge({ kind }: { kind: DerivationResult['documentKind'] }) {
   if (kind === 'mixed-document') return <span className="text-xs font-medium bg-violet-50 text-violet-700 px-2 py-0.5 rounded">Mischdokument erkannt</span>;
   if (kind === 'weak-material') return <span className="text-xs font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded">Schwaches Ausgangsmaterial</span>;
   return <span className="text-xs font-medium bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Unbekannter Dokumenttyp</span>;
+}
+
+function routingClassLabel(value: string) {
+  const labels: Record<string, string> = {
+    'structured-procedure': 'structured-procedure',
+    'semi-structured-procedure': 'semi-structured-procedure',
+    'narrative-case': 'narrative-case',
+    'mixed-document': 'mixed-document',
+    'eventlog-table': 'eventlog-table',
+    'weak-raw-table': 'weak-raw-table',
+  };
+  return labels[value] ?? value;
+}
+
+function suggestedModeLabel(mode: FileImportMode) {
+  return mode === 'eventlog' ? 'Ereignistabelle importieren' : 'Als Fallbeschreibungen auswerten';
 }
 
 function DerivationResultCard({
@@ -232,11 +249,14 @@ function TableImportConfig({
   onImport: (mode: FileImportMode, config: CsvImportConfig, headers: string[], rows: string[][]) => void;
   onCancel: () => void;
 }) {
-  const [mode, setMode] = useState<FileImportMode>(() => detectCsvImportMode(headers));
+  const tableSourceType = fileName.toLowerCase().endsWith('.xlsx') ? 'xlsx-row' : 'csv-row';
+  const suggestedRouting = buildTableRoutingContext(headers, rows, tableSourceType);
+  const suggestedMode = detectCsvImportMode(headers, rows, tableSourceType);
+  const [mode, setMode] = useState<FileImportMode>(() => suggestedMode);
   const [config, setConfig] = useState<CsvImportConfig>(() => {
     const cols = detectColumnCandidates(headers);
     return {
-      mode: detectCsvImportMode(headers),
+      mode: suggestedMode,
       descriptionColIdx: cols.description,
       nameColIdx: cols.name,
       idColIdx: cols.id,
@@ -249,6 +269,24 @@ function TableImportConfig({
     };
   });
   const [warnings, setWarnings] = useState<string[]>([]);
+
+  useEffect(() => {
+    const cols = detectColumnCandidates(headers);
+    setMode(suggestedMode);
+    setConfig({
+      mode: suggestedMode,
+      descriptionColIdx: cols.description,
+      nameColIdx: cols.name,
+      idColIdx: cols.id,
+      timestampColIdx: cols.timestamp,
+      sourceColIdx: -1,
+      activityColIdx: cols.activity,
+      caseIdColIdx: cols.caseId,
+      roleColIdx: cols.role,
+      systemColIdx: cols.system,
+    });
+    setWarnings([]);
+  }, [headers, rows, suggestedMode]);
 
   function ColSelect({ label, value, onChange, optional = true }: { label: string; value: number; onChange: (v: number) => void; optional?: boolean }) {
     return (
@@ -318,6 +356,33 @@ function TableImportConfig({
           <p className="font-semibold text-sm">Ereignistabelle importieren</p>
           <p className="text-xs opacity-70 mt-0.5">Jede Zeile ist ein Ereignis / Schritt</p>
         </button>
+      </div>
+
+      <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-3 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-cyan-900">Quellen-Router</span>
+          <span className="rounded-full border border-cyan-200 bg-white px-2.5 py-0.5 text-[11px] font-medium text-cyan-800">
+            {routingClassLabel(suggestedRouting.routingClass)}
+          </span>
+          <span className="rounded-full border border-cyan-200 bg-white px-2.5 py-0.5 text-[11px] font-medium text-cyan-800">
+            {suggestedRouting.routingConfidence}
+          </span>
+        </div>
+        <p className="text-xs leading-relaxed text-cyan-900">
+          Empfohlener Pfad: {suggestedModeLabel(suggestedMode)}.
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {suggestedRouting.routingSignals.slice(0, 6).map(signal => (
+            <span key={signal} className="rounded-full border border-cyan-200 bg-white px-2 py-0.5 text-[11px] text-cyan-800">
+              {signal}
+            </span>
+          ))}
+        </div>
+        {suggestedRouting.fallbackReason && (
+          <p className="text-[11px] leading-relaxed text-cyan-900">
+            Defensive Einordnung: {suggestedRouting.fallbackReason}
+          </p>
+        )}
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 overflow-x-auto">
@@ -434,19 +499,8 @@ export function FileImportPanel({ onImport }: Props) {
       } else if (type === 'csv') {
         const text = await file.text();
         const { headers, rows } = parseCsvForImport(text);
-        const detectedMode = detectCsvImportMode(headers);
-        if (detectedMode === 'eventlog') {
-          setParsedFile({ name: file.name, type, csvHeaders: headers, csvRows: rows, warnings: [] });
-          setPhase('config-table');
-        } else {
-          setParsedFile({ name: file.name, type, csvHeaders: headers, csvRows: rows, warnings: [] });
-          const cols = detectColumnCandidates(headers);
-          if (cols.description >= 0) {
-            setPhase('config-table');
-          } else {
-            setPhase('config-table');
-          }
-        }
+        setParsedFile({ name: file.name, type, csvHeaders: headers, csvRows: rows, warnings: [] });
+        setPhase('config-table');
 
       } else if (type === 'xlsx') {
         const r = await extractTablesFromXlsx(file);
@@ -474,10 +528,13 @@ export function FileImportPanel({ onImport }: Props) {
 
   function handleTableImport(mode: FileImportMode, config: CsvImportConfig, headers: string[], rows: string[][]) {
     if (!parsedFile) return;
+    const tableSourceType = parsedFile.type === 'xlsx' ? 'xlsx-row' : 'csv-row';
+    const tableRouting = buildTableRoutingContext(headers, rows, tableSourceType);
 
     if (mode === 'eventlog') {
       const result = runTableEventPipeline({
         fileName: parsedFile.name,
+        sourceType: tableSourceType,
         headers,
         rows,
         config,
@@ -503,7 +560,10 @@ export function FileImportPanel({ onImport }: Props) {
       return;
     }
 
-    const { cases, observations, totalSteps, combinedSummary } = deriveFromMultipleTexts(inputs);
+    const { cases, observations, totalSteps, combinedSummary } = deriveFromMultipleTexts(inputs, {
+      sourceLabel: parsedFile.name,
+      routingContextOverride: tableRouting.routingClass === 'eventlog-table' ? undefined : tableRouting,
+    });
     onImport(cases, observations, combinedSummary);
     setDoneInfo({ caseCount: cases.length, stepCount: totalSteps });
     setPhase('done');

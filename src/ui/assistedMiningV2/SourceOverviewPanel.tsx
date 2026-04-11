@@ -105,6 +105,7 @@ export function SourceOverviewPanel({
           const realTimeCount = stepObservations.filter(observation => observation.timestampQuality === 'real').length;
           const suggestionCount = suggestionCounts.get(caseItem.id) ?? 0;
           const hasText = Boolean((caseItem.rawText || caseItem.narrative || '').trim());
+          const canReanalyze = hasText && caseItem.sourceType !== 'eventlog' && caseItem.routingContext?.routingClass !== 'eventlog-table';
           const status = getStatus({ stepCount, suggestionCount, hasText });
           const isOpen = expandedCaseId === caseItem.id;
 
@@ -178,7 +179,7 @@ export function SourceOverviewPanel({
                   <Eye className="w-4 h-4" />
                   Prüfen
                 </button>
-                {hasText && (
+                {canReanalyze && (
                   <button
                     type="button"
                     onClick={() => onReanalyzeCase(caseItem.id)}

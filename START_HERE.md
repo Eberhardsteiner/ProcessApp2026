@@ -17,6 +17,16 @@ npm run dev
 - **Lazy Loading:** QA-Flächen werden nur bei aktivem QA-/Dev-Modus nachgeladen und nicht im Standardpfad gerendert.
 - **Export-JSON:** nutzt nur den Core-Analysezustand und bleibt als externes Bewertungsartefakt erhalten.
 
+## Quellen-Router (Phase 2)
+
+- Vor der eigentlichen Analyse klassifiziert der produktive Router Quellen defensiv in:
+  `structured-procedure`, `semi-structured-procedure`, `narrative-case`, `mixed-document`, `eventlog-table`, `weak-raw-table`
+- Der Routing-Kontext läuft produktiv mit:
+  `routingClass`, `routingConfidence`, `routingSignals`, `fallbackReason`
+- Dokumente/Freitexte laufen über [src/ui/assistedMiningV2/documentDerivation.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ui/assistedMiningV2/documentDerivation.ts)
+- Tabellen werden vor dem starken Eventlog-Pfad über [src/import/sourceRouter.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/import/sourceRouter.ts) geprüft und in [src/ui/assistedMiningV2/tableEventPipeline.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ui/assistedMiningV2/tableEventPipeline.ts) defensiv bestätigt oder abgerüstet
+- Der Export zeigt die Routing-Entscheidung direkt in `context.sourceRouting` und zusätzlich im `lastDerivationSummary.routingContext`
+
 ## Standardprüfung
 
 ```bash

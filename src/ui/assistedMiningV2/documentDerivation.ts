@@ -1344,10 +1344,15 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
   const supplementalIssueSignals = uniqueStrings(supplementalIssueEvidence.map(entry => entry.label));
   const storyBlocks = extractTimelineBlocks(rawText);
   const preferredPath = routingContext.routingClass;
-  const allowStructuredFirst = preferredPath === 'structured-procedure' || preferredPath === 'eventlog-table';
-  const allowSemiStructuredFirst = preferredPath === 'semi-structured-procedure' || preferredPath === 'mixed-document';
+  const allowStructuredFirst = preferredPath === 'structured-procedure';
+  const allowSemiStructuredFirst = preferredPath === 'semi-structured-procedure';
   const allowNarrativeFirst = preferredPath === 'narrative-case';
-  const forceDefensiveFallback = preferredPath === 'weak-raw-table';
+  const allowMixedPath = preferredPath === 'mixed-document';
+  const forceDefensiveFallback = preferredPath === 'weak-raw-table' || preferredPath === 'eventlog-table';
+
+  if (preferredPath === 'eventlog-table') {
+    warnings.push('Quellen-Router erkennt tabellarisches Ereignismaterial. Außerhalb des Tabellenimports bleibt dieser Pfad bewusst defensiv.');
+  }
 
   if (!forceDefensiveFallback && allowNarrativeFirst && isMostlyNarrative(rawText) && storyBlocks.length >= MIN_USEFUL_STEPS) {
     const narrativeResult = buildNarrativeDerivation({
@@ -1373,7 +1378,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     }
   }
 
-  if (!forceDefensiveFallback && (allowStructuredFirst || preferredPath === 'mixed-document')) {
+  if (!forceDefensiveFallback && (allowStructuredFirst || allowMixedPath)) {
     for (const candidateText of candidateTexts(rawText, sourceName)) {
       const structured = extractStructuredProcedureFromText(sourceName, candidateText);
       if (structured && structured.steps.length >= MIN_USEFUL_STEPS) {
@@ -1396,7 +1401,7 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
     }
   }
 
-  if (!forceDefensiveFallback && (allowSemiStructuredFirst || preferredPath === 'eventlog-table' || preferredPath === 'structured-procedure')) {
+  if (!forceDefensiveFallback && (allowSemiStructuredFirst || allowMixedPath || allowStructuredFirst)) {
     for (const candidateText of candidateTexts(rawText, sourceName)) {
       const semiStructured = extractSemiStructuredProcedureFromText(sourceName, candidateText);
       if (semiStructured && semiStructured.steps.length >= MIN_USEFUL_STEPS) {
@@ -1516,6 +1521,10 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
 
 export function deriveFromMultipleTexts(
   inputs: Array<{ text: string; name: string; sourceType: DerivationInput['sourceType'] }>,
+  options?: {
+    sourceLabel?: string;
+    routingContextOverride?: SourceRoutingContext;
+  },
 ): {
   cases: ProcessMiningObservationCase[];
   observations: ProcessMiningObservation[];
@@ -1550,18 +1559,30 @@ export function deriveFromMultipleTexts(
       }, {})
     : {};
   const routingWinner = Object.entries(dominantRoutingClass).sort((a, b) => b[1] - a[1])[0];
-  const combinedRoutingContext: SourceRoutingContext = {
-    routingClass: (inputs.length > 1 ? 'mixed-document' : (routingWinner?.[0] as SourceRoutingContext['routingClass'] | undefined)) ?? 'weak-raw-table',
-    routingConfidence: inputs.length > 1 ? 'medium' : (summaries[0]?.routingContext?.routingConfidence ?? 'low'),
-    routingSignals: [
-      `sources=${inputs.length}`,
-      `routingSpread=${uniqueStrings(routingClasses).join(',') || 'none'}`,
-      ...(summaries.flatMap(summary => summary.routingContext?.routingSignals ?? []).slice(0, 4)),
-    ],
-    fallbackReason: summaries.find(summary => summary.routingContext?.fallbackReason)?.routingContext?.fallbackReason,
-  };
+  const aggregatedRoutingSignals = [
+    `sources=${inputs.length}`,
+    `routingSpread=${uniqueStrings(routingClasses).join(',') || 'none'}`,
+    ...(summaries.flatMap(summary => summary.routingContext?.routingSignals ?? []).slice(0, 4)),
+  ];
+  const combinedRoutingContext: SourceRoutingContext = options?.routingContextOverride
+    ? {
+        routingClass: options.routingContextOverride.routingClass,
+        routingConfidence: options.routingContextOverride.routingConfidence,
+        routingSignals: uniqueStrings([
+          ...options.routingContextOverride.routingSignals,
+          ...aggregatedRoutingSignals,
+        ]),
+        fallbackReason: options.routingContextOverride.fallbackReason
+          ?? summaries.find(summary => summary.routingContext?.fallbackReason)?.routingContext?.fallbackReason,
+      }
+    : {
+        routingClass: (inputs.length > 1 ? 'mixed-document' : (routingWinner?.[0] as SourceRoutingContext['routingClass'] | undefined)) ?? 'weak-raw-table',
+        routingConfidence: inputs.length > 1 ? 'medium' : (summaries[0]?.routingContext?.routingConfidence ?? 'low'),
+        routingSignals: aggregatedRoutingSignals,
+        fallbackReason: summaries.find(summary => summary.routingContext?.fallbackReason)?.routingContext?.fallbackReason,
+      };
   const combinedSummary: DerivationSummary = {
-    sourceLabel: inputs.length === 1 ? inputs[0].name : `${inputs.length} importierte Beschreibungen`,
+    sourceLabel: options?.sourceLabel ?? (inputs.length === 1 ? inputs[0].name : `${inputs.length} importierte Beschreibungen`),
     method: summaries.some(summary => summary.method === 'structured')
       ? 'structured'
       : summaries.some(summary => summary.method === 'semi-structured')

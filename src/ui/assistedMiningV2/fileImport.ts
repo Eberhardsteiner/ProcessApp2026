@@ -3,6 +3,7 @@ import type {
   ProcessMiningObservation,
 } from '../../domain/process';
 import { parseCsvText } from '../../import/csv';
+import { routeSourceMaterial } from '../../import/sourceRouter';
 import type { XlsxSheet } from '../../import/extractTextFromXlsx';
 
 export type FileImportMode = 'narrative' | 'eventlog';
@@ -52,12 +53,36 @@ const NARRATIVE_HEADER_HINTS = [
   'text', 'inhalt', 'ablauf', 'bemerkung', 'freitext',
 ];
 
-export function detectCsvImportMode(headers: string[]): FileImportMode {
+export function buildTableRoutingContext(
+  headers: string[],
+  rows: string[][],
+  sourceType: 'csv-row' | 'xlsx-row' = 'csv-row',
+) {
+  return routeSourceMaterial({
+    sourceType,
+    headers,
+    rows,
+  });
+}
+
+export function detectCsvImportMode(
+  headers: string[],
+  rows: string[][],
+  sourceType: 'csv-row' | 'xlsx-row' = 'csv-row',
+): FileImportMode {
+  const routingContext = buildTableRoutingContext(headers, rows, sourceType);
+  if (routingContext.routingClass === 'eventlog-table') return 'eventlog';
+
   const lower = headers.map(h => h.toLowerCase());
   const eventScore = lower.filter(h => EVENT_LOG_HEADER_HINTS.some(hint => h.includes(hint))).length;
   const narrativeScore = lower.filter(h => NARRATIVE_HEADER_HINTS.some(hint => h.includes(hint))).length;
-  if (eventScore >= 2) return 'eventlog';
-  if (narrativeScore >= 1) return 'narrative';
+
+  if (routingContext.routingClass === 'semi-structured-procedure' || routingContext.routingClass === 'mixed-document') {
+    return 'narrative';
+  }
+  if (eventScore >= 2 && narrativeScore === 0 && routingContext.routingConfidence !== 'low') {
+    return 'eventlog';
+  }
   return 'narrative';
 }
 
