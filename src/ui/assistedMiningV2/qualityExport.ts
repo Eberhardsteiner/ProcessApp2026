@@ -22,6 +22,12 @@ import {
   type QualityScoringProfileSnapshot,
 } from './qualityScoring';
 
+function atomizeStructuredValues(values: Array<string | undefined>): string[] {
+  return uniqueStrings(
+    values.flatMap(value => normalizeWhitespace(value ?? '').split(/[,/;]|\s+und\s+/i).map(part => normalizeWhitespace(part))),
+  );
+}
+
 export interface ProcessMiningQualityExportFile {
   schemaVersion: 'pm-analysis-quality-export-v2';
   exportedAt: string;
@@ -566,33 +572,33 @@ export function buildQualityExportFile(params: {
       mergeSkippedBecauseStructured: step.mergeSkippedBecauseStructured,
       primaryRole: step.primaryRole ?? step.role,
       primarySystem: step.primarySystem ?? step.system,
-      roles: step.roles ?? (step.role ? [step.role] : undefined),
-      systems: step.systems ?? (step.system ? [step.system] : undefined),
-      explicitRoles: step.explicitRoles,
-      explicitSystems: step.explicitSystems,
-      inferredRoles: step.inferredRoles,
-      inferredSystems: step.inferredSystems,
-      supportOnlyRoles: step.supportOnlyRoles,
-      supportOnlySystems: step.supportOnlySystems,
-      suppressedInferredRoles: step.suppressedInferredRoles,
-      suppressedInferredSystems: step.suppressedInferredSystems,
+      roles: atomizeStructuredValues(step.roles ?? (step.role ? [step.role] : [])),
+      systems: atomizeStructuredValues(step.systems ?? (step.system ? [step.system] : [])),
+      explicitRoles: atomizeStructuredValues(step.explicitRoles ?? []),
+      explicitSystems: atomizeStructuredValues(step.explicitSystems ?? []),
+      inferredRoles: atomizeStructuredValues(step.inferredRoles ?? []),
+      inferredSystems: atomizeStructuredValues(step.inferredSystems ?? []),
+      supportOnlyRoles: atomizeStructuredValues(step.supportOnlyRoles ?? []),
+      supportOnlySystems: atomizeStructuredValues(step.supportOnlySystems ?? []),
+      suppressedInferredRoles: atomizeStructuredValues(step.suppressedInferredRoles ?? []),
+      suppressedInferredSystems: atomizeStructuredValues(step.suppressedInferredSystems ?? []),
     }));
-  const explicitStructuredRoles = uniqueStrings([
+  const explicitStructuredRoles = atomizeStructuredValues([
     ...preservedSteps.flatMap(step => step.explicitRoles ?? []),
-    ...(lastSummary?.explicitRoleTableDetected ? (lastSummary.roles ?? []) : []),
+    ...(lastSummary?.explicitRoles ?? []),
   ]);
-  const explicitStructuredSystems = uniqueStrings([
+  const explicitStructuredSystems = atomizeStructuredValues([
     ...preservedSteps.flatMap(step => step.explicitSystems ?? []),
-    ...((lastSummary?.explicitSystemCount ?? 0) > 0 ? (lastSummary?.systems ?? []) : []),
+    ...(lastSummary?.explicitSystems ?? []),
   ]);
-  const inferredStructuredRoles = uniqueStrings(preservedSteps.flatMap(step => step.inferredRoles ?? []));
-  const inferredStructuredSystems = uniqueStrings(preservedSteps.flatMap(step => step.inferredSystems ?? []));
-  const supportOnlyStructuredRoles = uniqueStrings(preservedSteps.flatMap(step => step.supportOnlyRoles ?? []));
-  const supportOnlyStructuredSystems = uniqueStrings(preservedSteps.flatMap(step => step.supportOnlySystems ?? []));
-  const suppressedStructuredRoles = uniqueStrings(preservedSteps.flatMap(step => step.suppressedInferredRoles ?? []));
-  const suppressedStructuredSystems = uniqueStrings(preservedSteps.flatMap(step => step.suppressedInferredSystems ?? []));
-  const finalStructuredRoles = uniqueStrings(preservedSteps.flatMap(step => step.roles ?? step.explicitRoles ?? (step.primaryRole ? [step.primaryRole] : [])));
-  const finalStructuredSystems = uniqueStrings(preservedSteps.flatMap(step => step.systems ?? step.explicitSystems ?? (step.primarySystem ? [step.primarySystem] : [])));
+  const inferredStructuredRoles = atomizeStructuredValues(preservedSteps.flatMap(step => step.inferredRoles ?? []));
+  const inferredStructuredSystems = atomizeStructuredValues(preservedSteps.flatMap(step => step.inferredSystems ?? []));
+  const supportOnlyStructuredRoles = atomizeStructuredValues(preservedSteps.flatMap(step => step.supportOnlyRoles ?? []));
+  const supportOnlyStructuredSystems = atomizeStructuredValues(preservedSteps.flatMap(step => step.supportOnlySystems ?? []));
+  const suppressedStructuredRoles = atomizeStructuredValues(preservedSteps.flatMap(step => step.suppressedInferredRoles ?? []));
+  const suppressedStructuredSystems = atomizeStructuredValues(preservedSteps.flatMap(step => step.suppressedInferredSystems ?? []));
+  const finalStructuredRoles = atomizeStructuredValues(preservedSteps.flatMap(step => step.roles ?? step.explicitRoles ?? (step.primaryRole ? [step.primaryRole] : [])));
+  const finalStructuredSystems = atomizeStructuredValues(preservedSteps.flatMap(step => step.systems ?? step.explicitSystems ?? (step.primarySystem ? [step.primarySystem] : [])));
 
   return {
     schemaVersion: 'pm-analysis-quality-export-v2',

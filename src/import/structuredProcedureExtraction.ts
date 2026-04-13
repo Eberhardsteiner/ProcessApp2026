@@ -369,13 +369,11 @@ function enrichStepsWithRoleRows(steps: StructuredProcedureStep[], roles: Struct
     const evidenceSystems = parsedColumns.length >= 5 ? splitStructuredValues(parsedColumns[3]) : [];
     const explicitRoles = uniqueCaseInsensitive([
       ...(step.explicitRoles ?? []),
-      ...(step.roles ?? []),
       ...splitStructuredValues(step.responsible),
       ...evidenceRoles,
     ]);
     const explicitSystems = uniqueCaseInsensitive([
       ...(step.explicitSystems ?? []),
-      ...(step.systems ?? []),
       ...splitStructuredValues(step.system),
       ...evidenceSystems,
     ]);

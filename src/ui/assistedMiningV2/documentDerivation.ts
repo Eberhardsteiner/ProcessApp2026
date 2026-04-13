@@ -1,5 +1,6 @@
 import type {
   DerivationSummary,
+  DerivationSourceProfile,
   MixedDocumentSegmentSummary,
   MixedDocumentSegmentType,
   ProcessDocumentType,
@@ -137,16 +138,102 @@ function buildStructuredDocumentSummary(params: {
   return notes.join(' ').trim();
 }
 
+const DOMAIN_REASON_RE = /^(?:Primärdomäne:|Sekundär berücksichtigt:|Weitere Domänenhinweise\b)/i;
+
+function sanitizeStructuredClassificationReasons(params: {
+  reasons?: string[];
+  preserveStructuredSteps: boolean;
+  exposeStructuredDomainContext: boolean;
+}): string[] | undefined {
+  const filtered = uniqueStrings(params.reasons ?? []).filter(reason => {
+    if (!params.preserveStructuredSteps || params.exposeStructuredDomainContext) return true;
+    return !DOMAIN_REASON_RE.test(normalizeWhitespace(reason));
+  });
+  return filtered.length > 0 ? filtered : undefined;
+}
+
 function shouldExposeStructuredDomainContext(params: {
   preserveStructuredSteps: boolean;
   primaryDomainKey?: string;
   scoreBoard: Array<{ score: number }>;
+  explicitStructuredStepCount?: number;
 }): boolean {
   if (!params.preserveStructuredSteps) return true;
   if (!params.primaryDomainKey) return false;
   const strongest = params.scoreBoard[0]?.score ?? 0;
   const runnerUp = params.scoreBoard[1]?.score ?? 0;
-  return strongest >= 8 && strongest >= runnerUp + 3;
+  const structuredStepCount = params.explicitStructuredStepCount ?? 0;
+  const isStructuredMicroGate = structuredStepCount > 0 && structuredStepCount <= 8;
+  const minimumScore = isStructuredMicroGate ? 12 : 10;
+  const minimumMargin = isStructuredMicroGate ? 5 : 4;
+  return strongest >= minimumScore && strongest >= runnerUp + minimumMargin;
+}
+
+function sanitizeStructuredWarnings(params: {
+  warnings: string[];
+  routingContext: SourceRoutingContext;
+}): string[] {
+  const filtered = uniqueStrings(params.warnings).filter(warning => {
+    if (/^Primärdomäne erkannt:/i.test(warning)) return false;
+    if (
+      params.routingContext.routingClass === 'structured-procedure'
+      && /^Dokumentklassifikation:/i.test(warning)
+      && /semi-structured-procedure|weak-material|mixed-document/i.test(warning)
+    ) {
+      return false;
+    }
+    return true;
+  });
+  if (
+    params.routingContext.routingClass === 'structured-procedure'
+    && !filtered.some(warning => /^Dokumentklassifikation:\s*structured-target-procedure/i.test(warning))
+  ) {
+    filtered.push('Dokumentklassifikation: structured-target-procedure (durch Structured-Ablauf und explizite Tabellenanker bestätigt).');
+  }
+  return filtered;
+}
+
+function buildStructuredSourceProfile(params: {
+  rawText: string;
+  explicitStructuredStepCount?: number;
+  structuredTableDetected?: boolean;
+  explicitRoleTableDetected?: boolean;
+  structuredSectionFallback?: boolean;
+  structuredWholeTextFallback?: boolean;
+}): DerivationSourceProfile {
+  const baseProfile = buildSourceExtractionPlan(params.rawText).profile;
+  return {
+    ...baseProfile,
+    inputProfile: 'procedure-document',
+    inputProfileLabel: 'Verfahrensbeschreibung',
+    documentClass: 'structured-target-procedure',
+    documentClassLabel: 'Strukturiertes Sollprozessdokument',
+    extractionFocus: 'Die lokale Engine nutzt formale Verfahrensschritte als Primärwahrheit und ergänzt Rollen, Systeme und Hinweise nur bei lokaler Evidenz.',
+    classificationReasons: uniqueStrings([
+      'Klare Sollprozess-Struktur mit Ablauf-, Rollen- und Regelblöcken erkannt',
+      params.explicitStructuredStepCount
+        ? `${params.explicitStructuredStepCount} explizite Structured-Schritte wurden als Primärquelle übernommen`
+        : 'Explizite Structured-Schritte wurden als Primärquelle übernommen',
+      params.structuredTableDetected
+        ? 'Tabellarische Ablaufquelle wurde strukturiert und quellentreu übernommen'
+        : 'Benannter Ablaufabschnitt wurde strukturiert und quellentreu übernommen',
+      params.explicitRoleTableDetected
+        ? 'Rollen-/Systemtabelle wurde als explizite Structured-Evidenz erkannt'
+        : undefined,
+      params.structuredWholeTextFallback
+        ? 'Structured-Parser musste auf Ganztext zurückfallen und behandelt das Ergebnis konservativer'
+        : undefined,
+      params.structuredSectionFallback && !params.structuredWholeTextFallback
+        ? 'Ablaufabschnitt wurde heuristisch gefunden, blieb aber strukturiert verankert'
+        : undefined,
+    ]),
+    extractionPlan: uniqueStrings([
+      'Formale Schritte zuerst lesen',
+      'Entscheidungen und Rollen ergänzen',
+      'Zusatzmaterial nur unterstützend nutzen',
+      'Explizite Structured-Evidenz vor Inferenz priorisieren',
+    ]),
+  };
 }
 
 function mapClassifierToDocumentKind(classType: ReturnType<typeof classifyDocumentStructure>['classType']): ProcessDocumentType {
@@ -971,16 +1058,10 @@ function buildStructuredStepArtifacts(
   steps.forEach((step, index) => {
     const evidenceAnchor = step.evidenceSnippet || [step.label, step.description, step.result].filter(Boolean).join(' | ');
     const contextWindow = buildContextWindow([step.label, step.description, step.result, step.decision, evidenceAnchor]);
-    const explicitRoles = uniqueStrings([
-      ...(step.explicitRoles ?? []),
-      ...(step.roles ?? []),
-      step.responsible,
-    ]);
-    const explicitSystems = uniqueStrings([
-      ...(step.explicitSystems ?? []),
-      ...(step.systems ?? []),
-      step.system,
-    ]);
+    const explicitRoles = uniqueStrings(splitEntitySeedParts(step.explicitRoles ?? []).filter(isExplicitRoleSeed));
+    const explicitSystems = uniqueStrings(splitEntitySeedParts(step.explicitSystems ?? []).filter(isExplicitSystemSeed));
+    const observedRoles = uniqueStrings(splitEntitySeedParts([...(step.roles ?? []), step.responsible]).filter(isExplicitRoleSeed));
+    const observedSystems = uniqueStrings(splitEntitySeedParts([...(step.systems ?? []), step.system]).filter(isExplicitSystemSeed));
     const localRoles = collectLocalRoleLabels({
       explicit: explicitRoles,
       context: [step.label, step.description, evidenceAnchor],
@@ -989,8 +1070,8 @@ function buildStructuredStepArtifacts(
       explicit: explicitSystems,
       context: [step.label, step.description, evidenceAnchor],
     });
-    const inferredRoles = excludeNormalizedValues(localRoles, explicitRoles);
-    const inferredSystems = excludeNormalizedValues(localSystems, explicitSystems);
+    const inferredRoles = excludeNormalizedValues(uniqueStrings([...observedRoles, ...localRoles]), explicitRoles);
+    const inferredSystems = excludeNormalizedValues(uniqueStrings([...observedSystems, ...localSystems]), explicitSystems);
     const allRoles = uniqueStrings([...explicitRoles, ...inferredRoles]);
     const allSystems = uniqueStrings([...explicitSystems, ...inferredSystems]);
     const primaryRole = allRoles[0];
@@ -1802,6 +1883,8 @@ function buildStructuredDerivation(params: {
   steps: StructuredProcedureStep[];
   roles: string[];
   systems: string[];
+  explicitRoles?: string[];
+  explicitSystems?: string[];
   warnings: string[];
   title?: string;
   sourceName: string;
@@ -1823,6 +1906,8 @@ function buildStructuredDerivation(params: {
     steps,
     roles,
     systems,
+    explicitRoles: explicitRolesFromSource = [],
+    explicitSystems: explicitSystemsFromSource = [],
     warnings,
     title,
     sourceName,
@@ -1840,8 +1925,18 @@ function buildStructuredDerivation(params: {
     explicitSystemCount,
     structuredRecallLoss,
   } = params;
-  const sourceProfile = buildSourceExtractionPlan(rawText).profile;
+  const sourceProfile = buildStructuredSourceProfile({
+    rawText,
+    explicitStructuredStepCount,
+    structuredTableDetected,
+    explicitRoleTableDetected,
+    structuredSectionFallback,
+    structuredWholeTextFallback,
+  });
+  const explicitRoles = uniqueStrings(splitEntitySeedParts(explicitRolesFromSource).filter(isExplicitRoleSeed));
+  const explicitSystems = uniqueStrings(splitEntitySeedParts(explicitSystemsFromSource).filter(isExplicitSystemSeed));
   const analysisStrategies = uniqueStrings([...buildAnalysisStrategies(sourceProfile.inputProfileLabel), ...(sourceProfile.extractionPlan ?? [])]).slice(0, 5);
+  const normalizedWarnings = sanitizeStructuredWarnings({ warnings, routingContext });
   const caseItem = buildCase({
     name: title ?? sourceName.replace(/\.[^.]+$/, ''),
     narrative: sliceNarrative(rawText),
@@ -1865,11 +1960,13 @@ function buildStructuredDerivation(params: {
     analysisMode: 'process-draft',
     caseCount: 1,
     observationCount: structuredArtifacts.observations.length,
-    warnings,
+    warnings: normalizedWarnings,
     confidence,
     stepLabels: structuredArtifacts.derivedSteps.map(step => step.label),
     roles: uniqueStrings([...roles, ...structuredArtifacts.roles]),
     systems: uniqueStrings([...systems, ...structuredArtifacts.systems]),
+    explicitRoles,
+    explicitSystems,
     issueSignals,
     structuredPreserveApplied: !structuredRecallLoss,
     explicitStructuredStepCount,
@@ -1906,7 +2003,7 @@ function buildStructuredDerivation(params: {
     observations: structuredArtifacts.observations,
     method: 'structured',
     documentKind,
-    warnings,
+    warnings: normalizedWarnings,
     confidence,
     derivedSteps: structuredArtifacts.derivedSteps,
     roles: uniqueStrings([...roles, ...structuredArtifacts.roles]),
@@ -2288,14 +2385,15 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     domainResult: domainIsolation,
   });
   const keptIssueLabels = new Set(keptIssueEvidence.map(entry => entry.label));
-  const secondaryDomainHint = domainIsolation.secondaryDomainLabels.length > 0
-    ? domainIsolation.secondaryDomainLabels.join(', ')
-    : undefined;
   const exposeStructuredDomainContext = shouldExposeStructuredDomainContext({
     preserveStructuredSteps,
     primaryDomainKey: domainIsolation.primaryDomainKey,
     scoreBoard: domainIsolation.scoreBoard,
+    explicitStructuredStepCount: result.summary.explicitStructuredStepCount,
   });
+  const secondaryDomainHint = exposeStructuredDomainContext && domainIsolation.secondaryDomainLabels.length > 0
+    ? domainIsolation.secondaryDomainLabels.join(', ')
+    : undefined;
   const effectiveDomainIsolationNote = exposeStructuredDomainContext ? domainIsolation.note : undefined;
 
   const filteredObservations = gatedObservations.flatMap(observation => {
@@ -2449,24 +2547,31 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
         secondaryDomainKeys: exposeStructuredDomainContext ? domainIsolation.secondaryDomainKeys : [],
         secondaryDomainLabels: exposeStructuredDomainContext ? domainIsolation.secondaryDomainLabels : [],
         domainGateNote: effectiveDomainIsolationNote,
-        domainScores: domainIsolation.scoreBoard,
+        domainScores: exposeStructuredDomainContext ? domainIsolation.scoreBoard : [],
         domainGateSuppressedSignals: droppedLabels,
         domainGateSuppressedRoles: uniqueStrings(droppedRoleLabels),
         domainGateSuppressedSystems: uniqueStrings(droppedSystemLabels),
-        classificationReasons: uniqueStrings([
-          ...(result.summary.sourceProfile.classificationReasons ?? []),
-          ...(effectiveDomainIsolationNote ? [effectiveDomainIsolationNote] : []),
-          droppedLabels.length > 0 ? 'Fachfremde Signalsätze werden nur bei starker Evidenz übernommen.' : undefined,
-          structuredPreserveApplied
-            ? 'Structured-Preserve behandelt Originalstruktur als Primärwahrheit; Normalisierung, Repair und Domain-Gate bleiben Hilfsschichten.'
-            : undefined,
-          structuredPreserveApplied && droppedRoleLabels.length > 0
-            ? 'Explizite strukturierte Rollen bleiben erhalten; nur inferierte Zusatzrollen werden domänensensitiv unterdrückt.'
-            : undefined,
-          structuredPreserveApplied && droppedSystemLabels.length > 0
-            ? 'Explizite strukturierte Systeme bleiben erhalten; nur inferierte Zusatzsysteme werden domänensensitiv unterdrückt.'
-            : undefined,
-        ]),
+        classificationReasons: sanitizeStructuredClassificationReasons({
+          reasons: uniqueStrings([
+            ...(result.summary.sourceProfile.classificationReasons ?? []),
+            ...(effectiveDomainIsolationNote ? [effectiveDomainIsolationNote] : []),
+            droppedLabels.length > 0 ? 'Fachfremde Signalsätze werden nur bei starker Evidenz übernommen.' : undefined,
+            structuredPreserveApplied
+              ? 'Structured-Preserve behandelt Originalstruktur als Primärwahrheit; Normalisierung, Repair und Domain-Gate bleiben Hilfsschichten.'
+              : undefined,
+            structuredPreserveApplied && !exposeStructuredDomainContext
+              ? 'Kleine strukturierte Quellen bleiben bei schwacher Domänenevidenz bewusst neutral; fachfremde Primärdomänen werden nicht forciert.'
+              : undefined,
+            structuredPreserveApplied && droppedRoleLabels.length > 0
+              ? 'Explizite strukturierte Rollen bleiben erhalten; nur inferierte Zusatzrollen werden domänensensitiv unterdrückt.'
+              : undefined,
+            structuredPreserveApplied && droppedSystemLabels.length > 0
+              ? 'Explizite strukturierte Systeme bleiben erhalten; nur inferierte Zusatzsysteme werden domänensensitiv unterdrückt.'
+              : undefined,
+          ]),
+          preserveStructuredSteps,
+          exposeStructuredDomainContext,
+        }),
       }
     : result.summary.sourceProfile;
 
@@ -2810,15 +2915,25 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
             ...structured.systems,
             ...structured.steps.flatMap(step => [...(step.explicitSystems ?? []), ...(step.systems ?? []), step.system]),
           ]),
+          explicitRoles: uniqueStrings([
+            ...structured.roles.map(role => role.name),
+            ...structured.steps.flatMap(step => step.explicitRoles ?? []),
+          ]),
+          explicitSystems: uniqueStrings([
+            ...structured.roles.flatMap(role => role.systems ?? []),
+            ...structured.steps.flatMap(step => step.explicitSystems ?? []),
+          ]),
           warnings: uniqueStrings([...structured.warnings, ...warnings]),
           title: structured.title,
           sourceName,
           sourceType: input.sourceType,
           rawText,
           confidence: 'high',
-          documentKind: classifiedDocumentKind === 'semi-structured-procedure-document'
-            ? 'semi-structured-procedure-document'
-            : 'procedure-document',
+          documentKind: routingContext.routingClass === 'structured-procedure'
+            ? 'procedure-document'
+            : classifiedDocumentKind === 'semi-structured-procedure-document'
+              ? 'semi-structured-procedure-document'
+              : 'procedure-document',
           domainContext,
           routingContext,
           explicitStructuredStepCount: structured.explicitStructuredStepCount,

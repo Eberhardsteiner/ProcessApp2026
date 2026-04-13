@@ -30,6 +30,16 @@ export interface ReviewOverview {
   issueCount: number;
   roles: string[];
   systems: string[];
+  rolesFull: string[];
+  systemsFull: string[];
+  explicitRoles: string[];
+  explicitSystems: string[];
+  inferredRoles: string[];
+  inferredSystems: string[];
+  supportOnlyRoles: string[];
+  supportOnlySystems: string[];
+  suppressedRoles: string[];
+  suppressedSystems: string[];
   suggestions: ReviewSuggestion[];
 }
 
@@ -92,8 +102,45 @@ function splitIntoParts(label: string, allowSoftSplit = false): string[] {
   return uniqueStrings(parts);
 }
 
+function getPrimaryRole(observation: ProcessMiningObservation): string | undefined {
+  return observation.primaryRole ?? observation.role;
+}
+
+function getPrimarySystem(observation: ProcessMiningObservation): string | undefined {
+  return observation.primarySystem ?? observation.system;
+}
+
+function explodeStructuredValues(values: Array<string | undefined>): string[] {
+  return uniqueStrings(
+    values.flatMap(value => (value ?? '').split(/[,/;]|\s+und\s+/i).map(part => part.trim()).filter(Boolean)),
+  );
+}
+
+function getObservationRolesFull(observation: ProcessMiningObservation): string[] {
+  return explodeStructuredValues([
+    ...(observation.explicitRoles ?? []),
+    ...(observation.roles ?? []),
+    ...(observation.inferredRoles ?? []),
+    ...(observation.supportOnlyRoles ?? []),
+    ...(observation.suppressedInferredRoles ?? []),
+    getPrimaryRole(observation),
+  ]);
+}
+
+function getObservationSystemsFull(observation: ProcessMiningObservation): string[] {
+  return explodeStructuredValues([
+    ...(observation.explicitSystems ?? []),
+    ...(observation.systems ?? []),
+    ...(observation.inferredSystems ?? []),
+    ...(observation.supportOnlySystems ?? []),
+    ...(observation.suppressedInferredSystems ?? []),
+    getPrimarySystem(observation),
+  ]);
+}
+
 export function getCanonicalLabelSuggestion(observation: ProcessMiningObservation): string | null {
   if (observation.kind !== 'step') return null;
+  if (observation.stepWasPreserved) return null;
   if (/^\|/.test((observation.evidenceSnippet ?? '').trim()) && observation.label.trim().length >= 8) {
     return null;
   }
@@ -341,8 +388,18 @@ export function buildReviewOverview(params: {
     splitCount: suggestions.filter(suggestion => suggestion.type === 'split').length,
     stepCount: params.observations.filter(observation => observation.kind === 'step').length,
     issueCount: params.observations.filter(observation => observation.kind === 'issue').length,
-    roles: uniqueStrings(params.observations.map(observation => observation.role)),
-    systems: uniqueStrings(params.observations.map(observation => observation.system)),
+    roles: uniqueStrings(params.observations.map(observation => getPrimaryRole(observation))),
+    systems: uniqueStrings(params.observations.map(observation => getPrimarySystem(observation))),
+    rolesFull: uniqueStrings(params.observations.flatMap(observation => getObservationRolesFull(observation))),
+    systemsFull: uniqueStrings(params.observations.flatMap(observation => getObservationSystemsFull(observation))),
+    explicitRoles: explodeStructuredValues(params.observations.flatMap(observation => observation.explicitRoles ?? [])),
+    explicitSystems: explodeStructuredValues(params.observations.flatMap(observation => observation.explicitSystems ?? [])),
+    inferredRoles: explodeStructuredValues(params.observations.flatMap(observation => observation.inferredRoles ?? [])),
+    inferredSystems: explodeStructuredValues(params.observations.flatMap(observation => observation.inferredSystems ?? [])),
+    supportOnlyRoles: explodeStructuredValues(params.observations.flatMap(observation => observation.supportOnlyRoles ?? [])),
+    supportOnlySystems: explodeStructuredValues(params.observations.flatMap(observation => observation.supportOnlySystems ?? [])),
+    suppressedRoles: explodeStructuredValues(params.observations.flatMap(observation => observation.suppressedInferredRoles ?? [])),
+    suppressedSystems: explodeStructuredValues(params.observations.flatMap(observation => observation.suppressedInferredSystems ?? [])),
     suggestions,
   };
 }

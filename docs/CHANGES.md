@@ -1,3 +1,9 @@
+## v0.44.2 – Phase-2 Cleanup für Review- und Domain-Hygiene
+
+- Review-Übersicht zeigt neben Primärwerten jetzt auch Vollmengen sowie explizite, inferierte, support-only und suppressed Rollen-/Systemsignale
+- preserved Structured-Steps erzeugen keine generischen Rename-Vorschläge mehr, damit die Review-Schicht den Preserve-Modus nicht unterläuft
+- Structured-Micro-Gates halten Domänenhinweise bei schwacher lokaler Evidenz bewusst neutral und schleppen keine fachfremden Primärdomänen mehr in Diagnosefelder
+
 ## v0.44.1 – Phase-2 Restfix für Mehrfachwerte und Summary-Konsistenz
 
 - Workspace-Hardening behält Mehrfachrollen, Mehrfachsysteme und Structured-Preserve-Metadaten in finalen Beobachtungen jetzt auch nach State-Härtung und Reload

@@ -875,6 +875,8 @@ export interface DerivationSummary {
   stepLabels: string[];
   roles: string[];
   systems?: string[];
+  explicitRoles?: string[];
+  explicitSystems?: string[];
   issueSignals?: string[];
   issueEvidence?: Array<{ label: string; snippet: string }>;
   structuredPreserveApplied?: boolean;
