@@ -1,3 +1,10 @@
+## v0.44.0 – Structured-Preserve Baseline und Multivalue-Erhalt
+
+- Baseline-Version nach fachlich bestandenem Structured-Preserve-Fix auf `v0.44.0` angehoben
+- Mehrfachrollen und Mehrfachsysteme bleiben intern im Dokumentpfad als Vollmenge erhalten; Primärwerte sind nur noch UI-Hilfswerte
+- Export trennt explizite, inferierte, support-only und suppressed Rollen-/Systemsignale transparenter
+- Structured-Micro-Gates beziehen Domänenbegründungen jetzt defensiver aus lokalem Dokumentkontext statt aus schwachen Fremdhints
+
 ## v0.43.1 – Structured-Preserve Restreparatur
 
 - Abschnitts- und Tabellenanker für strukturierte Sollprozessdokumente robuster gemacht, damit nummerierte Ablaufquellen nicht an einer festen Abschnittsnummer hängen

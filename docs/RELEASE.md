@@ -2,8 +2,8 @@
 
 ## Aktueller Produktstand
 
-- Sichtbare App-Version: `v0.43.1`
-- Freigabestatus: Patch-Stand für Structured-Preserve-Restreparaturen; keine Minor-Freigabe ohne belegtes grünes PG01
+- Sichtbare App-Version: `v0.44.0`
+- Freigabestatus: Phase-1-Baseline festgeschrieben; keine Phase-2-Minor-Freigabe ohne belegtes grünes PG01 und PG02
 
 ## Wofür dieser Stand gedacht ist
 

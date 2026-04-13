@@ -1123,13 +1123,13 @@ function buildSemiStructuredStepArtifacts(
   extractionCandidates: ExtractionCandidate[];
   roles: string[];
   systems: string[];
-  derivedSteps: Array<{ label: string; role?: string; evidenceSnippet?: string }>;
+  derivedSteps: DerivedStepResult[];
 } {
   const observations: ProcessMiningObservation[] = [];
   const extractionCandidates: ExtractionCandidate[] = [];
   const collectedRoles: string[] = [];
   const collectedSystems: string[] = [];
-  const derivedSteps: Array<{ label: string; role?: string; evidenceSnippet?: string }> = [];
+  const derivedSteps: DerivedStepResult[] = [];
 
   steps.forEach((step, index) => {
     const evidenceAnchor = step.evidenceSnippet || [step.label, step.description, step.sourceHeading].filter(Boolean).join(' | ');
