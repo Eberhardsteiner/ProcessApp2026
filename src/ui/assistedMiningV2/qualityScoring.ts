@@ -1028,6 +1028,22 @@ function buildDynamicBlockers(ctx: QualityScoringContext, dimensions: QualityDim
     if (ctx.mergedCoreSteps === 0) blockers.push('Prozessentwurf: Es wurde noch kein belastbarer Kernschritt finalisiert.');
     if ((dimensionByKey.get('stepClarity')?.score ?? 0) < 45) blockers.push('Prozessentwurf: Kernschritte sind semantisch zu schwach oder zu notizhaft.');
     if ((dimensionByKey.get('evidenceCoverage')?.score ?? 0) < 45) blockers.push('Prozessentwurf: Die lokale Evidenzbasis reicht für einen tragfähigen Entwurf noch nicht aus.');
+    if (ctx.summary?.method === 'structured') {
+      const explicitStructuredStepCount = ctx.summary.explicitStructuredStepCount ?? 0;
+      const preservedStructuredStepCount = ctx.summary.preservedStructuredStepCount ?? ctx.steps.length;
+      if (explicitStructuredStepCount > 0 && preservedStructuredStepCount < explicitStructuredStepCount) {
+        blockers.push('Structured-Prozessentwurf: Explizite Ablaufzeilen wurden nicht vollständig erhalten.');
+      }
+      if (ctx.summary.structuredWholeTextFallback) {
+        blockers.push('Structured-Prozessentwurf: Parser musste trotz strukturierter Quelle auf Ganztext zurückfallen.');
+      }
+      if (ctx.summary.explicitRoleTableDetected && (ctx.summary.roles?.length ?? 0) === 0) {
+        blockers.push('Structured-Prozessentwurf: Explizite Rollen-/Systemtabelle wurde erkannt, aber Rollen blieben final leer.');
+      }
+      if ((ctx.summary.explicitSystemCount ?? 0) > 0 && (ctx.summary.systems?.length ?? 0) === 0) {
+        blockers.push('Structured-Prozessentwurf: Explizite Structured-Systeme wurden erkannt, blieben final aber leer.');
+      }
+    }
   } else if (ctx.scoringMode === 'comparison') {
     if (ctx.caseCount < 2 || !ctx.summary?.multiCaseSummary) blockers.push('Fallvergleich: Mehrfallbasis oder Stabilitätsmuster reichen noch nicht für einen belastbaren Vergleich.');
     if ((dimensionByKey.get('evidenceCoverage')?.score ?? 0) < 50) blockers.push('Fallvergleich: Die Evidenz deckt mehrere Fälle noch nicht dicht genug ab.');

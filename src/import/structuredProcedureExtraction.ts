@@ -41,6 +41,8 @@ export interface StructuredProcedureExtraction {
   structuredSectionFallback: boolean;
   structuredWholeTextFallback: boolean;
   structuredTableDetected: boolean;
+  explicitRoleTableDetected: boolean;
+  explicitSystemCount: number;
   structuredRecallLoss?: boolean;
 }
 
@@ -492,7 +494,11 @@ function isMeaningfulStepLabel(label: string | undefined): boolean {
 function dedupeSteps(steps: StructuredProcedureStep[]): StructuredProcedureStep[] {
   const seen = new Set<string>();
   return steps.filter(step => {
-    const key = `${step.stepCode ?? ''}|${normalizeLabel(step.label).toLowerCase()}`;
+    const key = [
+      step.stepCode ?? '',
+      normalizeLabel(step.label).toLowerCase(),
+      cleanCell(step.evidenceSnippet)?.toLowerCase() ?? '',
+    ].join('|');
     if (!isMeaningfulStepLabel(step.label) || seen.has(key)) return false;
     seen.add(key);
     step.label = normalizeLabel(step.label);
@@ -593,6 +599,51 @@ function hasStepHeaderMap(headerMap: Partial<Record<HeaderKey, number>>): boolea
     );
 }
 
+function hasRoleTableHeader(row: string[]): boolean {
+  const header = row.map(cell => normalizeHeaderCell(cell));
+  return header.some(cell => cell.includes('rolle') || cell.includes('funktion') || cell.includes('gremium') || cell === 'name');
+}
+
+function extractRoleRowsFromTableRows(rows: string[][]): StructuredProcedureRole[] {
+  if (!rows.length) return [];
+  const headerIdx = detectPipeTableHeaders(rows);
+  if (headerIdx < 0) return [];
+
+  const header = rows[headerIdx]?.map(cell => normalizeHeaderCell(cell)) ?? [];
+  if (!hasRoleTableHeader(rows[headerIdx] ?? [])) return [];
+
+  const nameIdx = header.findIndex(cell => cell.includes('rolle') || cell.includes('funktion') || cell.includes('gremium') || cell === 'name');
+  const respIdx = header.findIndex(cell => cell.includes('aufgabe') || cell.includes('verantwort') || cell.includes('zuständig') || cell.includes('zustaendig'));
+  const systemsIdx = header.findIndex(cell => cell === 'system' || cell === 'systeme');
+  const ownerIdx = header.findIndex(cell => cell.includes('owner') || cell.includes('inhaber') || cell.includes('leiter') || cell === 'instanz');
+
+  return rows
+    .slice(headerIdx + 1)
+    .map(row => ({
+      name: preserveRoleLabel(cleanCell(nameIdx >= 0 ? row[nameIdx] : row[0])) ?? '',
+      owner: cleanCell(ownerIdx >= 0 ? row[ownerIdx] : undefined),
+      systems: preserveSystemLabels(cleanCell(systemsIdx >= 0 ? row[systemsIdx] : undefined)),
+      responsibility: cleanCell(respIdx >= 0 ? row[respIdx] : undefined),
+    }))
+    .filter(role => role.name.length > 1)
+    .filter((role, index, all) => all.findIndex(candidate => candidate.name.toLowerCase() === role.name.toLowerCase()) === index);
+}
+
+function chooseBestRoleTableBlock(blocks: ParsedTableBlock[]): ParsedTableBlock | undefined {
+  return blocks
+    .map(block => {
+      const explicitRoles = extractRoleRowsFromTableRows(block.rows);
+      return {
+        block,
+        explicitCount: explicitRoles.length,
+        hasRoleHeader: hasRoleTableHeader(block.rows[0] ?? []),
+        score: (hasRoleTableHeader(block.rows[0] ?? []) ? 50 : 0) + headerCoverage(block.rows[0] ?? []) * 8 + explicitRoles.length * 5,
+      };
+    })
+    .filter(item => item.hasRoleHeader && item.explicitCount > 0)
+    .sort((a, b) => b.score - a.score)[0]?.block;
+}
+
 function extractTableStepsFromRows(rows: string[][]): StructuredProcedureStep[] {
   if (!rows.length) return [];
   const headerIdx = detectPipeTableHeaders(rows);
@@ -657,7 +708,7 @@ function parseFlexibleTableStepSource(sectionText: string): {
 
 function chooseStructuredStepSection(text: string): StructuredStepSectionChoice | undefined {
   const sectionPatterns = [/standardablauf/i, /prozessablauf/i, /verfahrensablauf/i, /\bablauf\b/i, /\bvorgehen\b/i];
-  const rolePatterns = [/rollen? und systeme/i, /^rollen?$/i, /verantwortlichkeiten/i];
+  const rolePatterns = [/rollen?\s*(?:und|&|\/)\s*systeme?/i, /systeme?\s*(?:und|&|\/)\s*rollen?/i, /^rollen?$/i, /verantwortlichkeiten/i];
   const sections = collectNamedSections(text);
 
   const sectionCandidates = sections
@@ -865,31 +916,14 @@ function parseFlatStepBlocks(sectionText: string): StructuredProcedureStep[] {
 }
 
 function parseRoleTable(sectionText: string): StructuredProcedureRole[] {
-  const bestBlock = parsePipeTableBlocks(sectionText)
-    .map(block => {
-      const header = block.rows[0]?.map(cell => normalizeHeaderCell(cell)) ?? [];
-      const hasRoleHeader = header.some(cell => cell.includes('rolle') || cell.includes('funktion') || cell.includes('gremium'));
-      const hasSystemHeader = header.some(cell => cell === 'system' || cell === 'systeme');
-      const score = (hasRoleHeader ? 50 : 0) + (hasSystemHeader ? 20 : 0) + Math.max(0, block.rows.length - 1) * 4;
-      return { block, header, hasRoleHeader, score };
-    })
-    .filter(item => item.hasRoleHeader)
-    .sort((a, b) => b.score - a.score)[0]?.block;
-  if (!bestBlock || bestBlock.rows.length < 2) return [];
-  const header = bestBlock.rows[0].map(cell => normalizeHeaderCell(cell));
+  const pipeBlock = chooseBestRoleTableBlock(parsePipeTableBlocks(sectionText));
+  const pipeRoles = extractRoleRowsFromTableRows(pipeBlock?.rows ?? []);
+  if (pipeRoles.length > 0) return pipeRoles;
 
-  const nameIdx = header.findIndex(cell => cell.includes('rolle') || cell.includes('funktion') || cell.includes('gremium') || cell === 'name');
-  const ownerIdx = header.findIndex(cell => cell.includes('owner') || cell.includes('inhaber') || cell.includes('leiter') || cell === 'system' || cell === 'systeme');
-  const respIdx = header.findIndex(cell => cell.includes('aufgabe') || cell.includes('verantwort') || cell.includes('zuständig') || cell.includes('zustaendig'));
+  const delimitedRoles = extractRoleRowsFromTableRows(parseDelimitedTableRows(sectionText));
+  if (delimitedRoles.length > 0) return delimitedRoles;
 
-  const roles = bestBlock.rows.slice(1).map(row => ({
-    name: preserveRoleLabel(cleanCell(nameIdx >= 0 ? row[nameIdx] : row[0])) ?? '',
-    owner: cleanCell(ownerIdx >= 0 ? row[ownerIdx] : undefined),
-    systems: preserveSystemLabels(cleanCell(ownerIdx >= 0 ? row[ownerIdx] : undefined)),
-    responsibility: cleanCell(respIdx >= 0 ? row[respIdx] : undefined),
-  })).filter(role => role.name.length > 1);
-
-  return roles.filter((role, index, all) => all.findIndex(candidate => candidate.name.toLowerCase() === role.name.toLowerCase()) === index);
+  return [];
 }
 
 function parseRoles(sectionText: string): StructuredProcedureRole[] {
@@ -909,6 +943,24 @@ function parseRoles(sectionText: string): StructuredProcedureRole[] {
     }
   }
   return roles.filter((role, index, all) => all.findIndex(candidate => candidate.name.toLowerCase() === role.name.toLowerCase()) === index);
+}
+
+function extractStructuredRoleEvidence(sectionText: string): {
+  roles: StructuredProcedureRole[];
+  explicitRoleTableDetected: boolean;
+} {
+  const flatRoleRows = parseFlatRoleRows(sectionText);
+  const tableRoles = parseRoleTable(sectionText);
+  const explicitRoleTableDetected = flatRoleRows.length > 0 || tableRoles.length > 0;
+  const roles = [
+    ...flatRoleRows,
+    ...(tableRoles.length > 0 ? tableRoles : parseRoles(sectionText)),
+  ].filter((role, index, all) => all.findIndex(candidate => candidate.name.toLowerCase() === role.name.toLowerCase()) === index);
+
+  return {
+    roles,
+    explicitRoleTableDetected,
+  };
 }
 
 function parseFlatRoleRows(sectionText: string): StructuredProcedureRole[] {
@@ -971,7 +1023,14 @@ export function extractStructuredProcedureFromText(
 
   const warnings: string[] = [];
   const sections = splitSections(text);
-  const namedRolesSection = findNamedSection(text, [/rollen? und systeme/i, /^rollen?$/i, /verantwortlichkeiten/i], ['2']);
+  const roleSectionPatterns = [
+    /rollen?\s*(?:und|&|\/)\s*systeme?/i,
+    /systeme?\s*(?:und|&|\/)\s*rollen?/i,
+    /rollen?.*systeme?/i,
+    /^rollen?$/i,
+    /verantwortlichkeiten/i,
+  ];
+  const namedRolesSection = findNamedSection(text, roleSectionPatterns, ['2']);
   const namedApprovalsSection = findNamedSection(text, [/entscheidungslogik/i, /entscheidungsregeln/i, /freigaberegeln/i, /entscheidungen/i], ['6', '4']);
   const stepsSource = chooseStructuredStepSection(text);
   if (!stepsSource) return null;
@@ -986,10 +1045,8 @@ export function extractStructuredProcedureFromText(
     warnings.push('Benannter Ablaufabschnitt wurde nicht eindeutig erkannt – bestpassende strukturierte Ablaufquelle verwendet.');
   }
 
-  const roles = [
-    ...parseFlatRoleRows(rolesSection || text),
-    ...parseRoles(rolesSection || text),
-  ].filter((role, index, all) => all.findIndex(candidate => candidate.name.toLowerCase() === role.name.toLowerCase()) === index);
+  const roleEvidence = extractStructuredRoleEvidence(rolesSection || text);
+  const roles = roleEvidence.roles;
 
   steps = enrichStepsWithRoleRows(dedupeSteps(steps), roles);
   steps = dedupeSteps(steps);
@@ -1018,6 +1075,8 @@ export function extractStructuredProcedureFromText(
     structuredSectionFallback: stepsSource.sectionFallback,
     structuredWholeTextFallback: stepsSource.wholeTextFallback,
     structuredTableDetected: stepsSource.tableDetected,
+    explicitRoleTableDetected: roleEvidence.explicitRoleTableDetected,
+    explicitSystemCount: explicitSystems.length,
     structuredRecallLoss,
   };
 }

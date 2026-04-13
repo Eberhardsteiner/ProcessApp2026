@@ -138,7 +138,11 @@ export interface ProcessMiningQualityExportFile {
         structuredSectionFallback?: boolean;
         structuredWholeTextFallback?: boolean;
         structuredTableDetected?: boolean;
+        explicitRoleTableDetected?: boolean;
+        explicitSystemCount?: number;
         structuredRecallLoss?: boolean;
+        explicitRoles?: string[];
+        explicitSystems?: string[];
         preservedSteps: Array<{
           label: string;
           originalStepLabel?: string;
@@ -522,6 +526,14 @@ export function buildQualityExportFile(params: {
       suppressedInferredRoles: step.suppressedInferredRoles,
       suppressedInferredSystems: step.suppressedInferredSystems,
     }));
+  const explicitStructuredRoles = uniqueStrings([
+    ...preservedSteps.flatMap(step => step.explicitRoles ?? []),
+    ...(lastSummary?.explicitRoleTableDetected ? (lastSummary.roles ?? []) : []),
+  ]);
+  const explicitStructuredSystems = uniqueStrings([
+    ...preservedSteps.flatMap(step => step.explicitSystems ?? []),
+    ...((lastSummary?.explicitSystemCount ?? 0) > 0 ? (lastSummary?.systems ?? []) : []),
+  ]);
 
   return {
     schemaVersion: 'pm-analysis-quality-export-v2',
@@ -687,7 +699,11 @@ export function buildQualityExportFile(params: {
               structuredSectionFallback: lastSummary.structuredSectionFallback,
               structuredWholeTextFallback: lastSummary.structuredWholeTextFallback,
               structuredTableDetected: lastSummary.structuredTableDetected,
+              explicitRoleTableDetected: lastSummary.explicitRoleTableDetected,
+              explicitSystemCount: lastSummary.explicitSystemCount,
               structuredRecallLoss: lastSummary.structuredRecallLoss,
+              explicitRoles: explicitStructuredRoles,
+              explicitSystems: explicitStructuredSystems,
               preservedSteps,
             },
           }

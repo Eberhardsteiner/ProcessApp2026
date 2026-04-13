@@ -98,6 +98,37 @@ const ENGINE_VERSION = 'pm-local-engine-v4.3';
 const MIN_USEFUL_STEPS = 3;
 const MAX_NARRATIVE_LENGTH_IN_CASE = 2000;
 
+function buildStructuredDocumentSummary(params: {
+  explicitStructuredStepCount?: number;
+  preservedStructuredStepCount: number;
+  structuredTableDetected?: boolean;
+  explicitRoleTableDetected?: boolean;
+  explicitSystemCount?: number;
+  structuredSectionFallback?: boolean;
+  structuredWholeTextFallback?: boolean;
+  structuredRecallLoss?: boolean;
+}): string {
+  const notes = uniqueStrings([
+    params.explicitStructuredStepCount
+      ? `Strukturierter Sollprozess mit ${params.preservedStructuredStepCount} von ${params.explicitStructuredStepCount} expliziten Ablaufzeilen lokal übernommen.`
+      : `Strukturierter Sollprozess mit ${params.preservedStructuredStepCount} expliziten Ablaufzeilen lokal übernommen.`,
+    params.structuredTableDetected ? 'Tabellarische Ablaufquelle wurde als Primärstruktur erkannt.' : 'Strukturierte Ablaufquelle wurde als Primärstruktur erkannt.',
+    params.explicitRoleTableDetected ? 'Rollen-/Systemtabelle wurde als explizite Structured-Evidenz erkannt.' : undefined,
+    params.explicitSystemCount
+      ? `${params.explicitSystemCount} explizite Systeme wurden lokal gesichert.`
+      : undefined,
+    params.structuredWholeTextFallback ? 'Structured-Parser musste auf Ganztext zurückfallen.' : undefined,
+    params.structuredSectionFallback && !params.structuredWholeTextFallback
+      ? 'Ablaufabschnitt wurde nur heuristisch, nicht über eine eindeutige Abschnittsverankerung erkannt.'
+      : undefined,
+    params.structuredRecallLoss
+      ? 'Structured-Recall-Verlust erkannt: Nicht alle expliziten Ablaufzeilen blieben erhalten.'
+      : undefined,
+  ]);
+
+  return notes.join(' ').trim();
+}
+
 function mapClassifierToDocumentKind(classType: ReturnType<typeof classifyDocumentStructure>['classType']): ProcessDocumentType {
   switch (classType) {
     case 'structured-target-procedure':
@@ -1648,6 +1679,8 @@ function buildStructuredDerivation(params: {
   structuredSectionFallback?: boolean;
   structuredWholeTextFallback?: boolean;
   structuredTableDetected?: boolean;
+  explicitRoleTableDetected?: boolean;
+  explicitSystemCount?: number;
   structuredRecallLoss?: boolean;
 }): DerivationResult {
   const {
@@ -1667,10 +1700,11 @@ function buildStructuredDerivation(params: {
     structuredSectionFallback,
     structuredWholeTextFallback,
     structuredTableDetected,
+    explicitRoleTableDetected,
+    explicitSystemCount,
     structuredRecallLoss,
   } = params;
   const sourceProfile = buildSourceExtractionPlan(rawText).profile;
-  const sourceProfileNote = buildSourceProfileNote(sourceProfile);
   const analysisStrategies = uniqueStrings([...buildAnalysisStrategies(sourceProfile.inputProfileLabel), ...(sourceProfile.extractionPlan ?? [])]).slice(0, 5);
   const caseItem = buildCase({
     name: title ?? sourceName.replace(/\.[^.]+$/, ''),
@@ -1707,8 +1741,22 @@ function buildStructuredDerivation(params: {
     structuredSectionFallback,
     structuredWholeTextFallback,
     structuredTableDetected,
+    explicitRoleTableDetected,
+    explicitSystemCount,
     structuredRecallLoss,
-    documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind })} ${sourceProfileNote}`.trim(),
+    documentSummary: [
+      buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind }),
+      buildStructuredDocumentSummary({
+        explicitStructuredStepCount,
+        preservedStructuredStepCount: structuredArtifacts.derivedSteps.length,
+        structuredTableDetected,
+        explicitRoleTableDetected,
+        explicitSystemCount,
+        structuredSectionFallback,
+        structuredWholeTextFallback,
+        structuredRecallLoss,
+      }),
+    ].filter(Boolean).join(' ').trim(),
     sourceProfile,
     routingContext,
     issueEvidence,
@@ -2239,6 +2287,15 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
   const structuredRecallWarning = structuredRecallLoss
     ? `Structured-Recall-Verlust: ${preservedStructuredStepCount} von ${explicitStructuredStepCount} expliziten Structured-Schritten blieben final erhalten.`
     : undefined;
+  const structuredSummaryNotes = result.method === 'structured'
+    ? uniqueStrings([
+        result.summary.structuredWholeTextFallback ? 'Structured-Parser musste auf Ganztext zurückfallen.' : undefined,
+        result.summary.structuredSectionFallback && !result.summary.structuredWholeTextFallback
+          ? 'Ablaufabschnitt wurde nur heuristisch statt eindeutig verankert.'
+          : undefined,
+        structuredRecallWarning,
+      ])
+    : [];
   const finalWarnings = uniqueStrings([
     ...result.warnings,
     ...result.summary.warnings,
@@ -2247,7 +2304,8 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
   ]);
   const documentSummary = uniqueStrings([
     result.summary.documentSummary ?? '',
-    ...domainNotes,
+    ...structuredSummaryNotes,
+    ...(result.method === 'structured' ? [] : domainNotes),
   ]).join(' ').trim();
   const finalDocumentSummary = [
     forceConservative ? 'Vorläufiger Prozessentwurf mit erhöhter Unsicherheit.' : undefined,
@@ -2368,6 +2426,8 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       structuredSectionFallback: result.summary.structuredSectionFallback,
       structuredWholeTextFallback: result.summary.structuredWholeTextFallback,
       structuredTableDetected: result.summary.structuredTableDetected,
+      explicitRoleTableDetected: result.summary.explicitRoleTableDetected,
+      explicitSystemCount: result.summary.explicitSystemCount,
       structuredRecallLoss,
       documentSummary: finalDocumentSummary,
       routingContext: result.routingContext,
@@ -2509,6 +2569,8 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
           structuredSectionFallback: structured.structuredSectionFallback,
           structuredWholeTextFallback: structured.structuredWholeTextFallback,
           structuredTableDetected: structured.structuredTableDetected,
+          explicitRoleTableDetected: structured.explicitRoleTableDetected,
+          explicitSystemCount: structured.explicitSystemCount,
           structuredRecallLoss: structured.structuredRecallLoss,
         }));
       }

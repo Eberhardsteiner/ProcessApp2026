@@ -869,6 +869,8 @@ export interface DerivationSummary {
   structuredSectionFallback?: boolean;
   structuredWholeTextFallback?: boolean;
   structuredTableDetected?: boolean;
+  explicitRoleTableDetected?: boolean;
+  explicitSystemCount?: number;
   structuredRecallLoss?: boolean;
   documentSummary?: string;
   sourceProfile?: DerivationSourceProfile;
