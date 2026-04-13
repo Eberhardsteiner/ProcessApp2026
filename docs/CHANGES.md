@@ -1,3 +1,9 @@
+## v0.45.0 – Phase 2 abgeschlossen mit lokalem Gate-Scaffold
+
+- `qa/phase-gates` liegt jetzt direkt im Repository mit Fixture-Quellen, echten DOCX-Fixtures, Export-Runner und maschinenlesbaren PG01/PG02-Erwartungen
+- Structured-Micro-Gates können lokal auf derselben Build-Version exportiert und mit `check-export.mjs` hart geprüft werden
+- Rollen-/Systemerhaltung bleibt bis in Review, Beobachtungen, Structured-Preserve und Discovery konsistent, ohne generische Rename-Vorschläge oder fachfremde Domänenreste
+
 ## v0.44.2 – Phase-2 Cleanup für Review- und Domain-Hygiene
 
 - Review-Übersicht zeigt neben Primärwerten jetzt auch Vollmengen sowie explizite, inferierte, support-only und suppressed Rollen-/Systemsignale

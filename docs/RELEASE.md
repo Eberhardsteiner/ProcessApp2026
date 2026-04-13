@@ -2,8 +2,8 @@
 
 ## Aktueller Produktstand
 
-- Sichtbare App-Version: `v0.44.2`
-- Freigabestatus: Patch-Stand für Phase-2-Cleanup; keine Phase-2-Minor-Freigabe ohne belegtes grünes PG01 und verschärftes PG02
+- Sichtbare App-Version: `v0.45.0`
+- Freigabestatus: Phase 2 lokal abgeschlossen; PG01 und verschärftes PG02 sind auf derselben finalen Build-Version grün
 
 ## Wofür dieser Stand gedacht ist
 

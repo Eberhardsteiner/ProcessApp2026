@@ -1,0 +1,339 @@
+{
+  "name": "PG02 Explicit Roles Systems Multivalue",
+  "checks": [
+    {
+      "label": "Routing bleibt strukturiert",
+      "op": "eq",
+      "path": "analysisResults.routing.routingClass",
+      "value": "structured-procedure"
+    },
+    {
+      "label": "Methode bleibt structured",
+      "op": "eq",
+      "path": "analysisResults.lastDerivationSummary.method",
+      "value": "structured"
+    },
+    {
+      "label": "Dokumentklasse bleibt strukturiert",
+      "op": "eq",
+      "path": "analysisResults.lastDerivationSummary.sourceProfile.documentClass",
+      "value": "structured-target-procedure"
+    },
+    {
+      "label": "Fünf explizite Structured-Schritte erkannt",
+      "op": "eq",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.explicitStructuredStepCount",
+      "value": 5
+    },
+    {
+      "label": "Fünf Structured-Schritte erhalten",
+      "op": "eq",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.preservedStructuredStepCount",
+      "value": 5
+    },
+    {
+      "label": "Kein Section-Fallback",
+      "op": "eq",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.structuredSectionFallback",
+      "value": false
+    },
+    {
+      "label": "Structured-Tabelle erkannt",
+      "op": "eq",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.structuredTableDetected",
+      "value": true
+    },
+    {
+      "label": "Explizite Rollen-Tabelle erkannt",
+      "op": "eq",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.explicitRoleTableDetected",
+      "value": true
+    },
+    {
+      "label": "Quellreihenfolge bleibt erhalten",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.cases[0].derivedStepLabels",
+      "value": [
+        "Fall erfassen",
+        "Technische Sicht einholen",
+        "Freigabe abstimmen",
+        "Kundenentscheidung kommunizieren",
+        "Abschluss sichern"
+      ]
+    },
+    {
+      "label": "Discovery nutzt preserved Steps",
+      "op": "arrayEquals",
+      "path": "analysisResults.discoverySummary.topSteps",
+      "value": [
+        "Fall erfassen",
+        "Technische Sicht einholen",
+        "Freigabe abstimmen",
+        "Kundenentscheidung kommunizieren",
+        "Abschluss sichern"
+      ]
+    },
+    {
+      "label": "Review zeigt explizite Rollen-Vollmengen",
+      "op": "arrayContains",
+      "path": "qualityControl.reviewOverview.explicitRoles",
+      "values": [
+        "Innendienst",
+        "Vertrieb",
+        "Qualitätssicherung",
+        "Service",
+        "Teamleitung",
+        "Fachbereich",
+        "Wissensmanagement"
+      ]
+    },
+    {
+      "label": "Review zeigt explizite System-Vollmengen",
+      "op": "arrayContains",
+      "path": "qualityControl.reviewOverview.explicitSystems",
+      "values": [
+        "CRM",
+        "DMS",
+        "QMS",
+        "Ticketsystem",
+        "ERP",
+        "BI",
+        "Mail",
+        "Wissensdatenbank"
+      ]
+    },
+    {
+      "label": "Fall erfassen bleibt multivalue",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.observations[label=Fall erfassen].roles",
+      "value": [
+        "Innendienst",
+        "Vertrieb"
+      ]
+    },
+    {
+      "label": "Fall erfassen Systeme bleiben multivalue",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.observations[label=Fall erfassen].systems",
+      "value": [
+        "CRM",
+        "DMS"
+      ]
+    },
+    {
+      "label": "Fall erfassen explizite Rollen bleiben sauber",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.observations[label=Fall erfassen].explicitRoles",
+      "value": [
+        "Innendienst",
+        "Vertrieb"
+      ]
+    },
+    {
+      "label": "Fall erfassen explizite Systeme bleiben sauber",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.observations[label=Fall erfassen].explicitSystems",
+      "value": [
+        "CRM",
+        "DMS"
+      ]
+    },
+    {
+      "label": "Technische Sicht bleibt multivalue",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.observations[label=Technische Sicht einholen].roles",
+      "value": [
+        "Qualitätssicherung",
+        "Service"
+      ]
+    },
+    {
+      "label": "Technische Sicht Systeme bleiben multivalue",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.observations[label=Technische Sicht einholen].systems",
+      "value": [
+        "QMS",
+        "Ticketsystem"
+      ]
+    },
+    {
+      "label": "Freigabe bleibt multivalue",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.observations[label=Freigabe abstimmen].roles",
+      "value": [
+        "Teamleitung",
+        "Fachbereich"
+      ]
+    },
+    {
+      "label": "Freigabe Systeme bleiben multivalue",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.observations[label=Freigabe abstimmen].systems",
+      "value": [
+        "ERP",
+        "BI",
+        "Mail"
+      ]
+    },
+    {
+      "label": "Kundenentscheidung bleibt multivalue",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.observations[label=Kundenentscheidung kommunizieren].roles",
+      "value": [
+        "Innendienst",
+        "Vertrieb"
+      ]
+    },
+    {
+      "label": "Kundenentscheidung Systeme bleiben multivalue",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.observations[label=Kundenentscheidung kommunizieren].systems",
+      "value": [
+        "CRM",
+        "Mail"
+      ]
+    },
+    {
+      "label": "Abschluss bleibt multivalue",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.observations[label=Abschluss sichern].roles",
+      "value": [
+        "Qualitätssicherung",
+        "Wissensmanagement"
+      ]
+    },
+    {
+      "label": "Abschluss Systeme bleiben multivalue",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.observations[label=Abschluss sichern].systems",
+      "value": [
+        "DMS",
+        "Wissensdatenbank"
+      ]
+    },
+    {
+      "label": "Structured Preserve Final Roles gefüllt",
+      "op": "arrayContains",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.finalRoles",
+      "values": [
+        "Innendienst",
+        "Vertrieb",
+        "Qualitätssicherung",
+        "Service",
+        "Teamleitung",
+        "Fachbereich",
+        "Wissensmanagement"
+      ]
+    },
+    {
+      "label": "Structured Preserve Final Systems gefüllt",
+      "op": "arrayContains",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.finalSystems",
+      "values": [
+        "CRM",
+        "DMS",
+        "QMS",
+        "Ticketsystem",
+        "ERP",
+        "BI",
+        "Mail",
+        "Wissensdatenbank"
+      ]
+    },
+    {
+      "label": "Preserved Steps bleiben erhalten",
+      "op": "pluckArrayEquals",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.preservedSteps",
+      "field": "label",
+      "value": [
+        "Fall erfassen",
+        "Technische Sicht einholen",
+        "Freigabe abstimmen",
+        "Kundenentscheidung kommunizieren",
+        "Abschluss sichern"
+      ]
+    },
+    {
+      "label": "Explizite Rollen bleiben atomar",
+      "op": "arraySameMembers",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.explicitRoles",
+      "values": [
+        "Innendienst",
+        "Vertrieb",
+        "Qualitätssicherung",
+        "Service",
+        "Teamleitung",
+        "Fachbereich",
+        "Wissensmanagement"
+      ]
+    },
+    {
+      "label": "Explizite Systeme bleiben atomar",
+      "op": "arraySameMembers",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.explicitSystems",
+      "values": [
+        "CRM",
+        "DMS",
+        "QMS",
+        "Ticketsystem",
+        "ERP",
+        "BI",
+        "Mail",
+        "Wissensdatenbank"
+      ]
+    },
+    {
+      "label": "Keine zusammengesetzten Rohrollen mehr",
+      "op": "arrayNotContains",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.explicitRoles",
+      "values": [
+        "Innendienst; Vertrieb",
+        "Teamleitung; Fachbereich",
+        "Qualitätssicherung; Wissensmanagement"
+      ]
+    },
+    {
+      "label": "Keine Rename-Suggestions",
+      "op": "eq",
+      "path": "qualityControl.reviewOverview.renameCount",
+      "value": 0
+    },
+    {
+      "label": "Keine fachfremden Tokens in Routing-Gründen",
+      "op": "notContainsTokens",
+      "path": "context.sourceRouting.classificationReasons",
+      "values": [
+        "Rechnung & Zahlungsklärung",
+        "Service & Störung",
+        "Onboarding"
+      ]
+    },
+    {
+      "label": "Keine fachfremden Tokens im SourceProfile",
+      "op": "notContainsTokens",
+      "path": "analysisResults.lastDerivationSummary.sourceProfile.classificationReasons",
+      "values": [
+        "Rechnung & Zahlungsklärung",
+        "Service & Störung",
+        "Onboarding",
+        "semi-structured"
+      ]
+    },
+    {
+      "label": "Domain-Consistency bleibt lokal sauber",
+      "op": "notContainsTokens",
+      "path": "analysisResults.qualityAssessment.dimensions[key=domainConsistency].reason",
+      "values": [
+        "Rechnung & Zahlungsklärung",
+        "Service & Störung",
+        "Onboarding",
+        "semi-structured"
+      ]
+    },
+    {
+      "label": "Export trägt die aktuelle App-Version",
+      "op": "matchesCurrentAppVersion",
+      "path": "appVersion"
+    }
+  ]
+}

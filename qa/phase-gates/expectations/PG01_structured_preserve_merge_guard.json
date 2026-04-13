@@ -1,0 +1,162 @@
+{
+  "name": "PG01 Structured Preserve Merge Guard",
+  "checks": [
+    {
+      "label": "Routing bleibt strukturiert",
+      "op": "eq",
+      "path": "analysisResults.routing.routingClass",
+      "value": "structured-procedure"
+    },
+    {
+      "label": "Methode bleibt structured",
+      "op": "eq",
+      "path": "analysisResults.lastDerivationSummary.method",
+      "value": "structured"
+    },
+    {
+      "label": "Dokumentklasse bleibt strukturiert",
+      "op": "eq",
+      "path": "analysisResults.lastDerivationSummary.sourceProfile.documentClass",
+      "value": "structured-target-procedure"
+    },
+    {
+      "label": "Structured Preserve aktiv",
+      "op": "eq",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.applied",
+      "value": true
+    },
+    {
+      "label": "Sechs explizite Structured-Schritte erkannt",
+      "op": "eq",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.explicitStructuredStepCount",
+      "value": 6
+    },
+    {
+      "label": "Sechs Structured-Schritte erhalten",
+      "op": "eq",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.preservedStructuredStepCount",
+      "value": 6
+    },
+    {
+      "label": "Kein Section-Fallback",
+      "op": "eq",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.structuredSectionFallback",
+      "value": false
+    },
+    {
+      "label": "Structured-Tabelle erkannt",
+      "op": "eq",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.structuredTableDetected",
+      "value": true
+    },
+    {
+      "label": "Explizite Rollen-Tabelle erkannt",
+      "op": "eq",
+      "path": "analysisResults.extractionEvidence.structuredPreserve.explicitRoleTableDetected",
+      "value": true
+    },
+    {
+      "label": "Quellreihenfolge bleibt erhalten",
+      "op": "arrayEquals",
+      "path": "sourceMaterial.cases[0].derivedStepLabels",
+      "value": [
+        "Vorgang anlegen",
+        "Unterlagen prüfen",
+        "Fehlende Unterlagen nachfordern",
+        "Abweichung klassifizieren",
+        "Freigabe entscheiden",
+        "Abschluss dokumentieren"
+      ]
+    },
+    {
+      "label": "Discovery nutzt preserved Steps",
+      "op": "arrayEquals",
+      "path": "analysisResults.discoverySummary.topSteps",
+      "value": [
+        "Vorgang anlegen",
+        "Unterlagen prüfen",
+        "Fehlende Unterlagen nachfordern",
+        "Abweichung klassifizieren",
+        "Freigabe entscheiden",
+        "Abschluss dokumentieren"
+      ]
+    },
+    {
+      "label": "Explizite Rollen bleiben sichtbar",
+      "op": "arrayContains",
+      "path": "qualityControl.reviewOverview.explicitRoles",
+      "values": [
+        "Sachbearbeitung",
+        "Fachbereich",
+        "Teamleitung",
+        "Kundenservice"
+      ]
+    },
+    {
+      "label": "Explizite Systeme bleiben sichtbar",
+      "op": "arrayContains",
+      "path": "qualityControl.reviewOverview.explicitSystems",
+      "values": [
+        "ERP",
+        "DMS",
+        "Fachtool",
+        "BI",
+        "CRM",
+        "Mail"
+      ]
+    },
+    {
+      "label": "Keine Rename-Suggestions",
+      "op": "eq",
+      "path": "qualityControl.reviewOverview.renameCount",
+      "value": 0
+    },
+    {
+      "label": "Keine fachfremden Tokens in Routing-Gründen",
+      "op": "notContainsTokens",
+      "path": "context.sourceRouting.classificationReasons",
+      "values": [
+        "Rechnung & Zahlungsklärung",
+        "Service & Störung",
+        "Onboarding"
+      ]
+    },
+    {
+      "label": "Keine fachfremden Tokens im SourceProfile",
+      "op": "notContainsTokens",
+      "path": "analysisResults.lastDerivationSummary.sourceProfile.classificationReasons",
+      "values": [
+        "Rechnung & Zahlungsklärung",
+        "Service & Störung",
+        "Onboarding",
+        "semi-structured"
+      ]
+    },
+    {
+      "label": "Keine fachfremden Tokens in der Summary",
+      "op": "notContainsTokens",
+      "path": "analysisResults.lastDerivationSummary.documentSummary",
+      "values": [
+        "Rechnung & Zahlungsklärung",
+        "Service & Störung",
+        "Onboarding"
+      ]
+    },
+    {
+      "label": "Domain-Consistency bleibt lokal sauber",
+      "op": "notContainsTokens",
+      "path": "analysisResults.qualityAssessment.dimensions[key=domainConsistency].reason",
+      "values": [
+        "Rechnung & Zahlungsklärung",
+        "Service & Störung",
+        "Onboarding",
+        "semi-structured"
+      ]
+    },
+    {
+      "label": "Export trägt die aktuelle App-Version",
+      "op": "matchesCurrentAppVersion",
+      "path": "appVersion"
+    }
+  ]
+}

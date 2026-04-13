@@ -372,10 +372,17 @@ function enrichStepsWithRoleRows(steps: StructuredProcedureStep[], roles: Struct
       ...splitStructuredValues(step.responsible),
       ...evidenceRoles,
     ]);
-    const explicitSystems = uniqueCaseInsensitive([
+    const explicitRoleRows = preparedRoles.filter(role =>
+      explicitRoles.some(explicitRole => canonicalRoleLabel(explicitRole) === role.canonicalName || normalizeMatchText(explicitRole) === normalizeMatchText(role.name)),
+    );
+    const localExplicitSystems = uniqueCaseInsensitive([
       ...(step.explicitSystems ?? []),
       ...splitStructuredValues(step.system),
       ...evidenceSystems,
+    ]);
+    const explicitSystems = uniqueCaseInsensitive([
+      ...localExplicitSystems,
+      ...(localExplicitSystems.length === 0 ? explicitRoleRows.flatMap(role => role.canonicalSystems ?? []) : []),
     ]);
 
     const stepTokens = tokenSet([step.label, step.description, step.result, step.evidenceSnippet].filter(Boolean).join(' '));
