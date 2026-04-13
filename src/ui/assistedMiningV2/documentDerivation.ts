@@ -70,13 +70,27 @@ export interface DerivationResult {
   documentKind: ProcessDocumentType;
   warnings: string[];
   confidence: 'high' | 'medium' | 'low';
-  derivedSteps: Array<{ label: string; role?: string; evidenceSnippet?: string }>;
+  derivedSteps: DerivedStepResult[];
   roles: string[];
   systems: string[];
   issueSignals: string[];
   summary: DerivationSummary;
   routingContext: SourceRoutingContext;
   extractionCandidates?: ExtractionCandidate[];
+}
+
+export interface DerivedStepResult {
+  label: string;
+  role?: string;
+  evidenceSnippet?: string;
+  originalStepLabel?: string;
+  canonicalStepFamily?: string;
+  stepWasPreserved?: boolean;
+  mergeSkippedBecauseStructured?: boolean;
+  explicitRoles?: string[];
+  explicitSystems?: string[];
+  suppressedInferredRoles?: string[];
+  suppressedInferredSystems?: string[];
 }
 
 export const LOCAL_MINING_ENGINE_VERSION = 'pm-local-engine-v4.3';
@@ -861,6 +875,31 @@ function collectLocalSystemLabels(params: {
   ]);
 }
 
+function includesNormalizedValue(values: Array<string | undefined>, candidate: string | undefined): boolean {
+  const normalizedCandidate = normalizeWhitespace(candidate ?? '').toLowerCase();
+  if (!normalizedCandidate) return false;
+  return values.some(value => normalizeWhitespace(value ?? '').toLowerCase() === normalizedCandidate);
+}
+
+function excludeNormalizedValues(values: Array<string | undefined>, excluded: Array<string | undefined>): string[] {
+  return uniqueStrings(values).filter(value => !includesNormalizedValue(excluded, value));
+}
+
+function preserveStructuredDomainLabels(params: {
+  explicit: string[];
+  inferred: string[];
+  kind: 'role' | 'system';
+  domainIsolation: ReturnType<typeof detectDomainIsolation>;
+}): { kept: string[]; suppressed: string[] } {
+  const keptInferred = params.kind === 'role'
+    ? filterRolesByDomain(params.inferred, params.domainIsolation)
+    : filterSystemsByDomain(params.inferred, params.domainIsolation);
+  return {
+    kept: uniqueStrings([...params.explicit, ...keptInferred]),
+    suppressed: excludeNormalizedValues(params.inferred, keptInferred),
+  };
+}
+
 function buildStructuredStepArtifacts(
   caseId: string,
   steps: StructuredProcedureStep[],
@@ -870,27 +909,49 @@ function buildStructuredStepArtifacts(
   extractionCandidates: ExtractionCandidate[];
   roles: string[];
   systems: string[];
-  derivedSteps: Array<{ label: string; role?: string; evidenceSnippet?: string }>;
+  derivedSteps: DerivedStepResult[];
 } {
   const observations: ProcessMiningObservation[] = [];
   const extractionCandidates: ExtractionCandidate[] = [];
   const collectedRoles: string[] = [];
   const collectedSystems: string[] = [];
-  const derivedSteps: Array<{ label: string; role?: string; evidenceSnippet?: string }> = [];
+  const derivedSteps: DerivedStepResult[] = [];
 
   steps.forEach((step, index) => {
     const evidenceAnchor = step.evidenceSnippet || [step.label, step.description, step.result].filter(Boolean).join(' | ');
     const contextWindow = buildContextWindow([step.label, step.description, step.result, step.decision, evidenceAnchor]);
+    const explicitRoles = uniqueStrings([
+      ...(step.explicitRoles ?? []),
+      ...(step.roles ?? []),
+      step.responsible,
+    ]);
+    const explicitSystems = uniqueStrings([
+      ...(step.explicitSystems ?? []),
+      ...(step.systems ?? []),
+      step.system,
+    ]);
     const localRoles = collectLocalRoleLabels({
-      explicit: [step.responsible],
+      explicit: explicitRoles,
       context: [step.label, step.description, evidenceAnchor],
     });
     const localSystems = collectLocalSystemLabels({
-      explicit: [step.system],
+      explicit: explicitSystems,
       context: [step.label, step.description, evidenceAnchor],
     });
+    const inferredRoles = excludeNormalizedValues(localRoles, explicitRoles);
+    const inferredSystems = excludeNormalizedValues(localSystems, explicitSystems);
+    const allRoles = uniqueStrings([...explicitRoles, ...inferredRoles]);
+    const allSystems = uniqueStrings([...explicitSystems, ...inferredSystems]);
+    const canonicalStepFamily = inferStepFamily(step.label)?.label;
     const stepCandidate = createStepCandidate({
       rawLabel: step.label,
+      normalizedLabel: step.label,
+      preserveOriginalLabel: true,
+      originalStepLabel: step.label,
+      canonicalStepFamily,
+      stepWasPreserved: true,
+      explicitRoles,
+      explicitSystems,
       evidenceAnchor,
       contextWindow,
       confidence: evidenceAnchor.length >= 28 ? 'high' : 'medium',
@@ -903,7 +964,7 @@ function buildStructuredStepArtifacts(
 
     extractionCandidates.push(stepCandidate);
     extractionCandidates.push(...createRoleCandidates({
-      labels: localRoles,
+      labels: allRoles,
       evidenceAnchor,
       contextWindow,
       confidence: stepCandidate.confidence,
@@ -914,7 +975,7 @@ function buildStructuredStepArtifacts(
       relatedCandidateId: stepCandidate.candidateId,
     }));
     extractionCandidates.push(...createSystemCandidates({
-      labels: localSystems,
+      labels: allSystems,
       evidenceAnchor,
       contextWindow,
       confidence: stepCandidate.confidence,
@@ -929,16 +990,25 @@ function buildStructuredStepArtifacts(
       candidate: stepCandidate,
       caseId,
       sequenceIndex: observations.length,
-      role: localRoles[0],
-      system: localSystems[0],
+      role: allRoles[0],
+      system: allSystems[0],
+      roles: allRoles,
+      systems: allSystems,
+      explicitRoles,
+      explicitSystems,
       timestampQuality: 'missing',
     }));
-    collectedRoles.push(...localRoles);
-    collectedSystems.push(...localSystems);
+    collectedRoles.push(...allRoles);
+    collectedSystems.push(...allSystems);
     derivedSteps.push({
       label: stepCandidate.normalizedLabel,
-      role: localRoles[0],
+      role: allRoles[0],
       evidenceSnippet: stepCandidate.evidenceAnchor,
+      originalStepLabel: stepCandidate.originalStepLabel,
+      canonicalStepFamily: stepCandidate.canonicalStepFamily,
+      stepWasPreserved: true,
+      explicitRoles,
+      explicitSystems,
     });
   });
 
@@ -1619,6 +1689,7 @@ function buildStructuredDerivation(params: {
     roles: uniqueStrings([...roles, ...structuredArtifacts.roles]),
     systems: structuredArtifacts.systems,
     issueSignals,
+    structuredPreserveApplied: true,
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind })} ${sourceProfileNote}`.trim(),
     sourceProfile,
     routingContext,
@@ -1799,31 +1870,39 @@ function buildExtractionCandidates(
 
     if (observation.kind === 'step') {
       const stepCandidateId = `${observation.id}:step`;
-      candidates.push({
+      const preserveStructured = Boolean(seed?.stepWasPreserved || observation.stepWasPreserved);
+      candidates.push(createStepCandidate({
         candidateId: stepCandidateId,
-        candidateType: 'step',
         rawLabel: observation.label,
-        normalizedLabel: canonicalizeProcessStepLabel({
-          title: observation.label,
-          body: evidenceAnchor || contextWindow,
-          fallback: observation.label,
-          index: observation.sequenceIndex,
-        }),
+        normalizedLabel: preserveStructured
+          ? (observation.originalStepLabel ?? observation.label)
+          : observation.label,
+        preserveOriginalLabel: preserveStructured,
+        originalStepLabel: observation.originalStepLabel ?? seed?.originalStepLabel ?? observation.label,
+        canonicalStepFamily: observation.canonicalStepFamily ?? seed?.canonicalStepFamily,
+        stepWasPreserved: preserveStructured,
+        mergeSkippedBecauseStructured: observation.mergeSkippedBecauseStructured ?? seed?.mergeSkippedBecauseStructured,
+        explicitRoles: observation.explicitRoles ?? seed?.explicitRoles,
+        explicitSystems: observation.explicitSystems ?? seed?.explicitSystems,
+        suppressedInferredRoles: observation.suppressedInferredRoles ?? seed?.suppressedInferredRoles,
+        suppressedInferredSystems: observation.suppressedInferredSystems ?? seed?.suppressedInferredSystems,
+        domainAligned: observation.domainAligned ?? seed?.domainAligned,
+        secondaryDomainHint: observation.secondaryDomainHint ?? seed?.secondaryDomainHint,
         evidenceAnchor: evidenceAnchor || observation.label,
         contextWindow,
         confidence: seed?.confidence ?? (evidenceAnchor.length >= 24 ? 'medium' : 'low'),
         originChannel,
         sourceFragmentType,
-        routingClass: routingContext.routingClass,
+        routingContext,
         sourceRef: observation.id,
-        status: 'candidate',
-        supportClass: seed?.supportClass,
-      });
+        index: observation.sequenceIndex,
+      }));
 
-      if (observation.role) {
+      const roleLabels = observation.roles ?? (observation.role ? [observation.role] : []);
+      if (roleLabels.length > 0) {
         candidates.push(...createRoleCandidates({
-          labels: [observation.role],
-          evidenceAnchor: evidenceAnchor || observation.role,
+          labels: roleLabels,
+          evidenceAnchor: evidenceAnchor || observation.role || observation.label,
           contextWindow,
           confidence: seed?.confidence ?? 'medium',
           originChannel,
@@ -1834,10 +1913,11 @@ function buildExtractionCandidates(
         }));
       }
 
-      if (observation.system) {
+      const systemLabels = observation.systems ?? (observation.system ? [observation.system] : []);
+      if (systemLabels.length > 0) {
         candidates.push(...createSystemCandidates({
-          labels: [observation.system],
-          evidenceAnchor: evidenceAnchor || observation.system,
+          labels: systemLabels,
+          evidenceAnchor: evidenceAnchor || observation.system || observation.label,
           contextWindow,
           confidence: seed?.confidence ?? 'medium',
           originChannel,
