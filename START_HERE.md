@@ -1,4 +1,4 @@
-> Aktueller Produktstand: **v0.43**
+> Aktueller Produktstand: **v0.43.1**
 
 # Start hier
 

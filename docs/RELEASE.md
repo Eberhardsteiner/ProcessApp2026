@@ -1,5 +1,10 @@
 # Freigabe, Stabilisierung und Governance-Auswertung
 
+## Aktueller Produktstand
+
+- Sichtbare App-Version: `v0.43.1`
+- Freigabestatus: Patch-Stand für Structured-Preserve-Restreparaturen; keine Minor-Freigabe ohne belegtes grünes PG01
+
 ## Wofür dieser Stand gedacht ist
 
 Phase 30 und Phase 31 schließen den letzten Schritt des Assisted Process Mining zu einem ruhigen Freigabeweg zusammen.

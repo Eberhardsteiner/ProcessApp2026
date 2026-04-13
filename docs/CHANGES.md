@@ -1,3 +1,10 @@
+## v0.43.1 – Structured-Preserve Restreparatur
+
+- Abschnitts- und Tabellenanker für strukturierte Sollprozessdokumente robuster gemacht, damit nummerierte Ablaufquellen nicht an einer festen Abschnittsnummer hängen
+- explizite Structured-Ablaufzeilen werden mit Zähltransparenz, Section-Fallback-Status und Recall-Warnung ausgewertet
+- explizite Rollen- und Systemtabellen bleiben im Structured-Pfad quellentreuer erhalten und kollabieren nicht mehr frühzeitig auf Sammelbegriffe
+- Export ergänzt Structured-Transparenz für explizite vs. final erhaltene Schritte sowie Table-/Fallback-Signale
+
 ## v0.43 – Sanierungsstufen A–E
 
 - sichtbarer Versionsstand in der App auf `v0.43` angehoben

@@ -864,6 +864,12 @@ export interface DerivationSummary {
   issueSignals?: string[];
   issueEvidence?: Array<{ label: string; snippet: string }>;
   structuredPreserveApplied?: boolean;
+  explicitStructuredStepCount?: number;
+  preservedStructuredStepCount?: number;
+  structuredSectionFallback?: boolean;
+  structuredWholeTextFallback?: boolean;
+  structuredTableDetected?: boolean;
+  structuredRecallLoss?: boolean;
   documentSummary?: string;
   sourceProfile?: DerivationSourceProfile;
   routingContext?: SourceRoutingContext;

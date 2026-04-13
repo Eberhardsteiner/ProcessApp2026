@@ -19,6 +19,7 @@ export interface StructuredProcedureStep {
 export interface StructuredProcedureRole {
   name: string;
   owner?: string;
+  systems?: string[];
   responsibility?: string;
 }
 
@@ -33,8 +34,14 @@ export interface StructuredProcedureExtraction {
   title?: string;
   steps: StructuredProcedureStep[];
   roles: StructuredProcedureRole[];
+  systems: string[];
   approvals: StructuredProcedureApproval[];
   warnings: string[];
+  explicitStructuredStepCount: number;
+  structuredSectionFallback: boolean;
+  structuredWholeTextFallback: boolean;
+  structuredTableDetected: boolean;
+  structuredRecallLoss?: boolean;
 }
 
 const STEP_CODE_RE = /^([A-Z]{1,3}-\d{1,3})\s*$/;
@@ -43,7 +50,7 @@ const DUE_RE = /T[+-]\s*\d+\s*(Tag(e)?|Woche[n]?|Monat(e)?|KW|Std\.?|h\b)/i;
 const SECTION_RE = /^\s*(\d+)\.\s+/;
 const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
 const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
-const NAMED_SECTION_RE = /^\s*((?:\d+\.)*\d+)\s+(.+)$/;
+const NAMED_SECTION_RE = /^\s*((?:\d+(?:\.\d+)*)|[A-ZÄÖÜ])\.?\s+(.+)$/;
 const PIPE_SEPARATOR_RE = /^\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?$/;
 
 type HeaderKey =
@@ -71,6 +78,16 @@ interface ParsedTableBlock {
   endLine: number;
 }
 
+interface StructuredStepSectionChoice {
+  text: string;
+  section?: NamedSection;
+  steps: StructuredProcedureStep[];
+  explicitStepCount: number;
+  tableDetected: boolean;
+  wholeTextFallback: boolean;
+  sectionFallback: boolean;
+}
+
 interface PreparedRoleRow extends StructuredProcedureRole {
   canonicalName?: string;
   canonicalSystems: string[];
@@ -80,30 +97,25 @@ interface PreparedRoleRow extends StructuredProcedureRole {
 const ROLE_CANONICALS: Array<{ label: string; patterns: RegExp[] }> = [
   { label: 'Kunde', patterns: [/\bkunde\b/i, /kund:in/i] },
   { label: 'Vertrieb', patterns: [/vertrieb/i, /account manager/i] },
+  { label: 'Kundenservice', patterns: [/kundenservice/i, /customer service/i] },
   { label: 'Servicekoordination', patterns: [/servicekoordination/i, /dispatcher/i, /service desk/i] },
-  { label: 'Fachbereich', patterns: [/fachbereich/i, /sachbearbeitung/i, /backoffice/i] },
+  { label: 'Sachbearbeitung', patterns: [/sachbearbeitung/i, /backoffice/i] },
+  { label: 'Fachbereich', patterns: [/fachbereich/i] },
+  { label: 'Teamleitung', patterns: [/teamleitung/i, /team lead/i] },
   { label: 'Qualitätsmanagement', patterns: [/qualit/i, /\bqm\b/i, /\bqs\b/i] },
   { label: 'Buchhaltung', patterns: [/buchhaltung/i, /finance/i, /kreditor/i, /debitor/i] },
   { label: 'Logistik', patterns: [/logistik/i, /lager/i, /versand/i] },
   { label: 'IT', patterns: [/\bit\b/i, /admin/i, /support/i] },
 ];
 
-const SYSTEM_CANONICALS: Array<{ label: string; patterns: RegExp[] }> = [
-  { label: 'ERP', patterns: [/\berp\b/i, /sap/i] },
-  { label: 'CRM', patterns: [/\bcrm\b/i, /salesforce/i] },
-  { label: 'DMS', patterns: [/\bdms\b/i, /dokumenten/i] },
-  { label: 'E-Mail', patterns: [/mail/i, /outlook/i] },
-  { label: 'Telefon', patterns: [/telefon/i, /telefonie/i] },
-  { label: 'Workflow', patterns: [/workflow/i, /prozessportal/i] },
-  { label: 'Ticketsystem', patterns: [/ticket/i, /service desk/i] },
-  { label: 'Portal', patterns: [/portal/i, /serviceportal/i] },
-  { label: 'Reporting', patterns: [/report/i, /bi\b/i, /dashboard/i] },
-];
-
 const ROLE_KEYWORD_HINTS: Array<{ pattern: RegExp; role: string }> = [
   { pattern: /kunde|kund:in/i, role: 'Kunde' },
   { pattern: /vertrieb|account/i, role: 'Vertrieb' },
+  { pattern: /kundenservice|customer service/i, role: 'Kundenservice' },
   { pattern: /service|dispatcher|leitstand/i, role: 'Servicekoordination' },
+  { pattern: /sachbearbeitung|backoffice/i, role: 'Sachbearbeitung' },
+  { pattern: /fachbereich/i, role: 'Fachbereich' },
+  { pattern: /teamleitung|team lead/i, role: 'Teamleitung' },
   { pattern: /qualit|qm|qs/i, role: 'Qualitätsmanagement' },
   { pattern: /buchhaltung|finance|kreditor|debitor/i, role: 'Buchhaltung' },
   { pattern: /logistik|lager|versand/i, role: 'Logistik' },
@@ -188,8 +200,41 @@ function splitNamedSections(text: string): NamedSection[] {
   return sections;
 }
 
+function splitNumberedSections(text: string): NamedSection[] {
+  return Array.from(splitSections(text).entries())
+    .filter(([number]) => /^\d+$/.test(number))
+    .map(([number, raw]) => {
+    const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    const firstLine = lines[0]?.trim() ?? '';
+    const headingMatch = firstLine.match(NAMED_SECTION_RE);
+    const heading = headingMatch?.[2] ?? (firstLine || `Abschnitt ${number}`);
+    const body = (headingMatch ? lines.slice(1) : lines).join('\n').trim();
+    return {
+      number,
+      heading,
+      body,
+      raw: raw.trim(),
+    };
+  });
+}
+
+function collectNamedSections(text: string): NamedSection[] {
+  const sections = [...splitNamedSections(text), ...splitNumberedSections(text)];
+  const seen = new Set<string>();
+  const result: NamedSection[] = [];
+
+  for (const section of sections) {
+    const key = `${section.number ?? ''}::${section.heading.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(section);
+  }
+
+  return result;
+}
+
 function findNamedSection(text: string, patterns: RegExp[], preferredNumbers: string[] = []): NamedSection | undefined {
-  const sections = splitNamedSections(text);
+  const sections = collectNamedSections(text);
   const preferred = sections.find(section => preferredNumbers.includes(section.number ?? '') && patterns.some(pattern => pattern.test(section.heading)));
   if (preferred) return preferred;
   return sections.find(section => patterns.some(pattern => pattern.test(section.heading)));
@@ -230,6 +275,13 @@ function splitStructuredValues(value: string | undefined): string[] {
   );
 }
 
+function preserveRoleLabel(value: string | undefined): string | undefined {
+  return cleanCell(value);
+}
+
+function preserveSystemLabels(value: string | undefined): string[] {
+  return splitStructuredValues(value);
+}
 
 function canonicalRoleLabel(value: string | undefined): string | undefined {
   const cleaned = cleanCell(value);
@@ -241,18 +293,6 @@ function canonicalRoleLabel(value: string | undefined): string | undefined {
     }
   }
   return cleaned;
-}
-
-function canonicalSystemLabels(value: string | undefined): string[] {
-  const cleaned = cleanCell(value);
-  if (!cleaned) return [];
-  const parts = cleaned.split(/[,;/]+|\s+und\s+/i).map(part => part.trim()).filter(Boolean);
-  const labels: string[] = [];
-  for (const part of parts) {
-    const match = SYSTEM_CANONICALS.find(entry => entry.patterns.some(pattern => pattern.test(part)));
-    labels.push(match?.label ?? part);
-  }
-  return Array.from(new Set(labels));
 }
 
 function normalizeMatchText(value: string | undefined): string {
@@ -308,8 +348,17 @@ function enrichStepsWithRoleRows(steps: StructuredProcedureStep[], roles: Struct
   const preparedRoles: PreparedRoleRow[] = roles.map(role => ({
     ...role,
     canonicalName: canonicalRoleLabel(role.name),
-    canonicalSystems: canonicalSystemLabels(role.owner),
-    matchTokens: tokenSet([role.name, role.responsibility, role.owner].filter(Boolean).join(' ')),
+    canonicalSystems: uniqueCaseInsensitive([
+      ...(role.systems ?? []),
+      ...splitStructuredValues(role.owner),
+    ]),
+    matchTokens: tokenSet([
+      role.name,
+      canonicalRoleLabel(role.name),
+      role.responsibility,
+      role.owner,
+      ...(role.systems ?? []),
+    ].filter(Boolean).join(' ')),
   }));
 
   return steps.map(step => {
@@ -494,10 +543,6 @@ function parsePipeTableBlocks(text: string): ParsedTableBlock[] {
   return blocks;
 }
 
-function parsePipeTableRows(sectionText: string): string[][] {
-  return chooseBestTableBlock(parsePipeTableBlocks(sectionText), 2)?.rows ?? [];
-}
-
 function parseDelimitedTableRows(sectionText: string): string[][] {
   const rows: string[][] = [];
   for (const line of sectionText.split('\n')) {
@@ -538,6 +583,141 @@ function chooseBestTableBlock(blocks: ParsedTableBlock[], minHeaders = 2): Parse
     }))
     .filter(item => headerCoverage(item.block.rows[0] ?? []) >= minHeaders)
     .sort((a, b) => b.score - a.score)[0]?.block;
+}
+
+function hasStepHeaderMap(headerMap: Partial<Record<HeaderKey, number>>): boolean {
+  return headerMap.label !== undefined
+    || (
+      headerMap.code !== undefined
+      && (headerMap.responsible !== undefined || headerMap.result !== undefined || headerMap.description !== undefined)
+    );
+}
+
+function extractTableStepsFromRows(rows: string[][]): StructuredProcedureStep[] {
+  if (!rows.length) return [];
+  const headerIdx = detectPipeTableHeaders(rows);
+  if (headerIdx < 0) return [];
+
+  const headerMap = mapHeaderRow(rows[headerIdx]);
+  if (!hasStepHeaderMap(headerMap)) return [];
+
+  return rows
+    .slice(headerIdx + 1)
+    .map(row => buildStepFromHeaderMappedRow(row, headerMap))
+    .filter((step): step is StructuredProcedureStep => Boolean(step));
+}
+
+function chooseBestStepTableBlock(blocks: ParsedTableBlock[]): ParsedTableBlock | undefined {
+  return blocks
+    .map(block => {
+      const headerMap = mapHeaderRow(block.rows[0] ?? []);
+      const explicitSteps = extractTableStepsFromRows(block.rows);
+      return {
+        block,
+        explicitCount: explicitSteps.length,
+        hasStepHeader: hasStepHeaderMap(headerMap),
+        score: (hasStepHeaderMap(headerMap) ? 60 : 0) + headerCoverage(block.rows[0] ?? []) * 10 + explicitSteps.length * 6,
+      };
+    })
+    .filter(item => item.hasStepHeader && item.explicitCount > 0)
+    .sort((a, b) => b.score - a.score)[0]?.block;
+}
+
+function parseFlexibleTableStepSource(sectionText: string): {
+  steps: StructuredProcedureStep[];
+  explicitStepCount: number;
+  tableDetected: boolean;
+} {
+  const pipeBlock = chooseBestStepTableBlock(parsePipeTableBlocks(sectionText));
+  if (pipeBlock) {
+    const explicitSteps = extractTableStepsFromRows(pipeBlock.rows);
+    return {
+      steps: dedupeSteps(explicitSteps),
+      explicitStepCount: explicitSteps.length,
+      tableDetected: explicitSteps.length > 0,
+    };
+  }
+
+  const delimitedRows = parseDelimitedTableRows(sectionText);
+  const explicitSteps = extractTableStepsFromRows(delimitedRows);
+  if (explicitSteps.length > 0) {
+    return {
+      steps: dedupeSteps(explicitSteps),
+      explicitStepCount: explicitSteps.length,
+      tableDetected: true,
+    };
+  }
+
+  return {
+    steps: [],
+    explicitStepCount: 0,
+    tableDetected: false,
+  };
+}
+
+function chooseStructuredStepSection(text: string): StructuredStepSectionChoice | undefined {
+  const sectionPatterns = [/standardablauf/i, /prozessablauf/i, /verfahrensablauf/i, /\bablauf\b/i, /\bvorgehen\b/i];
+  const rolePatterns = [/rollen? und systeme/i, /^rollen?$/i, /verantwortlichkeiten/i];
+  const sections = collectNamedSections(text);
+
+  const sectionCandidates = sections
+    .map(section => {
+      const sectionText = section.body || section.raw;
+      const tableSource = parseFlexibleTableStepSource(sectionText);
+      const flatSteps = tableSource.steps.length > 0 ? [] : parseFlatStepBlocks(sectionText);
+      const matchedHeading = sectionPatterns.some(pattern => pattern.test(section.heading));
+      const roleLikeHeading = rolePatterns.some(pattern => pattern.test(section.heading));
+      const explicitStepCount = tableSource.explicitStepCount > 0 ? tableSource.explicitStepCount : flatSteps.length;
+      const steps = tableSource.steps.length > 0 ? tableSource.steps : flatSteps;
+      const score =
+        (matchedHeading ? 140 : 0)
+        + (tableSource.tableDetected ? 70 : 0)
+        + explicitStepCount * 7
+        + steps.length * 3
+        - (roleLikeHeading ? 80 : 0);
+
+      return {
+        text: sectionText,
+        section,
+        steps,
+        explicitStepCount,
+        tableDetected: tableSource.tableDetected,
+        wholeTextFallback: false,
+        sectionFallback: !matchedHeading,
+        matchedHeading,
+        score,
+      };
+    })
+    .filter(candidate => candidate.explicitStepCount > 0);
+
+  const preferredSections = sectionCandidates.filter(candidate => candidate.matchedHeading);
+  const bestSection = (preferredSections.length > 0 ? preferredSections : sectionCandidates)
+    .sort((a, b) => b.score - a.score)[0];
+  if (bestSection) {
+    return {
+      text: bestSection.text,
+      section: bestSection.section,
+      steps: bestSection.steps,
+      explicitStepCount: bestSection.explicitStepCount,
+      tableDetected: bestSection.tableDetected,
+      wholeTextFallback: false,
+      sectionFallback: bestSection.sectionFallback,
+    };
+  }
+
+  const fullTextTableSource = parseFlexibleTableStepSource(text);
+  const fullTextSteps = fullTextTableSource.steps.length > 0 ? fullTextTableSource.steps : parseFlatStepBlocks(text);
+  const explicitStepCount = fullTextTableSource.explicitStepCount > 0 ? fullTextTableSource.explicitStepCount : fullTextSteps.length;
+  if (explicitStepCount === 0) return undefined;
+
+  return {
+    text,
+    steps: fullTextSteps,
+    explicitStepCount,
+    tableDetected: fullTextTableSource.tableDetected,
+    wholeTextFallback: true,
+    sectionFallback: true,
+  };
 }
 
 function mapHeaderRow(row: string[]): Partial<Record<HeaderKey, number>> {
@@ -603,30 +783,6 @@ function buildStepFromHeaderMappedRow(
     decision: cleanCell(get('decision')),
     evidenceSnippet: row.filter(Boolean).join(' | '),
   };
-}
-
-function parseTableStepsFromRows(rows: string[][]): StructuredProcedureStep[] {
-  if (!rows.length) return [];
-  const headerIdx = detectPipeTableHeaders(rows);
-  if (headerIdx < 0) return [];
-
-  const headerMap = mapHeaderRow(rows[headerIdx]);
-  const steps = rows
-    .slice(headerIdx + 1)
-    .map(row => buildStepFromHeaderMappedRow(row, headerMap))
-    .filter((step): step is StructuredProcedureStep => Boolean(step));
-
-  return dedupeSteps(steps);
-}
-
-function parsePipeTableSteps(sectionText: string): StructuredProcedureStep[] {
-  return parseTableStepsFromRows(parsePipeTableRows(sectionText));
-}
-
-function parseFlexibleTableSteps(sectionText: string): StructuredProcedureStep[] {
-  const pipeSteps = parsePipeTableSteps(sectionText);
-  if (pipeSteps.length >= 2) return pipeSteps;
-  return parseTableStepsFromRows(parseDelimitedTableRows(sectionText));
 }
 
 function parseFlatStepBlocks(sectionText: string): StructuredProcedureStep[] {
@@ -709,18 +865,27 @@ function parseFlatStepBlocks(sectionText: string): StructuredProcedureStep[] {
 }
 
 function parseRoleTable(sectionText: string): StructuredProcedureRole[] {
-  const bestBlock = chooseBestTableBlock(parsePipeTableBlocks(sectionText), 1);
+  const bestBlock = parsePipeTableBlocks(sectionText)
+    .map(block => {
+      const header = block.rows[0]?.map(cell => normalizeHeaderCell(cell)) ?? [];
+      const hasRoleHeader = header.some(cell => cell.includes('rolle') || cell.includes('funktion') || cell.includes('gremium'));
+      const hasSystemHeader = header.some(cell => cell === 'system' || cell === 'systeme');
+      const score = (hasRoleHeader ? 50 : 0) + (hasSystemHeader ? 20 : 0) + Math.max(0, block.rows.length - 1) * 4;
+      return { block, header, hasRoleHeader, score };
+    })
+    .filter(item => item.hasRoleHeader)
+    .sort((a, b) => b.score - a.score)[0]?.block;
   if (!bestBlock || bestBlock.rows.length < 2) return [];
   const header = bestBlock.rows[0].map(cell => normalizeHeaderCell(cell));
-  if (!header.some(cell => cell.includes('rolle') || cell.includes('funktion') || cell.includes('gremium'))) return [];
 
   const nameIdx = header.findIndex(cell => cell.includes('rolle') || cell.includes('funktion') || cell.includes('gremium') || cell === 'name');
   const ownerIdx = header.findIndex(cell => cell.includes('owner') || cell.includes('inhaber') || cell.includes('leiter') || cell === 'system' || cell === 'systeme');
   const respIdx = header.findIndex(cell => cell.includes('aufgabe') || cell.includes('verantwort') || cell.includes('zuständig') || cell.includes('zustaendig'));
 
   const roles = bestBlock.rows.slice(1).map(row => ({
-    name: canonicalRoleLabel(cleanCell(nameIdx >= 0 ? row[nameIdx] : row[0])) ?? '',
-    owner: canonicalSystemLabels(cleanCell(ownerIdx >= 0 ? row[ownerIdx] : undefined)).join(' / ') || undefined,
+    name: preserveRoleLabel(cleanCell(nameIdx >= 0 ? row[nameIdx] : row[0])) ?? '',
+    owner: cleanCell(ownerIdx >= 0 ? row[ownerIdx] : undefined),
+    systems: preserveSystemLabels(cleanCell(ownerIdx >= 0 ? row[ownerIdx] : undefined)),
     responsibility: cleanCell(respIdx >= 0 ? row[respIdx] : undefined),
   })).filter(role => role.name.length > 1);
 
@@ -738,9 +903,9 @@ function parseRoles(sectionText: string): StructuredProcedureRole[] {
     if (/^\d+\.\s/.test(trimmed)) continue;
     const colonIdx = trimmed.indexOf(':');
     if (colonIdx > 0 && colonIdx < 50) {
-      roles.push({ name: canonicalRoleLabel(trimmed.slice(0, colonIdx).trim()) ?? trimmed.slice(0, colonIdx).trim(), responsibility: trimmed.slice(colonIdx + 1).trim() || undefined });
+      roles.push({ name: preserveRoleLabel(trimmed.slice(0, colonIdx).trim()) ?? trimmed.slice(0, colonIdx).trim(), responsibility: trimmed.slice(colonIdx + 1).trim() || undefined });
     } else if (trimmed.length < 80 && !isHeaderCell(trimmed)) {
-      roles.push({ name: canonicalRoleLabel(trimmed) ?? trimmed });
+      roles.push({ name: preserveRoleLabel(trimmed) ?? trimmed });
     }
   }
   return roles.filter((role, index, all) => all.findIndex(candidate => candidate.name.toLowerCase() === role.name.toLowerCase()) === index);
@@ -763,9 +928,10 @@ function parseFlatRoleRows(sectionText: string): StructuredProcedureRole[] {
     const [name, responsibility, maybeOwner] = cells;
     if (!name || /^rolle$/i.test(name)) break;
     roles.push({
-      name: canonicalRoleLabel(name) ?? name,
+      name: preserveRoleLabel(name) ?? name,
       responsibility: responsibility || undefined,
-      owner: maybeOwner && !/^systeme?$/i.test(maybeOwner) ? (canonicalSystemLabels(maybeOwner).join(' / ') || undefined) : undefined,
+      owner: maybeOwner && !/^systeme?$/i.test(maybeOwner) ? (cleanCell(maybeOwner) || undefined) : undefined,
+      systems: maybeOwner && !/^systeme?$/i.test(maybeOwner) ? preserveSystemLabels(maybeOwner) : undefined,
     });
     cursor += rowWidth;
   }
@@ -805,31 +971,19 @@ export function extractStructuredProcedureFromText(
 
   const warnings: string[] = [];
   const sections = splitSections(text);
-  const namedStepsSection = findNamedSection(text, [/standardablauf/i, /prozessablauf/i, /ablauf/i, /vorgehen/i], ['5', '4', '3']);
   const namedRolesSection = findNamedSection(text, [/rollen? und systeme/i, /^rollen?$/i, /verantwortlichkeiten/i], ['2']);
   const namedApprovalsSection = findNamedSection(text, [/entscheidungslogik/i, /entscheidungsregeln/i, /freigaberegeln/i, /entscheidungen/i], ['6', '4']);
-
-  const stepsSection = namedStepsSection?.body ?? sections.get('4') ?? sections.get('5') ?? sections.get('3') ?? '';
+  const stepsSource = chooseStructuredStepSection(text);
+  if (!stepsSource) return null;
   const rolesSection = namedRolesSection?.body ?? sections.get('2') ?? '';
   const approvalsSection = namedApprovalsSection?.body ?? sections.get('3') ?? sections.get('4') ?? '';
 
-  let steps: StructuredProcedureStep[] = [];
+  let steps = stepsSource.steps;
 
-  if (stepsSection) {
-    steps = parseFlexibleTableSteps(stepsSection);
-    if (!steps.length) {
-      steps = parseFlatStepBlocks(stepsSection);
-    }
-  }
-
-  if (!steps.length) {
-    steps = parseFlexibleTableSteps(text);
-    if (!steps.length) {
-      steps = parseFlatStepBlocks(text);
-    }
-    if (steps.length) {
-      warnings.push('Prozessschritte wurden nicht in Abschnitt 4 gefunden – ganztext-Fallback verwendet.');
-    }
+  if (stepsSource.wholeTextFallback) {
+    warnings.push('Prozessschritte wurden nicht in einem benannten Ablaufabschnitt gefunden – Ganztext-Fallback verwendet.');
+  } else if (stepsSource.sectionFallback) {
+    warnings.push('Benannter Ablaufabschnitt wurde nicht eindeutig erkannt – bestpassende strukturierte Ablaufquelle verwendet.');
   }
 
   const roles = [
@@ -841,10 +995,31 @@ export function extractStructuredProcedureFromText(
   steps = dedupeSteps(steps);
   if (!steps.length) return null;
 
+  const explicitSystems = uniqueCaseInsensitive([
+    ...roles.flatMap(role => role.systems ?? []),
+    ...steps.flatMap(step => [...(step.explicitSystems ?? []), ...(step.systems ?? [])]),
+  ]);
+  const structuredRecallLoss = steps.length < stepsSource.explicitStepCount;
+  if (structuredRecallLoss) {
+    warnings.push(`Structured-Recall-Verlust erkannt: ${steps.length} von ${stepsSource.explicitStepCount} expliziten Ablaufzeilen wurden übernommen.`);
+  }
+
   const approvals = parseApprovals(approvalsSection || text);
   const title = extractTitle(text);
 
-  return { title, steps, roles, approvals, warnings };
+  return {
+    title,
+    steps,
+    roles,
+    systems: explicitSystems,
+    approvals,
+    warnings,
+    explicitStructuredStepCount: stepsSource.explicitStepCount,
+    structuredSectionFallback: stepsSource.sectionFallback,
+    structuredWholeTextFallback: stepsSource.wholeTextFallback,
+    structuredTableDetected: stepsSource.tableDetected,
+    structuredRecallLoss,
+  };
 }
 
 export function buildAiCaptureFromStructuredProcedure(

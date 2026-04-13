@@ -1634,6 +1634,7 @@ function buildMixedDocumentDerivation(params: {
 function buildStructuredDerivation(params: {
   steps: StructuredProcedureStep[];
   roles: string[];
+  systems: string[];
   warnings: string[];
   title?: string;
   sourceName: string;
@@ -1643,10 +1644,16 @@ function buildStructuredDerivation(params: {
   documentKind?: ProcessDocumentType;
   domainContext?: { primary: DomainKey; secondary?: DomainKey };
   routingContext: SourceRoutingContext;
+  explicitStructuredStepCount?: number;
+  structuredSectionFallback?: boolean;
+  structuredWholeTextFallback?: boolean;
+  structuredTableDetected?: boolean;
+  structuredRecallLoss?: boolean;
 }): DerivationResult {
   const {
     steps,
     roles,
+    systems,
     warnings,
     title,
     sourceName,
@@ -1656,6 +1663,11 @@ function buildStructuredDerivation(params: {
     documentKind = 'procedure-document',
     domainContext,
     routingContext,
+    explicitStructuredStepCount,
+    structuredSectionFallback,
+    structuredWholeTextFallback,
+    structuredTableDetected,
+    structuredRecallLoss,
   } = params;
   const sourceProfile = buildSourceExtractionPlan(rawText).profile;
   const sourceProfileNote = buildSourceProfileNote(sourceProfile);
@@ -1687,9 +1699,15 @@ function buildStructuredDerivation(params: {
     confidence,
     stepLabels: structuredArtifacts.derivedSteps.map(step => step.label),
     roles: uniqueStrings([...roles, ...structuredArtifacts.roles]),
-    systems: structuredArtifacts.systems,
+    systems: uniqueStrings([...systems, ...structuredArtifacts.systems]),
     issueSignals,
-    structuredPreserveApplied: true,
+    structuredPreserveApplied: !structuredRecallLoss,
+    explicitStructuredStepCount,
+    preservedStructuredStepCount: structuredArtifacts.derivedSteps.length,
+    structuredSectionFallback,
+    structuredWholeTextFallback,
+    structuredTableDetected,
+    structuredRecallLoss,
     documentSummary: `${buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind })} ${sourceProfileNote}`.trim(),
     sourceProfile,
     routingContext,
@@ -1708,7 +1726,7 @@ function buildStructuredDerivation(params: {
     confidence,
     derivedSteps: structuredArtifacts.derivedSteps,
     roles: uniqueStrings([...roles, ...structuredArtifacts.roles]),
-    systems: structuredArtifacts.systems,
+    systems: uniqueStrings([...systems, ...structuredArtifacts.systems]),
     issueSignals,
     summary,
     routingContext,
@@ -1996,22 +2014,28 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       .map(observation => observation.originalStepLabel ?? observation.label),
   );
   const provisionalRoles = uniqueStrings(
-    gatedObservations.flatMap(observation => {
-      if (observation.kind !== 'step') return [];
-      const roleLabels = observation.roles ?? (observation.role ? [observation.role] : []);
-      return preserveStructuredSteps && observation.stepWasPreserved
-        ? roleLabels
-        : roleLabels.map(label => (label ? rolePreferredValue(label) : undefined));
-    }),
+    [
+      ...gatedObservations.flatMap(observation => {
+        if (observation.kind !== 'step') return [];
+        const roleLabels = observation.roles ?? (observation.role ? [observation.role] : []);
+        return preserveStructuredSteps && observation.stepWasPreserved
+          ? roleLabels
+          : roleLabels.map(label => (label ? rolePreferredValue(label) : undefined));
+      }),
+      ...(preserveStructuredSteps ? result.summary.roles : []),
+    ],
   );
   const provisionalSystems = uniqueStrings(
-    gatedObservations.flatMap(observation => {
-      if (observation.kind !== 'step') return [];
-      const systemLabels = observation.systems ?? (observation.system ? [observation.system] : []);
-      return preserveStructuredSteps && observation.stepWasPreserved
-        ? systemLabels
-        : systemLabels.map(label => (label ? systemPreferredValue(label) : undefined));
-    }),
+    [
+      ...gatedObservations.flatMap(observation => {
+        if (observation.kind !== 'step') return [];
+        const systemLabels = observation.systems ?? (observation.system ? [observation.system] : []);
+        return preserveStructuredSteps && observation.stepWasPreserved
+          ? systemLabels
+          : systemLabels.map(label => (label ? systemPreferredValue(label) : undefined));
+      }),
+      ...(preserveStructuredSteps ? (result.summary.systems ?? []) : []),
+    ],
   );
   const domainIsolation = detectDomainIsolation({
     text: rawText,
@@ -2120,15 +2144,33 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     (observation): observation is ProcessMiningObservation => observation.kind === 'step',
   );
   const stepLabels = uniqueStrings(stepObservations.map(observation => observation.originalStepLabel ?? observation.label));
-  const roles = uniqueStrings(
-    stepObservations.flatMap(observation => observation.roles ?? (observation.role ? [observation.role] : [])),
-  );
-  const systems = uniqueStrings(
-    stepObservations.flatMap(observation => observation.systems ?? (observation.system ? [observation.system] : [])),
-  );
+  const roles = uniqueStrings([
+    ...stepObservations.flatMap(observation => observation.roles ?? (observation.role ? [observation.role] : [])),
+    ...(preserveStructuredSteps ? result.summary.roles : []),
+  ]);
+  const systems = uniqueStrings([
+    ...stepObservations.flatMap(observation => observation.systems ?? (observation.system ? [observation.system] : [])),
+    ...(preserveStructuredSteps ? (result.summary.systems ?? []) : []),
+  ]);
   const issueSignals = uniqueStrings(keptIssueEvidence.map(entry => entry.label));
   const droppedRoleLabels = provisionalRoles.filter(label => label && !includesNormalizedValue(roles, label));
   const droppedSystemLabels = provisionalSystems.filter(label => label && !includesNormalizedValue(systems, label));
+  const explicitStructuredStepCount = preserveStructuredSteps
+    ? result.summary.explicitStructuredStepCount
+    : undefined;
+  const preservedStructuredStepCount = preserveStructuredSteps
+    ? stepObservations.length
+    : undefined;
+  const structuredRecallLoss = Boolean(
+    result.summary.structuredRecallLoss
+    || (
+      preserveStructuredSteps
+      && explicitStructuredStepCount
+      && preservedStructuredStepCount !== undefined
+      && preservedStructuredStepCount < explicitStructuredStepCount
+    ),
+  );
+  const structuredPreserveApplied = Boolean(preserveStructuredSteps && !structuredRecallLoss);
   const domainNotes = uniqueStrings([
     domainIsolation.note,
     droppedLabels.length > 0 ? `Fachfremde Signale ausgeblendet: ${droppedLabels.join(', ')}.` : undefined,
@@ -2142,7 +2184,7 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
         ? `Nur inferierte, domänenfremde Systeme wurden als Sekundärhinweis unterdrückt: ${droppedSystemLabels.join(', ')}.`
         : `Domänenfremde Systeme ausgeblendet: ${droppedSystemLabels.join(', ')}.`
       : undefined,
-    preserveStructuredSteps
+    structuredPreserveApplied
       ? 'Structured-Preserve aktiv: Explizite strukturierte Rollen- und Systemevidenz bleibt trotz Domain-Gate erhalten.'
       : undefined,
   ]);
@@ -2167,13 +2209,13 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
           ...(result.summary.sourceProfile.classificationReasons ?? []),
           ...(domainIsolation.note ? [domainIsolation.note] : []),
           droppedLabels.length > 0 ? 'Fachfremde Signalsätze werden nur bei starker Evidenz übernommen.' : undefined,
-          preserveStructuredSteps
+          structuredPreserveApplied
             ? 'Structured-Preserve behandelt Originalstruktur als Primärwahrheit; Normalisierung, Repair und Domain-Gate bleiben Hilfsschichten.'
             : undefined,
-          preserveStructuredSteps && droppedRoleLabels.length > 0
+          structuredPreserveApplied && droppedRoleLabels.length > 0
             ? 'Explizite strukturierte Rollen bleiben erhalten; nur inferierte Zusatzrollen werden domänensensitiv unterdrückt.'
             : undefined,
-          preserveStructuredSteps && droppedSystemLabels.length > 0
+          structuredPreserveApplied && droppedSystemLabels.length > 0
             ? 'Explizite strukturierte Systeme bleiben erhalten; nur inferierte Zusatzsysteme werden domänensensitiv unterdrückt.'
             : undefined,
         ]),
@@ -2194,10 +2236,14 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
   const conservativeWarning = forceConservative
     ? 'Konservative Auswertung aktiv: Datenbasis ist schwach, daher werden Ergebnisse nur als vorläufiger Prozessentwurf ausgewiesen.'
     : undefined;
+  const structuredRecallWarning = structuredRecallLoss
+    ? `Structured-Recall-Verlust: ${preservedStructuredStepCount} von ${explicitStructuredStepCount} expliziten Structured-Schritten blieben final erhalten.`
+    : undefined;
   const finalWarnings = uniqueStrings([
     ...result.warnings,
     ...result.summary.warnings,
     conservativeWarning,
+    structuredRecallWarning,
   ]);
   const documentSummary = uniqueStrings([
     result.summary.documentSummary ?? '',
@@ -2205,7 +2251,7 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
   ]).join(' ').trim();
   const finalDocumentSummary = [
     forceConservative ? 'Vorläufiger Prozessentwurf mit erhöhter Unsicherheit.' : undefined,
-    preserveStructuredSteps
+    structuredPreserveApplied
       ? 'Structured-Preserve aktiv: Quellschritte, explizite Rollen und explizite Systeme bleiben Primärwahrheit.'
       : undefined,
     documentSummary,
@@ -2316,7 +2362,13 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       systems,
       issueSignals,
       issueEvidence: keptIssueEvidence,
-      structuredPreserveApplied: preserveStructuredSteps,
+      structuredPreserveApplied,
+      explicitStructuredStepCount,
+      preservedStructuredStepCount,
+      structuredSectionFallback: result.summary.structuredSectionFallback,
+      structuredWholeTextFallback: result.summary.structuredWholeTextFallback,
+      structuredTableDetected: result.summary.structuredTableDetected,
+      structuredRecallLoss,
       documentSummary: finalDocumentSummary,
       routingContext: result.routingContext,
       extractionCandidates: finalizedCandidateList,
@@ -2434,7 +2486,14 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       if (structured && structured.steps.length >= MIN_USEFUL_STEPS) {
         return finalizeDerivationResult(buildStructuredDerivation({
           steps: structured.steps,
-          roles: uniqueStrings([...structured.roles.map(role => role.name), ...structured.steps.map(step => step.responsible)]),
+          roles: uniqueStrings([
+            ...structured.roles.map(role => role.name),
+            ...structured.steps.flatMap(step => [...(step.roles ?? []), step.responsible]),
+          ]),
+          systems: uniqueStrings([
+            ...structured.systems,
+            ...structured.steps.flatMap(step => [...(step.explicitSystems ?? []), ...(step.systems ?? []), step.system]),
+          ]),
           warnings: uniqueStrings([...structured.warnings, ...warnings]),
           title: structured.title,
           sourceName,
@@ -2446,6 +2505,11 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
             : 'procedure-document',
           domainContext,
           routingContext,
+          explicitStructuredStepCount: structured.explicitStructuredStepCount,
+          structuredSectionFallback: structured.structuredSectionFallback,
+          structuredWholeTextFallback: structured.structuredWholeTextFallback,
+          structuredTableDetected: structured.structuredTableDetected,
+          structuredRecallLoss: structured.structuredRecallLoss,
         }));
       }
     }

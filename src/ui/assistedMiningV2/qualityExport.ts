@@ -133,6 +133,12 @@ export interface ProcessMiningQualityExportFile {
       }>;
       structuredPreserve?: {
         applied: boolean;
+        explicitStructuredStepCount?: number;
+        preservedStructuredStepCount?: number;
+        structuredSectionFallback?: boolean;
+        structuredWholeTextFallback?: boolean;
+        structuredTableDetected?: boolean;
+        structuredRecallLoss?: boolean;
         preservedSteps: Array<{
           label: string;
           originalStepLabel?: string;
@@ -672,7 +678,16 @@ export function buildQualityExportFile(params: {
                 evidenceAnchor: candidate.evidenceAnchor,
               })),
             structuredPreserve: {
-              applied: Boolean(lastSummary.structuredPreserveApplied || preservedSteps.length > 0),
+              applied: Boolean(
+                lastSummary.structuredPreserveApplied
+                ?? (preservedSteps.length > 0 && !lastSummary.structuredRecallLoss),
+              ),
+              explicitStructuredStepCount: lastSummary.explicitStructuredStepCount,
+              preservedStructuredStepCount: lastSummary.preservedStructuredStepCount ?? preservedSteps.length,
+              structuredSectionFallback: lastSummary.structuredSectionFallback,
+              structuredWholeTextFallback: lastSummary.structuredWholeTextFallback,
+              structuredTableDetected: lastSummary.structuredTableDetected,
+              structuredRecallLoss: lastSummary.structuredRecallLoss,
               preservedSteps,
             },
           }
