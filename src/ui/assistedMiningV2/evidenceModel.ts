@@ -1,4 +1,5 @@
 import type {
+  EntityEvidenceOrigin,
   ExtractionCandidate,
   ExtractionCandidateReview,
   ExtractionSupportClass,
@@ -134,8 +135,14 @@ export function createStepCandidate(params: {
   canonicalStepFamily?: string;
   stepWasPreserved?: boolean;
   mergeSkippedBecauseStructured?: boolean;
+  primaryRole?: string;
+  primarySystem?: string;
   explicitRoles?: string[];
   explicitSystems?: string[];
+  inferredRoles?: string[];
+  inferredSystems?: string[];
+  supportOnlyRoles?: string[];
+  supportOnlySystems?: string[];
   suppressedInferredRoles?: string[];
   suppressedInferredSystems?: string[];
   domainAligned?: boolean;
@@ -168,8 +175,14 @@ export function createStepCandidate(params: {
     canonicalStepFamily,
     stepWasPreserved: params.stepWasPreserved,
     mergeSkippedBecauseStructured: params.mergeSkippedBecauseStructured,
+    primaryRole: params.primaryRole,
+    primarySystem: params.primarySystem,
     explicitRoles: params.explicitRoles,
     explicitSystems: params.explicitSystems,
+    inferredRoles: params.inferredRoles,
+    inferredSystems: params.inferredSystems,
+    supportOnlyRoles: params.supportOnlyRoles,
+    supportOnlySystems: params.supportOnlySystems,
     suppressedInferredRoles: params.suppressedInferredRoles,
     suppressedInferredSystems: params.suppressedInferredSystems,
     domainAligned: params.domainAligned,
@@ -189,6 +202,7 @@ export function createStepCandidate(params: {
 function createLinkedCandidates(params: {
   type: 'role' | 'system';
   labels: string[];
+  evidenceOrigin: EntityEvidenceOrigin;
   evidenceAnchor: string;
   contextWindow: string;
   confidence?: ExtractionCandidate['confidence'];
@@ -207,6 +221,7 @@ function createLinkedCandidates(params: {
     candidateType: params.type,
     rawLabel: label,
     normalizedLabel: sentenceCase(label),
+    evidenceOrigin: params.evidenceOrigin,
     evidenceAnchor: trimEvidence(params.evidenceAnchor),
     contextWindow: trimEvidence(params.contextWindow),
     confidence: params.confidence ?? 'medium',
@@ -346,17 +361,23 @@ export function createObservationFromStepCandidate(params: {
   sequenceIndex: number;
   role?: string;
   system?: string;
+  primaryRole?: string;
+  primarySystem?: string;
   roles?: string[];
   systems?: string[];
   explicitRoles?: string[];
   explicitSystems?: string[];
+  inferredRoles?: string[];
+  inferredSystems?: string[];
+  supportOnlyRoles?: string[];
+  supportOnlySystems?: string[];
   timestampRaw?: string;
   timestampIso?: string;
   timestampQuality?: ProcessMiningObservation['timestampQuality'];
 }): ProcessMiningObservation {
   const preserveStructured = Boolean(params.candidate.stepWasPreserved);
-  const primaryRole = params.role ?? params.roles?.[0];
-  const primarySystem = params.system ?? params.systems?.[0];
+  const primaryRole = params.primaryRole ?? params.role ?? params.roles?.[0];
+  const primarySystem = params.primarySystem ?? params.system ?? params.systems?.[0];
   const roles = params.roles
     ? uniqueStrings(params.roles)
     : primaryRole
@@ -394,10 +415,20 @@ export function createObservationFromStepCandidate(params: {
     canonicalStepFamily: params.candidate.canonicalStepFamily,
     stepWasPreserved: params.candidate.stepWasPreserved,
     mergeSkippedBecauseStructured: params.candidate.mergeSkippedBecauseStructured,
+    primaryRole: primaryRole
+      ? (preserveStructured ? primaryRole : rolePreferredValue(primaryRole))
+      : undefined,
+    primarySystem: primarySystem
+      ? (preserveStructured ? primarySystem : systemPreferredValue(primarySystem))
+      : undefined,
     roles: roles.length > 0 ? roles : undefined,
     systems: systems.length > 0 ? systems : undefined,
     explicitRoles: params.explicitRoles ?? params.candidate.explicitRoles,
     explicitSystems: params.explicitSystems ?? params.candidate.explicitSystems,
+    inferredRoles: params.inferredRoles ?? params.candidate.inferredRoles,
+    inferredSystems: params.inferredSystems ?? params.candidate.inferredSystems,
+    supportOnlyRoles: params.supportOnlyRoles ?? params.candidate.supportOnlyRoles,
+    supportOnlySystems: params.supportOnlySystems ?? params.candidate.supportOnlySystems,
     suppressedInferredRoles: params.candidate.suppressedInferredRoles,
     suppressedInferredSystems: params.candidate.suppressedInferredSystems,
     domainAligned: params.candidate.domainAligned,

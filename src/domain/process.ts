@@ -544,6 +544,7 @@ export interface SourceRoutingContext {
 
 export type ExtractionCandidateType = 'step' | 'role' | 'system' | 'signal' | 'support';
 export type ExtractionCandidateStatus = 'candidate' | 'merged' | 'support-only' | 'rejected';
+export type EntityEvidenceOrigin = 'explicit' | 'inferred' | 'support-only' | 'suppressed';
 export type ExtractionSupportClass =
   | 'core-step'
   | 'support-evidence'
@@ -579,10 +580,17 @@ export interface ExtractionCandidate {
   canonicalStepFamily?: string;
   stepWasPreserved?: boolean;
   mergeSkippedBecauseStructured?: boolean;
+  primaryRole?: string;
+  primarySystem?: string;
   explicitRoles?: string[];
   explicitSystems?: string[];
+  inferredRoles?: string[];
+  inferredSystems?: string[];
+  supportOnlyRoles?: string[];
+  supportOnlySystems?: string[];
   suppressedInferredRoles?: string[];
   suppressedInferredSystems?: string[];
+  evidenceOrigin?: EntityEvidenceOrigin;
   domainAligned?: boolean;
   secondaryDomainHint?: string;
   evidenceAnchor: string;
@@ -654,10 +662,16 @@ export interface ProcessMiningObservation {
   sourceFragmentType?: ExtractionCandidate['sourceFragmentType'];
   role?: string;
   system?: string;
+  primaryRole?: string;
+  primarySystem?: string;
   roles?: string[];
   systems?: string[];
   explicitRoles?: string[];
   explicitSystems?: string[];
+  inferredRoles?: string[];
+  inferredSystems?: string[];
+  supportOnlyRoles?: string[];
+  supportOnlySystems?: string[];
   suppressedInferredRoles?: string[];
   suppressedInferredSystems?: string[];
   domainAligned?: boolean;

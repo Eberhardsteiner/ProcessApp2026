@@ -127,6 +127,7 @@ export interface ProcessMiningQualityExportFile {
         candidateType: string;
         normalizedLabel: string;
         status: string;
+        evidenceOrigin?: string;
         rejectionReason?: string;
         downgradeReason?: string;
         evidenceAnchor: string;
@@ -141,16 +142,32 @@ export interface ProcessMiningQualityExportFile {
         explicitRoleTableDetected?: boolean;
         explicitSystemCount?: number;
         structuredRecallLoss?: boolean;
+        finalRoles?: string[];
+        finalSystems?: string[];
         explicitRoles?: string[];
         explicitSystems?: string[];
+        inferredRoles?: string[];
+        inferredSystems?: string[];
+        supportOnlyRoles?: string[];
+        supportOnlySystems?: string[];
+        suppressedRoles?: string[];
+        suppressedSystems?: string[];
         preservedSteps: Array<{
           label: string;
           originalStepLabel?: string;
           canonicalStepFamily?: string;
           stepWasPreserved?: boolean;
           mergeSkippedBecauseStructured?: boolean;
+          primaryRole?: string;
+          primarySystem?: string;
+          roles?: string[];
+          systems?: string[];
           explicitRoles?: string[];
           explicitSystems?: string[];
+          inferredRoles?: string[];
+          inferredSystems?: string[];
+          supportOnlyRoles?: string[];
+          supportOnlySystems?: string[];
           suppressedInferredRoles?: string[];
           suppressedInferredSystems?: string[];
         }>;
@@ -486,9 +503,9 @@ export function buildQualityExportFile(params: {
   const evidenceBackedSteps = state.qualitySummary?.stepObservationsWithEvidence
     ?? stepObservations.filter(step => Boolean(normalizeWhitespace(step.evidenceSnippet ?? ''))).length;
   const roleBackedSteps = state.qualitySummary?.stepObservationsWithRole
-    ?? stepObservations.filter(step => Boolean(normalizeWhitespace(step.role ?? ''))).length;
+    ?? stepObservations.filter(step => Boolean(normalizeWhitespace(step.primaryRole ?? step.role ?? '')) || Boolean(step.roles?.length)).length;
   const systemBackedSteps = state.qualitySummary?.stepObservationsWithSystem
-    ?? stepObservations.filter(step => Boolean(normalizeWhitespace(step.system ?? ''))).length;
+    ?? stepObservations.filter(step => Boolean(normalizeWhitespace(step.primarySystem ?? step.system ?? '')) || Boolean(step.systems?.length)).length;
   const scoringWeights = qualityBundle.scoringProfile.dimensionWeights.reduce<Record<string, number>>((acc, item) => {
     acc[item.key] = item.weight;
     return acc;
@@ -521,8 +538,16 @@ export function buildQualityExportFile(params: {
       canonicalStepFamily: step.canonicalStepFamily,
       stepWasPreserved: step.stepWasPreserved,
       mergeSkippedBecauseStructured: step.mergeSkippedBecauseStructured,
+      primaryRole: step.primaryRole ?? step.role,
+      primarySystem: step.primarySystem ?? step.system,
+      roles: step.roles,
+      systems: step.systems,
       explicitRoles: step.explicitRoles,
       explicitSystems: step.explicitSystems,
+      inferredRoles: step.inferredRoles,
+      inferredSystems: step.inferredSystems,
+      supportOnlyRoles: step.supportOnlyRoles,
+      supportOnlySystems: step.supportOnlySystems,
       suppressedInferredRoles: step.suppressedInferredRoles,
       suppressedInferredSystems: step.suppressedInferredSystems,
     }));
@@ -534,6 +559,14 @@ export function buildQualityExportFile(params: {
     ...preservedSteps.flatMap(step => step.explicitSystems ?? []),
     ...((lastSummary?.explicitSystemCount ?? 0) > 0 ? (lastSummary?.systems ?? []) : []),
   ]);
+  const inferredStructuredRoles = uniqueStrings(preservedSteps.flatMap(step => step.inferredRoles ?? []));
+  const inferredStructuredSystems = uniqueStrings(preservedSteps.flatMap(step => step.inferredSystems ?? []));
+  const supportOnlyStructuredRoles = uniqueStrings(preservedSteps.flatMap(step => step.supportOnlyRoles ?? []));
+  const supportOnlyStructuredSystems = uniqueStrings(preservedSteps.flatMap(step => step.supportOnlySystems ?? []));
+  const suppressedStructuredRoles = uniqueStrings(preservedSteps.flatMap(step => step.suppressedInferredRoles ?? []));
+  const suppressedStructuredSystems = uniqueStrings(preservedSteps.flatMap(step => step.suppressedInferredSystems ?? []));
+  const finalStructuredRoles = uniqueStrings(preservedSteps.flatMap(step => step.roles ?? []));
+  const finalStructuredSystems = uniqueStrings(preservedSteps.flatMap(step => step.systems ?? []));
 
   return {
     schemaVersion: 'pm-analysis-quality-export-v2',
@@ -685,6 +718,7 @@ export function buildQualityExportFile(params: {
                 candidateType: candidate.candidateType,
                 normalizedLabel: candidate.normalizedLabel,
                 status: candidate.status,
+                evidenceOrigin: candidate.evidenceOrigin,
                 rejectionReason: candidate.rejectionReason,
                 downgradeReason: candidate.downgradeReason,
                 evidenceAnchor: candidate.evidenceAnchor,
@@ -702,8 +736,16 @@ export function buildQualityExportFile(params: {
               explicitRoleTableDetected: lastSummary.explicitRoleTableDetected,
               explicitSystemCount: lastSummary.explicitSystemCount,
               structuredRecallLoss: lastSummary.structuredRecallLoss,
+              finalRoles: finalStructuredRoles,
+              finalSystems: finalStructuredSystems,
               explicitRoles: explicitStructuredRoles,
               explicitSystems: explicitStructuredSystems,
+              inferredRoles: inferredStructuredRoles,
+              inferredSystems: inferredStructuredSystems,
+              supportOnlyRoles: supportOnlyStructuredRoles,
+              supportOnlySystems: supportOnlyStructuredSystems,
+              suppressedRoles: suppressedStructuredRoles,
+              suppressedSystems: suppressedStructuredSystems,
               preservedSteps,
             },
           }

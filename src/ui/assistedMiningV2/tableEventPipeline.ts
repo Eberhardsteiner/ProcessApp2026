@@ -123,6 +123,7 @@ export function runTableEventPipeline(params: {
       extractionCandidates.push(stepCandidate);
       extractionCandidates.push(...createRoleCandidates({
         labels: uniqueStrings([event.role ?? '', event.resource ?? '']),
+        evidenceOrigin: 'explicit',
         evidenceAnchor: event.rowEvidenceAnchor,
         contextWindow,
         confidence: confidenceFromScore(event.confidence),
@@ -134,6 +135,7 @@ export function runTableEventPipeline(params: {
       }));
       extractionCandidates.push(...createSystemCandidates({
         labels: event.system ? [event.system] : [],
+        evidenceOrigin: 'explicit',
         evidenceAnchor: event.rowEvidenceAnchor,
         contextWindow,
         confidence: confidenceFromScore(event.confidence),
