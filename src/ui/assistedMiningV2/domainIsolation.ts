@@ -129,6 +129,14 @@ function countPatternHits(text: string, patterns: RegExp[]): number {
   return patterns.reduce((sum, pattern) => (pattern.test(normalized) ? sum + 1 : sum), 0);
 }
 
+function countEntityHits(params: {
+  available: Set<string>;
+  allowed: string[];
+  genericLabels: Set<string>;
+}): number {
+  return params.allowed.filter(label => !params.genericLabels.has(label) && params.available.has(label)).length;
+}
+
 function buildScoreBoard(params: {
   text: string;
   stepLabels: string[];
@@ -142,12 +150,17 @@ function buildScoreBoard(params: {
   const systemSet = new Set(params.systems ?? []);
 
   const scores = Object.entries(DOMAIN_SPECS).map(([key, spec]) => {
+    const textHits = countPatternHits(params.text, spec.scorePatterns);
+    const stepHits = countPatternHits(stepText, spec.scorePatterns);
+    const fileHintHits = countPatternHits(params.fileHints ?? '', spec.scorePatterns);
     let score = 0;
-    score += countPatternHits(params.text, spec.scorePatterns) * 4;
-    score += countPatternHits(stepText, spec.scorePatterns) * 3;
-    score += countPatternHits(params.fileHints ?? '', spec.scorePatterns);
-    score += spec.roleLabels.filter(label => roleSet.has(label)).length * 2;
-    score += spec.systemLabels.filter(label => systemSet.has(label)).length * 2;
+    score += textHits * 4;
+    score += stepHits * 3;
+    score += fileHintHits;
+    if (textHits + stepHits + fileHintHits > 0) {
+      score += countEntityHits({ available: roleSet, allowed: spec.roleLabels, genericLabels: GENERIC_ROLE_LABELS }) * 2;
+      score += countEntityHits({ available: systemSet, allowed: spec.systemLabels, genericLabels: GENERIC_SYSTEM_LABELS }) * 2;
+    }
     if (params.sourceProfile?.documentClass === 'mixed-document' && key === 'mixed') {
       score += 2;
     }

@@ -1,3 +1,10 @@
+## v0.44.1 – Phase-2 Restfix für Mehrfachwerte und Summary-Konsistenz
+
+- Workspace-Hardening behält Mehrfachrollen, Mehrfachsysteme und Structured-Preserve-Metadaten in finalen Beobachtungen jetzt auch nach State-Härtung und Reload
+- Discovery nutzt im Structured-Pfad preserved Originalschritte als Hauptlinie statt generischer Familienlabels
+- Export spiegelt aktuelle Discovery-Ergebnisse sowie finale Rollen-/Systemmengen robuster wider und lässt `preservedSteps`, `finalRoles` und `finalSystems` nicht mehr unnötig leer laufen
+- Domänenheuristik behandelt generische Rollen-/Systemüberschneidungen defensiver, damit kleine Structured-Micro-Gates nicht fachfremd kippen
+
 ## v0.44.0 – Structured-Preserve Baseline und Multivalue-Erhalt
 
 - Baseline-Version nach fachlich bestandenem Structured-Preserve-Fix auf `v0.44.0` angehoben

@@ -10,6 +10,7 @@ import { APP_SEMVER, APP_VERSION_LABEL } from '../../config/release';
 import type { WorkspaceIntegrityReport } from './workspaceIntegrity';
 import { computeMiningReadiness } from './analysisReadiness';
 import { computeDataMaturity } from './dataMaturity';
+import { computeV2Discovery } from './discovery';
 import { buildReviewOverview } from './reviewSuggestions';
 import { buildVerifiedAnalysisFacts, normalizeWhitespace, uniqueStrings } from './pmShared';
 import {
@@ -499,6 +500,31 @@ export function buildQualityExportFile(params: {
   const lastSummary = state.lastDerivationSummary;
   const happyPath = version.sidecar.captureDraft?.happyPath ?? [];
   const stepObservations = getStepObservations(state);
+  const liveDiscovery = stepObservations.length > 0
+    ? computeV2Discovery({
+        cases: state.cases,
+        observations: state.observations,
+        lastDerivationSummary: lastSummary,
+      })
+    : undefined;
+  const effectiveDiscoverySummary = liveDiscovery
+    ? {
+        caseCount: liveDiscovery.totalCases,
+        variantCount: liveDiscovery.variants.length,
+        mainVariantShare: liveDiscovery.coreProcessCaseCoverage,
+        topSteps: liveDiscovery.coreProcess,
+        analysisMode: liveDiscovery.analysisMode,
+        sampleNotice: liveDiscovery.sampleNotice,
+        notes: state.discoverySummary?.notes,
+        updatedAt: liveDiscovery.computedAt,
+      }
+    : state.discoverySummary;
+  const exportState = effectiveDiscoverySummary
+    ? {
+        ...state,
+        discoverySummary: effectiveDiscoverySummary,
+      }
+    : state;
   const issueCount = getIssueCount(state);
   const evidenceBackedSteps = state.qualitySummary?.stepObservationsWithEvidence
     ?? stepObservations.filter(step => Boolean(normalizeWhitespace(step.evidenceSnippet ?? ''))).length;
@@ -533,15 +559,15 @@ export function buildQualityExportFile(params: {
   const preservedSteps = stepObservations
     .filter(step => Boolean(step.stepWasPreserved || step.originalStepLabel || step.explicitRoles?.length || step.explicitSystems?.length))
     .map(step => ({
-      label: step.label,
+      label: step.originalStepLabel ?? step.label,
       originalStepLabel: step.originalStepLabel,
       canonicalStepFamily: step.canonicalStepFamily,
       stepWasPreserved: step.stepWasPreserved,
       mergeSkippedBecauseStructured: step.mergeSkippedBecauseStructured,
       primaryRole: step.primaryRole ?? step.role,
       primarySystem: step.primarySystem ?? step.system,
-      roles: step.roles,
-      systems: step.systems,
+      roles: step.roles ?? (step.role ? [step.role] : undefined),
+      systems: step.systems ?? (step.system ? [step.system] : undefined),
       explicitRoles: step.explicitRoles,
       explicitSystems: step.explicitSystems,
       inferredRoles: step.inferredRoles,
@@ -565,8 +591,8 @@ export function buildQualityExportFile(params: {
   const supportOnlyStructuredSystems = uniqueStrings(preservedSteps.flatMap(step => step.supportOnlySystems ?? []));
   const suppressedStructuredRoles = uniqueStrings(preservedSteps.flatMap(step => step.suppressedInferredRoles ?? []));
   const suppressedStructuredSystems = uniqueStrings(preservedSteps.flatMap(step => step.suppressedInferredSystems ?? []));
-  const finalStructuredRoles = uniqueStrings(preservedSteps.flatMap(step => step.roles ?? []));
-  const finalStructuredSystems = uniqueStrings(preservedSteps.flatMap(step => step.systems ?? []));
+  const finalStructuredRoles = uniqueStrings(preservedSteps.flatMap(step => step.roles ?? step.explicitRoles ?? (step.primaryRole ? [step.primaryRole] : [])));
+  const finalStructuredSystems = uniqueStrings(preservedSteps.flatMap(step => step.systems ?? step.explicitSystems ?? (step.primarySystem ? [step.primarySystem] : [])));
 
   return {
     schemaVersion: 'pm-analysis-quality-export-v2',
@@ -750,7 +776,7 @@ export function buildQualityExportFile(params: {
             },
           }
         : undefined,
-      discoverySummary: state.discoverySummary,
+      discoverySummary: effectiveDiscoverySummary,
       conformanceSummary: state.conformanceSummary,
       enhancementSummary: state.enhancementSummary,
       reportSnapshot: state.reportSnapshot,
@@ -770,8 +796,8 @@ export function buildQualityExportFile(params: {
       },
     },
     sourceMaterial: {
-      cases: state.cases,
-      observations: state.observations,
+      cases: exportState.cases,
+      observations: exportState.observations,
       supportSignals: lastSummary?.issueEvidence ?? [],
       extractionCandidates: lastSummary?.extractionCandidates ?? [],
       candidateReview: lastSummary?.candidateReview,
@@ -790,7 +816,7 @@ export function buildQualityExportFile(params: {
     workspaceArtifacts: {
       augmentationNotes: state.augmentationNotes,
     },
-    rawWorkspaceState: state,
+    rawWorkspaceState: exportState,
   };
 }
 

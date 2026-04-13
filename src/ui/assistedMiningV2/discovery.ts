@@ -8,8 +8,10 @@ import {
   buildAnalysisModeNotice,
   detectProcessMiningAnalysisMode,
   getCaseIdsFromObservations,
+  normalizeLabel,
+  normalizeWhitespace,
 } from './pmShared';
-import { canonicalizeProcessStepLabel, canonicalizeStepSequence, stepSemanticKey } from './semanticStepFamilies';
+import { canonicalizeProcessStepLabel, stepSemanticKey } from './semanticStepFamilies';
 
 export interface V2Variant {
   id: string;
@@ -41,35 +43,68 @@ export interface V2DiscoveryResult {
   computedAt: string;
 }
 
+interface DiscoverySequenceEntry {
+  label: string;
+  key: string;
+}
+
 function getStepObservations(observations: ProcessMiningObservation[]): ProcessMiningObservation[] {
   return observations.filter(observation => observation.kind === 'step');
 }
 
-function getSequenceForCase(caseId: string, observations: ProcessMiningObservation[]): string[] {
+function getDiscoveryLabel(observation: ProcessMiningObservation, index: number): string {
+  const preservedLabel = normalizeWhitespace(observation.originalStepLabel ?? observation.label);
+  if (observation.stepWasPreserved && preservedLabel) {
+    return preservedLabel;
+  }
+  return canonicalizeProcessStepLabel({
+    title: observation.label,
+    body: observation.evidenceSnippet,
+    fallback: observation.label,
+    index,
+  });
+}
+
+function getDiscoveryKey(observation: ProcessMiningObservation, label: string): string {
+  if (observation.stepWasPreserved) {
+    return `structured:${normalizeLabel(observation.originalStepLabel ?? label)}`;
+  }
+  return stepSemanticKey(label);
+}
+
+function getSequenceForCase(caseId: string, observations: ProcessMiningObservation[]): DiscoverySequenceEntry[] {
   const labels = observations
     .filter(observation => observation.sourceCaseId === caseId)
     .sort((a, b) => a.sequenceIndex - b.sequenceIndex)
-    .map((observation, index) =>
-      canonicalizeProcessStepLabel({
-        title: observation.label,
-        body: observation.evidenceSnippet,
-        fallback: observation.label,
-        index,
-      }),
-    )
-    .filter(Boolean);
-  return canonicalizeStepSequence(labels);
+    .map((observation, index) => {
+      const label = getDiscoveryLabel(observation, index);
+      return {
+        label,
+        key: getDiscoveryKey(observation, label),
+      };
+    })
+    .filter(entry => Boolean(entry.label));
+
+  const deduped: DiscoverySequenceEntry[] = [];
+  let lastKey: string | null = null;
+  for (const entry of labels) {
+    if (entry.key === lastKey) continue;
+    deduped.push(entry);
+    lastKey = entry.key;
+  }
+  return deduped;
 }
 
-function detectLoops(sequence: string[]): string[] {
+function detectLoops(sequence: DiscoverySequenceEntry[]): DiscoverySequenceEntry[] {
   const seen = new Set<string>();
-  const repeated = new Set<string>();
+  const repeated = new Map<string, DiscoverySequenceEntry>();
   for (const step of sequence) {
-    const key = stepSemanticKey(step);
-    if (seen.has(key)) repeated.add(step);
-    seen.add(key);
+    if (seen.has(step.key) && !repeated.has(step.key)) {
+      repeated.set(step.key, step);
+    }
+    seen.add(step.key);
   }
-  return Array.from(repeated);
+  return Array.from(repeated.values());
 }
 
 export function computeV2Discovery(params: {
@@ -106,16 +141,16 @@ export function computeV2Discovery(params: {
     };
   }
 
-  const caseSequences = new Map<string, string[]>();
+  const caseSequences = new Map<string, DiscoverySequenceEntry[]>();
   for (const caseId of caseIds) {
     caseSequences.set(caseId, getSequenceForCase(caseId, stepObservations));
   }
 
   const variantMap = new Map<string, { steps: string[]; caseIds: string[] }>();
   for (const [caseId, steps] of caseSequences) {
-    const normalizedKey = steps.map(stepSemanticKey).join(' → ');
+    const normalizedKey = steps.map(step => step.key).join(' → ');
     if (!variantMap.has(normalizedKey)) {
-      variantMap.set(normalizedKey, { steps, caseIds: [] });
+      variantMap.set(normalizedKey, { steps: steps.map(step => step.label), caseIds: [] });
     }
     variantMap.get(normalizedKey)!.caseIds.push(caseId);
   }
@@ -135,18 +170,19 @@ export function computeV2Discovery(params: {
 
   const coreVariant = variants[0];
   const loopMap = new Map<string, Set<string>>();
+  const loopLabels = new Map<string, string>();
   for (const [caseId, steps] of caseSequences) {
     for (const repeatedStep of detectLoops(steps)) {
-      const key = stepSemanticKey(repeatedStep);
-      if (!loopMap.has(key)) loopMap.set(key, new Set());
-      loopMap.get(key)!.add(caseId);
+      if (!loopMap.has(repeatedStep.key)) loopMap.set(repeatedStep.key, new Set());
+      loopMap.get(repeatedStep.key)!.add(caseId);
+      if (!loopLabels.has(repeatedStep.key)) loopLabels.set(repeatedStep.key, repeatedStep.label);
     }
   }
 
   const loops = Array.from(loopMap.entries())
     .sort((a, b) => b[1].size - a[1].size)
     .map(([key, caseIdSet]) => ({
-      label: stepObservations.find(observation => stepSemanticKey(observation.label) === key)?.label ?? key.replace(/^family:/, ''),
+      label: loopLabels.get(key) ?? stepObservations.find(observation => getDiscoveryKey(observation, getDiscoveryLabel(observation, observation.sequenceIndex)) === key)?.originalStepLabel ?? key.replace(/^family:/, ''),
       count: caseIdSet.size,
       caseIds: Array.from(caseIdSet),
     }));

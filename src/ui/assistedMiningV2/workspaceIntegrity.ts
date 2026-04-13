@@ -58,6 +58,18 @@ function optionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
 }
 
+function optionalStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const cleaned = value
+    .filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+    .map(entry => entry.trim());
+  return cleaned.length > 0 ? Array.from(new Set(cleaned)) : undefined;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
+}
+
 function safeIso(value: unknown, fallback: string): string {
   if (typeof value === 'string' && value.trim().length > 0) {
     const parsed = Date.parse(value);
@@ -178,9 +190,32 @@ function sanitizeObservations(rawObservations: unknown, validCaseIds: Set<string
         id,
         sourceCaseId: caseRef,
         label,
+        originalStepLabel: optionalString(candidate.originalStepLabel),
+        canonicalStepFamily: optionalString(candidate.canonicalStepFamily),
+        stepWasPreserved: optionalBoolean(candidate.stepWasPreserved),
+        mergeSkippedBecauseStructured: optionalBoolean(candidate.mergeSkippedBecauseStructured),
         evidenceSnippet: optionalString(candidate.evidenceSnippet),
+        candidateId: optionalString(candidate.candidateId),
+        evidenceAnchor: optionalString(candidate.evidenceAnchor),
+        contextWindow: optionalString(candidate.contextWindow),
+        originChannel: optionalString(candidate.originChannel) as Observation['originChannel'] | undefined,
+        sourceFragmentType: optionalString(candidate.sourceFragmentType) as Observation['sourceFragmentType'] | undefined,
         role: optionalString(candidate.role),
         system: optionalString(candidate.system),
+        primaryRole: optionalString(candidate.primaryRole),
+        primarySystem: optionalString(candidate.primarySystem),
+        roles: optionalStringArray(candidate.roles),
+        systems: optionalStringArray(candidate.systems),
+        explicitRoles: optionalStringArray(candidate.explicitRoles),
+        explicitSystems: optionalStringArray(candidate.explicitSystems),
+        inferredRoles: optionalStringArray(candidate.inferredRoles),
+        inferredSystems: optionalStringArray(candidate.inferredSystems),
+        supportOnlyRoles: optionalStringArray(candidate.supportOnlyRoles),
+        supportOnlySystems: optionalStringArray(candidate.supportOnlySystems),
+        suppressedInferredRoles: optionalStringArray(candidate.suppressedInferredRoles),
+        suppressedInferredSystems: optionalStringArray(candidate.suppressedInferredSystems),
+        domainAligned: optionalBoolean(candidate.domainAligned),
+        secondaryDomainHint: optionalString(candidate.secondaryDomainHint),
         kind: VALID_OBSERVATION_KINDS.has(candidate.kind as Observation['kind']) ? (candidate.kind as Observation['kind']) : 'other',
         sequenceIndex: Number.isFinite(candidate.sequenceIndex) ? Math.max(0, Math.trunc(candidate.sequenceIndex as number)) : index,
         timestampRaw: optionalString(candidate.timestampRaw),
