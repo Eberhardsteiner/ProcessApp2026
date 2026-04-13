@@ -1885,6 +1885,89 @@ function buildExtractionCandidates(
   });
 
   return reviewExtractionCandidates(candidates);
+const WEAK_STEP_LABEL_RE = /^(mail|e-?mail|chat|kommentar|notiz|hinweis|offen|ticket|frage|status|todo)$/i;
+const ACTIVITY_STEP_RE = /\b(pr[üu]fen|bearbeiten|anlegen|validieren|freigeben|abstimmen|dokumentieren|versenden|zuordnen|abschlie[ßs]en|eskalieren|bereitstellen|bestellen|recherchieren|koordinieren)\b/i;
+
+function buildExtractionCandidates(
+  observations: ProcessMiningObservation[],
+  routingContext: SourceRoutingContext,
+): ExtractionCandidate[] {
+  const candidates: ExtractionCandidate[] = [];
+  for (const observation of observations) {
+    const anchor = observation.evidenceSnippet?.trim() || '';
+    const contextWindow = normalizeWhitespace(`${observation.label} ${observation.evidenceSnippet ?? ''}`).slice(0, 320);
+    const isWeakStep = observation.kind === 'step' && (
+      anchor.length < 12 ||
+      WEAK_STEP_LABEL_RE.test(observation.label.trim()) ||
+      !ACTIVITY_STEP_RE.test(contextWindow)
+    );
+    const stepStatus: ExtractionCandidate['status'] = observation.kind === 'step'
+      ? (isWeakStep ? 'rejected' : 'merged')
+      : observation.kind === 'issue'
+      ? 'support-only'
+      : 'candidate';
+    const rejectionReason = observation.kind === 'step' && isWeakStep
+      ? anchor.length < 12
+        ? 'Kein belastbarer Evidenzanker am Schritt.'
+        : WEAK_STEP_LABEL_RE.test(observation.label.trim())
+        ? 'Nur schwaches Kurzlabel ohne belastbaren Prozessbezug.'
+        : 'Kein stabiler Aktivitätscharakter im lokalen Kontext.'
+      : undefined;
+
+    candidates.push({
+      candidateId: `${observation.id}-base`,
+      candidateType: observation.kind === 'step' ? 'step' : observation.kind === 'issue' ? 'signal' : 'support',
+      rawLabel: observation.label,
+      normalizedLabel: observation.kind === 'step' ? canonicalizeProcessStepLabel({ title: observation.label, body: observation.evidenceSnippet, fallback: observation.label, index: observation.sequenceIndex }) : observation.label,
+      evidenceAnchor: anchor || observation.label,
+      contextWindow,
+      confidence: observation.kind === 'step' && !isWeakStep ? 'medium' : 'low',
+      originChannel: 'imported-observation',
+      sourceFragmentType: anchor.includes('|') ? 'table-row' : 'sentence',
+      routingClass: routingContext.routingClass,
+      sourceRef: observation.id,
+      status: stepStatus,
+      rejectionReason,
+      downgradeReason: stepStatus === 'support-only' ? 'Signal oder Hinweis, kein Kernschritt.' : undefined,
+    });
+
+    if (observation.kind === 'step' && observation.role) {
+      candidates.push({
+        candidateId: `${observation.id}-role`,
+        candidateType: 'role',
+        rawLabel: observation.role,
+        normalizedLabel: sentenceCase(observation.role),
+        evidenceAnchor: anchor || observation.role,
+        contextWindow,
+        confidence: anchor ? 'medium' : 'low',
+        originChannel: 'imported-observation',
+        sourceFragmentType: anchor.includes('|') ? 'table-row' : 'sentence',
+        routingClass: routingContext.routingClass,
+        sourceRef: observation.id,
+        status: anchor ? 'candidate' : 'support-only',
+        downgradeReason: anchor ? undefined : 'Rolle nur schwach ohne lokalen Evidenzanker.',
+      });
+    }
+
+    if (observation.kind === 'step' && observation.system) {
+      candidates.push({
+        candidateId: `${observation.id}-system`,
+        candidateType: 'system',
+        rawLabel: observation.system,
+        normalizedLabel: sentenceCase(observation.system),
+        evidenceAnchor: anchor || observation.system,
+        contextWindow,
+        confidence: anchor ? 'medium' : 'low',
+        originChannel: 'imported-observation',
+        sourceFragmentType: anchor.includes('|') ? 'table-row' : 'sentence',
+        routingClass: routingContext.routingClass,
+        sourceRef: observation.id,
+        status: anchor ? 'candidate' : 'support-only',
+        downgradeReason: anchor ? undefined : 'System nur schwach ohne lokalen Evidenzanker.',
+      });
+    }
+  }
+  return candidates;
 }
 
 function finalizeDerivationResult(result: DerivationResult): DerivationResult {
@@ -2029,6 +2112,31 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
         ...(sourceProfile.extractionPlan ?? []),
       ]).slice(0, 5)
     : undefined;
+  const stepLabels = uniqueStrings(
+    gatedObservations
+      .filter(observation => observation.kind === 'step')
+      .map(observation => observation.label),
+  );
+  const roles = uniqueStrings([
+    ...result.roles,
+    ...candidates
+      .filter(candidate => candidate.candidateType === 'role' && candidate.status !== 'rejected')
+      .map(candidate => candidate.normalizedLabel),
+  ]);
+  const systems = uniqueStrings([
+    ...result.systems,
+    ...candidates
+      .filter(candidate => candidate.candidateType === 'system' && candidate.status !== 'rejected')
+      .map(candidate => candidate.normalizedLabel),
+  ]);
+  const issueSignals = uniqueStrings([
+    ...result.issueSignals,
+    ...gatedObservations.filter(observation => observation.kind === 'issue').map(observation => observation.label),
+  ]);
+  const repairNotes = repaired.report.notes.length > 0 ? repaired.report.notes : result.summary.repairNotes;
+  const sourceProfile = result.summary.sourceProfile;
+  const multiCaseSummary = buildMultiCaseSummary(repaired.observations);
+  const analysisStrategies = sourceProfile ? buildAnalysisStrategies(sourceProfile.inputProfileLabel) : undefined;
   const caseCount = Math.max(result.summary.caseCount, result.cases.length);
   const lowEvidence = stepLabels.length < 3 || result.documentKind === 'weak-material' || result.documentKind === 'unknown';
   const forceConservative = caseCount <= 1 && lowEvidence;
@@ -2070,6 +2178,11 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     systems,
     issueSignals,
     derivedSteps: filteredObservations
+    observations: gatedObservations,
+    roles,
+    systems,
+    issueSignals,
+    derivedSteps: gatedObservations
       .filter(observation => observation.kind === 'step')
       .map(observation => ({
         label: observation.label,
@@ -2088,6 +2201,15 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       issueEvidence: keptIssueEvidence,
       documentSummary: finalDocumentSummary,
       routingContext: result.routingContext,
+      documentSummary: finalDocumentSummary,
+      routingContext: result.routingContext,
+      extractionCandidates: candidates,
+      candidateStats: {
+        total: candidates.length,
+        mergedCoreSteps: candidates.filter(candidate => candidate.candidateType === 'step' && candidate.status === 'merged').length,
+        supportOnly: candidates.filter(candidate => candidate.status === 'support-only').length,
+        rejected: candidates.filter(candidate => candidate.status === 'rejected').length,
+      },
       repairNotes,
       sourceProfile,
       multiCaseSummary,
@@ -2294,6 +2416,15 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       .filter(candidate => candidate.candidateType === 'system' && Boolean(candidate.relatedCandidateId))
       .map(candidate => candidate.normalizedLabel),
   );
+  const fallbackIssueEvidence = extractIssueEvidence(rawText, domainContext);
+  const enrichedFallbackObservations = [
+    ...usableObservations,
+    ...buildIssueObservations({
+      caseId: fallbackCase.id,
+      startIndex: usableObservations.length,
+      issueEvidence: fallbackIssueEvidence,
+    }),
+  ];
 
   const summary: DerivationSummary = {
     sourceLabel: sourceName,
@@ -2404,6 +2535,16 @@ export function deriveFromMultipleTexts(
         routingSignals: aggregatedRoutingSignals,
         fallbackReason: summaries.find(summary => summary.routingContext?.fallbackReason)?.routingContext?.fallbackReason,
       };
+  const combinedRoutingContext: SourceRoutingContext = {
+    routingClass: (inputs.length > 1 ? 'mixed-document' : (routingWinner?.[0] as SourceRoutingContext['routingClass'] | undefined)) ?? 'weak-raw-table',
+    routingConfidence: inputs.length > 1 ? 'medium' : (summaries[0]?.routingContext?.routingConfidence ?? 'low'),
+    routingSignals: [
+      `sources=${inputs.length}`,
+      `routingSpread=${uniqueStrings(routingClasses).join(',') || 'none'}`,
+      ...(summaries.flatMap(summary => summary.routingContext?.routingSignals ?? []).slice(0, 4)),
+    ],
+    fallbackReason: summaries.find(summary => summary.routingContext?.fallbackReason)?.routingContext?.fallbackReason,
+  };
   const combinedSummary: DerivationSummary = {
     sourceLabel: options?.sourceLabel ?? (inputs.length === 1 ? inputs[0].name : `${inputs.length} importierte Beschreibungen`),
     method: summaries.some(summary => summary.method === 'structured')

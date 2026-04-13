@@ -6,7 +6,7 @@ import type {
   SourceRoutingContext,
 } from '../../domain/process';
 import { normalizeWhitespace, createObservation, sentenceCase, uniqueStrings } from './pmShared';
-import { canonicalizeProcessStepLabel } from './semanticStepFamilies';
+import { canonicalizeProcessStepLabel, inferStepFamily } from './semanticStepFamilies';
 import { rolePreferredValue, systemPreferredValue } from './reviewNormalization';
 
 const WEAK_STEP_LABEL_RE = /^(mail|e-?mail|chat|kommentar|notiz|hinweis|offen|ticket|frage|status|todo)$/i;
@@ -129,6 +129,17 @@ export function createStepCandidate(params: {
   candidateId?: string;
   rawLabel: string;
   normalizedLabel?: string;
+  preserveOriginalLabel?: boolean;
+  originalStepLabel?: string;
+  canonicalStepFamily?: string;
+  stepWasPreserved?: boolean;
+  mergeSkippedBecauseStructured?: boolean;
+  explicitRoles?: string[];
+  explicitSystems?: string[];
+  suppressedInferredRoles?: string[];
+  suppressedInferredSystems?: string[];
+  domainAligned?: boolean;
+  secondaryDomainHint?: string;
   evidenceAnchor: string;
   contextWindow: string;
   confidence?: ExtractionCandidate['confidence'];
@@ -138,16 +149,31 @@ export function createStepCandidate(params: {
   sourceRef: string;
   index: number;
 }): ExtractionCandidate {
+  const originalStepLabel = trimEvidence(params.originalStepLabel ?? params.rawLabel, 180);
+  const canonicalStepFamily = params.canonicalStepFamily
+    ?? inferStepFamily(params.normalizedLabel ?? params.rawLabel)?.label;
   return {
     candidateId: params.candidateId ?? crypto.randomUUID(),
     candidateType: 'step',
     rawLabel: trimEvidence(params.rawLabel, 180),
-    normalizedLabel: canonicalizeProcessStepLabel({
-      title: params.normalizedLabel ?? params.rawLabel,
-      body: params.contextWindow || params.evidenceAnchor,
-      fallback: params.rawLabel,
-      index: params.index,
-    }),
+    normalizedLabel: params.preserveOriginalLabel
+      ? trimEvidence(params.normalizedLabel ?? originalStepLabel, 180)
+      : canonicalizeProcessStepLabel({
+        title: params.normalizedLabel ?? params.rawLabel,
+        body: params.contextWindow || params.evidenceAnchor,
+        fallback: params.rawLabel,
+        index: params.index,
+      }),
+    originalStepLabel,
+    canonicalStepFamily,
+    stepWasPreserved: params.stepWasPreserved,
+    mergeSkippedBecauseStructured: params.mergeSkippedBecauseStructured,
+    explicitRoles: params.explicitRoles,
+    explicitSystems: params.explicitSystems,
+    suppressedInferredRoles: params.suppressedInferredRoles,
+    suppressedInferredSystems: params.suppressedInferredSystems,
+    domainAligned: params.domainAligned,
+    secondaryDomainHint: params.secondaryDomainHint,
     evidenceAnchor: trimEvidence(params.evidenceAnchor),
     contextWindow: trimEvidence(params.contextWindow),
     confidence: params.confidence ?? 'medium',
@@ -244,6 +270,14 @@ export function reviewExtractionCandidates(candidates: ExtractionCandidate[]): E
   return dedupeCandidates(
     candidates.map(candidate => {
       if (candidate.candidateType === 'step') {
+        if (candidate.stepWasPreserved) {
+          return {
+            ...candidate,
+            status: 'merged' as const,
+            supportClass: 'core-step' as const,
+            rejectionReason: undefined,
+          };
+        }
         const rejectionReason = getStepRejectionReason(candidate);
         if (rejectionReason) {
           return {
@@ -312,17 +346,38 @@ export function createObservationFromStepCandidate(params: {
   sequenceIndex: number;
   role?: string;
   system?: string;
+  roles?: string[];
+  systems?: string[];
+  explicitRoles?: string[];
+  explicitSystems?: string[];
   timestampRaw?: string;
   timestampIso?: string;
   timestampQuality?: ProcessMiningObservation['timestampQuality'];
 }): ProcessMiningObservation {
+  const preserveStructured = Boolean(params.candidate.stepWasPreserved);
+  const primaryRole = params.role ?? params.roles?.[0];
+  const primarySystem = params.system ?? params.systems?.[0];
+  const roles = params.roles
+    ? uniqueStrings(params.roles)
+    : primaryRole
+    ? [preserveStructured ? primaryRole : rolePreferredValue(primaryRole)]
+    : [];
+  const systems = params.systems
+    ? uniqueStrings(params.systems)
+    : primarySystem
+    ? [preserveStructured ? primarySystem : systemPreferredValue(primarySystem)]
+    : [];
   const observation = createObservation({
     caseId: params.caseId,
     label: params.candidate.normalizedLabel,
     sequenceIndex: params.sequenceIndex,
     evidenceSnippet: params.candidate.evidenceAnchor,
-    role: params.role ? rolePreferredValue(params.role) : undefined,
-    system: params.system ? systemPreferredValue(params.system) : undefined,
+    role: primaryRole
+      ? (preserveStructured ? primaryRole : rolePreferredValue(primaryRole))
+      : undefined,
+    system: primarySystem
+      ? (preserveStructured ? primarySystem : systemPreferredValue(primarySystem))
+      : undefined,
     timestampRaw: params.timestampRaw,
     timestampIso: params.timestampIso,
     timestampQuality: params.timestampQuality,
@@ -335,5 +390,17 @@ export function createObservationFromStepCandidate(params: {
     contextWindow: params.candidate.contextWindow,
     originChannel: params.candidate.originChannel,
     sourceFragmentType: params.candidate.sourceFragmentType,
+    originalStepLabel: params.candidate.originalStepLabel,
+    canonicalStepFamily: params.candidate.canonicalStepFamily,
+    stepWasPreserved: params.candidate.stepWasPreserved,
+    mergeSkippedBecauseStructured: params.candidate.mergeSkippedBecauseStructured,
+    roles: roles.length > 0 ? roles : undefined,
+    systems: systems.length > 0 ? systems : undefined,
+    explicitRoles: params.explicitRoles ?? params.candidate.explicitRoles,
+    explicitSystems: params.explicitSystems ?? params.candidate.explicitSystems,
+    suppressedInferredRoles: params.candidate.suppressedInferredRoles,
+    suppressedInferredSystems: params.candidate.suppressedInferredSystems,
+    domainAligned: params.candidate.domainAligned,
+    secondaryDomainHint: params.candidate.secondaryDomainHint,
   };
 }

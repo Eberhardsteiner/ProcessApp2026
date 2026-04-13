@@ -4,10 +4,14 @@ export interface StructuredProcedureStep {
   stepCode?: string;
   label: string;
   responsible?: string;
+  roles?: string[];
   description?: string;
   due?: string;
   result?: string;
   system?: string;
+  systems?: string[];
+  explicitRoles?: string[];
+  explicitSystems?: string[];
   decision?: string;
   evidenceSnippet: string;
 }
@@ -201,6 +205,31 @@ function cleanCell(value: string | undefined): string | undefined {
   return cleaned || undefined;
 }
 
+function uniqueCaseInsensitive(values: Array<string | undefined>): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const cleaned = cleanCell(value);
+    if (!cleaned) continue;
+    const key = cleaned.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(cleaned);
+  }
+  return result;
+}
+
+function splitStructuredValues(value: string | undefined): string[] {
+  const cleaned = cleanCell(value);
+  if (!cleaned) return [];
+  return uniqueCaseInsensitive(
+    cleaned
+      .split(/[,;/]+|\s+und\s+/i)
+      .map(part => part.trim())
+      .filter(Boolean),
+  );
+}
+
 
 function canonicalRoleLabel(value: string | undefined): string | undefined {
   const cleaned = cleanCell(value);
@@ -285,10 +314,20 @@ function enrichStepsWithRoleRows(steps: StructuredProcedureStep[], roles: Struct
 
   return steps.map(step => {
     const parsedColumns = step.evidenceSnippet.split('|').map(part => cleanCell(part)).filter(Boolean) as string[];
-    const evidenceRole = parsedColumns.length >= 4 ? canonicalRoleLabel(parsedColumns[2]) : undefined;
-    const evidenceSystems = parsedColumns.length >= 5 ? canonicalSystemLabels(parsedColumns[3]) : [];
-    const existingRole = canonicalRoleLabel(step.responsible) ?? evidenceRole;
-    const existingSystems = step.system ? canonicalSystemLabels(step.system) : evidenceSystems;
+    const evidenceRoles = parsedColumns.length >= 4 ? splitStructuredValues(parsedColumns[2]) : [];
+    const evidenceSystems = parsedColumns.length >= 5 ? splitStructuredValues(parsedColumns[3]) : [];
+    const explicitRoles = uniqueCaseInsensitive([
+      ...(step.explicitRoles ?? []),
+      ...(step.roles ?? []),
+      ...splitStructuredValues(step.responsible),
+      ...evidenceRoles,
+    ]);
+    const explicitSystems = uniqueCaseInsensitive([
+      ...(step.explicitSystems ?? []),
+      ...(step.systems ?? []),
+      ...splitStructuredValues(step.system),
+      ...evidenceSystems,
+    ]);
 
     const stepTokens = tokenSet([step.label, step.description, step.result, step.evidenceSnippet].filter(Boolean).join(' '));
     const inferredRole = inferRoleByStepText(step);
@@ -301,17 +340,31 @@ function enrichStepsWithRoleRows(steps: StructuredProcedureStep[], roles: Struct
       })
       .sort((a, b) => b.score - a.score)[0];
 
-    const finalRole = existingRole ?? ((bestRole?.score ?? 0) >= 1 ? bestRole?.role.canonicalName : undefined) ?? inferredRole ?? preparedRoles[0]?.canonicalName;
-    const finalSystems = existingSystems.length > 0
-      ? existingSystems
-      : finalRole
-      ? preparedRoles.find(role => role.canonicalName === finalRole)?.canonicalSystems ?? []
+    const inferredRoles = uniqueCaseInsensitive([
+      explicitRoles.length === 0 && (bestRole?.score ?? 0) >= 1 ? bestRole?.role.canonicalName : undefined,
+      explicitRoles.length === 0 ? inferredRole : undefined,
+      explicitRoles.length === 0 ? preparedRoles[0]?.canonicalName : undefined,
+    ]);
+    const finalRoles = explicitRoles.length > 0
+      ? uniqueCaseInsensitive([...explicitRoles, ...inferredRoles])
+      : inferredRoles;
+    const inferredSystems = explicitSystems.length > 0
+      ? []
+      : finalRoles[0]
+      ? preparedRoles.find(role => role.canonicalName === finalRoles[0])?.canonicalSystems ?? []
       : ((bestRole?.score ?? 0) >= 1 ? bestRole?.role.canonicalSystems ?? [] : []);
+    const finalSystems = explicitSystems.length > 0
+      ? uniqueCaseInsensitive([...explicitSystems, ...inferredSystems])
+      : uniqueCaseInsensitive(inferredSystems);
 
     return {
       ...step,
-      responsible: finalRole,
+      responsible: finalRoles[0],
+      roles: finalRoles,
       system: selectPrimarySystem(finalSystems),
+      systems: finalSystems,
+      explicitRoles,
+      explicitSystems,
     };
   });
 }
@@ -472,6 +525,94 @@ function headerCoverage(row: string[]): number {
   return row.filter(cell => Boolean(classifyHeaderKey(cell))).length;
 }
 
+function parseDelimitedTableRows(sectionText: string): string[][] {
+  const rows: string[][] = [];
+  for (const line of sectionText.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.length < 5) continue;
+    if (trimmed.startsWith('|')) continue;
+    if (!TABLE_HEADER_HINT_RE.test(trimmed) && !/[;\t]/.test(trimmed) && !/\s{2,}/.test(trimmed)) continue;
+
+    let cells: string[] = [];
+    if (trimmed.includes(';')) {
+      cells = trimmed.split(';').map(cell => cell.trim());
+    } else if (trimmed.includes('\t')) {
+      cells = trimmed.split('\t').map(cell => cell.trim());
+    } else {
+      cells = trimmed.split(/\s{2,}/).map(cell => cell.trim());
+    }
+    cells = cells.filter(Boolean);
+    if (cells.length >= 2) rows.push(cells);
+  }
+  return rows;
+}
+
+function parseDelimitedTableRows(sectionText: string): string[][] {
+  const rows: string[][] = [];
+  for (const line of sectionText.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.length < 5) continue;
+    if (trimmed.startsWith('|')) continue;
+    if (!TABLE_HEADER_HINT_RE.test(trimmed) && !/[;\t]/.test(trimmed) && !/\s{2,}/.test(trimmed)) continue;
+
+    let cells: string[] = [];
+    if (trimmed.includes(';')) {
+      cells = trimmed.split(';').map(cell => cell.trim());
+    } else if (trimmed.includes('\t')) {
+      cells = trimmed.split('\t').map(cell => cell.trim());
+    } else {
+      cells = trimmed.split(/\s{2,}/).map(cell => cell.trim());
+    }
+    cells = cells.filter(Boolean);
+    if (cells.length >= 2) rows.push(cells);
+  }
+  return rows;
+}
+
+function parseDelimitedTableRows(sectionText: string): string[][] {
+  const rows: string[][] = [];
+  for (const line of sectionText.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.length < 5) continue;
+    if (trimmed.startsWith('|')) continue;
+    if (!TABLE_HEADER_HINT_RE.test(trimmed) && !/[;\t]/.test(trimmed) && !/\s{2,}/.test(trimmed)) continue;
+
+    let cells: string[] = [];
+    if (trimmed.includes(';')) {
+      cells = trimmed.split(';').map(cell => cell.trim());
+    } else if (trimmed.includes('\t')) {
+      cells = trimmed.split('\t').map(cell => cell.trim());
+    } else {
+      cells = trimmed.split(/\s{2,}/).map(cell => cell.trim());
+    }
+    cells = cells.filter(Boolean);
+    if (cells.length >= 2) rows.push(cells);
+  }
+  return rows;
+}
+
+function parseDelimitedTableRows(sectionText: string): string[][] {
+  const rows: string[][] = [];
+  for (const line of sectionText.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.length < 5) continue;
+    if (trimmed.startsWith('|')) continue;
+    if (!TABLE_HEADER_HINT_RE.test(trimmed) && !/[;\t]/.test(trimmed) && !/\s{2,}/.test(trimmed)) continue;
+
+    let cells: string[] = [];
+    if (trimmed.includes(';')) {
+      cells = trimmed.split(';').map(cell => cell.trim());
+    } else if (trimmed.includes('\t')) {
+      cells = trimmed.split('\t').map(cell => cell.trim());
+    } else {
+      cells = trimmed.split(/\s{2,}/).map(cell => cell.trim());
+    }
+    cells = cells.filter(Boolean);
+    if (cells.length >= 2) rows.push(cells);
+  }
+  return rows;
+}
+
 function detectPipeTableHeaders(rows: string[][]): number {
   if (!rows.length) return -1;
   return headerCoverage(rows[0] ?? []) >= 2 ? 0 : -1;
@@ -532,17 +673,21 @@ function buildStepFromHeaderMappedRow(
 
   if (!labelVal) return undefined;
 
-  const responsible = canonicalRoleLabel(get('responsible'));
-  const systems = canonicalSystemLabels(get('system'));
+  const explicitRoles = splitStructuredValues(get('responsible'));
+  const explicitSystems = splitStructuredValues(get('system'));
 
   return {
     stepCode: codeVal,
     label: labelVal,
-    responsible,
+    responsible: explicitRoles[0],
+    roles: explicitRoles,
     description: cleanCell(get('description')),
     due: cleanCell(get('due')),
     result: cleanCell(get('result')),
-    system: selectPrimarySystem(systems),
+    system: selectPrimarySystem(explicitSystems),
+    systems: explicitSystems,
+    explicitRoles,
+    explicitSystems,
     decision: cleanCell(get('decision')),
     evidenceSnippet: row.filter(Boolean).join(' | '),
   };

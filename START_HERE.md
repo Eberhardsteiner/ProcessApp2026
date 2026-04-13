@@ -63,6 +63,12 @@ npm run dev
   `qualityAssessment.scoringProfile`, `analysisPositioning.nominalClaimStrength`, `analysisPositioning.claimStrength`, `analysisPositioning.claimCalibration`, `analysisPositioning.nominalClaimNote`, `analysisPositioning.claimNote`.
 
 ## Standardprüfung
+- **Standard (Produktivmodus):** QA-/Self-Test-/Freigabe-Surfaces sind aus dem Nutzerpfad entfernt.
+- **QA-/Dev-Modus aktivieren:** `VITE_ENABLE_QA_SURFACES=1 npm run dev`
+- **Optional per URL:** `?qa=1` (nur für gezielt aktivierte Sitzungen)
+- Der Standardpfad bleibt damit ruhig und eindeutig: **Upload → Analyse → Prüfen → Export**.
+
+## Vor dem Weitergeben kurz prüfen
 
 ```bash
 npm run typecheck

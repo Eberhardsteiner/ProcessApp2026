@@ -115,6 +115,32 @@ export interface ProcessMiningQualityExportFile {
   analysisResults: {
     qualitySummary?: ProcessMiningAssistedV2State['qualitySummary'];
     lastDerivationSummary?: ProcessMiningAssistedV2State['lastDerivationSummary'];
+    tablePipeline?: ProcessMiningAssistedV2State['lastDerivationSummary'] extends infer T
+      ? T extends { tablePipeline?: infer U }
+        ? U
+        : never
+      : never;
+    routing?: {
+      routingClass: string;
+      routingConfidence: string;
+      routingSignals: string[];
+      fallbackReason?: string;
+    };
+    extractionEvidence?: {
+      candidateStats?: ProcessMiningAssistedV2State['lastDerivationSummary'] extends infer T
+        ? T extends { candidateStats?: infer U }
+          ? U
+          : never
+        : never;
+      rejectedOrSupportCandidates?: Array<{
+        candidateType: string;
+        normalizedLabel: string;
+        status: string;
+        rejectionReason?: string;
+        downgradeReason?: string;
+        evidenceAnchor: string;
+      }>;
+    };
     discoverySummary?: ProcessMiningAssistedV2State['discoverySummary'];
     conformanceSummary?: ProcessMiningAssistedV2State['conformanceSummary'];
     enhancementSummary?: ProcessMiningAssistedV2State['enhancementSummary'];
@@ -124,6 +150,26 @@ export interface ProcessMiningQualityExportFile {
       overall: 'high' | 'medium' | 'low';
       dimensions: Array<{
         key: QualityDimensionKey;
+      scoringProfile?: {
+        mode: 'process-draft' | 'comparison' | 'eventlog-table' | 'weak-raw-table';
+        weights: Record<string, number>;
+        evidenceTypes: string[];
+        blockerRules: string[];
+      };
+      scoringReasons?: string[];
+      blockerReasons?: string[];
+      confidenceAdjustments?: string[];
+      overall: 'high' | 'medium' | 'low';
+      dimensions: Array<{
+        key:
+          | 'documentTypeDetection'
+          | 'structureFidelity'
+          | 'stepClarity'
+          | 'roleQuality'
+          | 'systemQuality'
+          | 'domainConsistency'
+          | 'evidenceCoverage'
+          | 'conservativeHandling';
         label: string;
         score: number;
         level: 'high' | 'medium' | 'low';
@@ -397,6 +443,14 @@ function buildExportIntegrityReport(params: {
     repairedCount,
     criticalCount,
   };
+function scoreToLevel(score: number): 'high' | 'medium' | 'low' {
+  if (score >= 0.75) return 'high';
+  if (score >= 0.45) return 'medium';
+  return 'low';
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 export function buildQualityExportFile(params: {
@@ -579,6 +633,31 @@ export function buildQualityExportFile(params: {
     analysisResults: {
       qualitySummary: state.qualitySummary,
       lastDerivationSummary: state.lastDerivationSummary,
+      tablePipeline: lastSummary?.tablePipeline,
+      routing: lastSummary?.routingContext
+        ? {
+            routingClass: lastSummary.routingContext.routingClass,
+            routingConfidence: lastSummary.routingContext.routingConfidence,
+            routingSignals: lastSummary.routingContext.routingSignals,
+            fallbackReason: lastSummary.routingContext.fallbackReason,
+          }
+        : undefined,
+      extractionEvidence: lastSummary
+        ? {
+            candidateStats: lastSummary.candidateStats,
+            rejectedOrSupportCandidates: (lastSummary.extractionCandidates ?? [])
+              .filter(candidate => candidate.status === 'rejected' || candidate.status === 'support-only')
+              .slice(0, 30)
+              .map(candidate => ({
+                candidateType: candidate.candidateType,
+                normalizedLabel: candidate.normalizedLabel,
+                status: candidate.status,
+                rejectionReason: candidate.rejectionReason,
+                downgradeReason: candidate.downgradeReason,
+                evidenceAnchor: candidate.evidenceAnchor,
+              })),
+          }
+        : undefined,
       discoverySummary: state.discoverySummary,
       conformanceSummary: state.conformanceSummary,
       enhancementSummary: state.enhancementSummary,
@@ -593,6 +672,21 @@ export function buildQualityExportFile(params: {
           level: levelFromScore(item.score),
           reason: item.rationale[0] ?? item.summary,
         })),
+        scoringProfile: {
+          mode,
+          weights: activeProfile.weights,
+          evidenceTypes: activeProfile.evidenceTypes,
+          blockerRules: activeProfile.blockerRules,
+        },
+        scoringReasons: [
+          `Mode-spezifische Gewichtung aktiv: ${mode}.`,
+          `Routing-Klasse: ${routingClass ?? 'unbekannt'}.`,
+          `Semantische Schrittklarheit: ${(semanticStepShare * 100).toFixed(0)}%.`,
+        ],
+        blockerReasons,
+        confidenceAdjustments,
+        overall,
+        dimensions: dimensionScores,
       },
     },
     sourceMaterial: {

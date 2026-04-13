@@ -85,6 +85,7 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
   const [showOverviewDetails, setShowOverviewDetails] = useState(
     miningState.observations.length === 0,
   );
+  const [showHealthDetails, setShowHealthDetails] = useState(false);
 
   useEffect(() => {
     latestStateRef.current = miningState;
@@ -337,6 +338,25 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
         onOperatingModeChange={mode => applyPatch({ operatingMode: mode })}
       />
 
+      {QA_SURFACES_ENABLED && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-slate-900">Status & Integrität</p>
+            <button
+              type="button"
+              onClick={() => setShowHealthDetails(open => !open)}
+              className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              {showHealthDetails ? 'Details ausblenden' : 'Details anzeigen'}
+            </button>
+          </div>
+          {showHealthDetails && (
+            <div className="mt-3">
+              <WorkspaceIntegrityPanel report={integrityReport} />
+            </div>
+          )}
+        </div>
+      )}
 
       <QualityExportPanel
         process={process}

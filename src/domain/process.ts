@@ -575,6 +575,16 @@ export interface ExtractionCandidate {
   candidateType: ExtractionCandidateType;
   rawLabel: string;
   normalizedLabel: string;
+  originalStepLabel?: string;
+  canonicalStepFamily?: string;
+  stepWasPreserved?: boolean;
+  mergeSkippedBecauseStructured?: boolean;
+  explicitRoles?: string[];
+  explicitSystems?: string[];
+  suppressedInferredRoles?: string[];
+  suppressedInferredSystems?: string[];
+  domainAligned?: boolean;
+  secondaryDomainHint?: string;
   evidenceAnchor: string;
   contextWindow: string;
   confidence: 'high' | 'medium' | 'low';
@@ -632,6 +642,10 @@ export interface ProcessMiningObservation {
   id: string;
   sourceCaseId?: string;
   label: string;
+  originalStepLabel?: string;
+  canonicalStepFamily?: string;
+  stepWasPreserved?: boolean;
+  mergeSkippedBecauseStructured?: boolean;
   evidenceSnippet?: string;
   candidateId?: string;
   evidenceAnchor?: string;
@@ -640,6 +654,14 @@ export interface ProcessMiningObservation {
   sourceFragmentType?: ExtractionCandidate['sourceFragmentType'];
   role?: string;
   system?: string;
+  roles?: string[];
+  systems?: string[];
+  explicitRoles?: string[];
+  explicitSystems?: string[];
+  suppressedInferredRoles?: string[];
+  suppressedInferredSystems?: string[];
+  domainAligned?: boolean;
+  secondaryDomainHint?: string;
   kind: 'step' | 'variant' | 'timing' | 'role' | 'issue' | 'other';
   sequenceIndex: number;
   timestampRaw?: string;
@@ -841,9 +863,17 @@ export interface DerivationSummary {
   systems?: string[];
   issueSignals?: string[];
   issueEvidence?: Array<{ label: string; snippet: string }>;
+  structuredPreserveApplied?: boolean;
   documentSummary?: string;
   sourceProfile?: DerivationSourceProfile;
   routingContext?: SourceRoutingContext;
+  extractionCandidates?: ExtractionCandidate[];
+  candidateStats?: {
+    total: number;
+    mergedCoreSteps: number;
+    supportOnly: number;
+    rejected: number;
+  };
   tablePipeline?: {
     pipelineMode: 'eventlog-table' | 'weak-raw-table';
     tableProfile: {
@@ -864,6 +894,36 @@ export interface DerivationSummary {
     acceptedColumnMappings?: TableColumnMapping[];
     rejectedColumnMappings?: TableColumnMapping[];
     mappingConfidence?: number;
+      rowOrderCoherence: number;
+      caseCoherence: number;
+    };
+    inferredSchema: Array<{
+      columnIndex: number;
+      header: string;
+      inferredSemanticType:
+        | 'case-id'
+        | 'activity'
+        | 'timestamp'
+        | 'start-timestamp'
+        | 'end-timestamp'
+        | 'order-index'
+        | 'resource'
+        | 'role'
+        | 'system'
+        | 'status'
+        | 'lifecycle'
+        | 'comment'
+        | 'note'
+        | 'amount'
+        | 'location'
+        | 'free-text-support'
+        | 'unknown';
+      confidence: number;
+      supportingSignals: string[];
+      conflictingSignals: string[];
+      accepted: boolean;
+      fallbackUse?: string;
+    }>;
     eventlogEligibility: {
       eligible: boolean;
       reasons: string[];

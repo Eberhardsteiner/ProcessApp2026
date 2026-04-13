@@ -38,6 +38,7 @@ export interface RepairReport {
   reclassifiedIssues: number;
   splitSteps: number;
   mergedDuplicates: number;
+  mergeSkippedBecauseStructured: number;
   notes: string[];
 }
 
@@ -126,24 +127,46 @@ export function shouldSuggestIssueReclassification(observation: ProcessMiningObs
 function mergeConsecutiveDuplicates(observations: ProcessMiningObservation[]): {
   observations: ProcessMiningObservation[];
   mergedCount: number;
+  mergeSkippedBecauseStructured: number;
 } {
   const sorted = sortCaseObservations(observations);
   const merged: ProcessMiningObservation[] = [];
   let mergedCount = 0;
+  let mergeSkippedBecauseStructured = 0;
 
   for (const observation of sorted) {
     const last = merged[merged.length - 1];
+    const structuredPreserve = Boolean(last?.stepWasPreserved && observation.stepWasPreserved);
+    const sameStructuredLabel =
+      normalizeLabel(last?.originalStepLabel ?? last?.label ?? '') === normalizeLabel(observation.originalStepLabel ?? observation.label);
+    const sameStructuredEvidence =
+      normalizeLabel(last?.evidenceAnchor ?? last?.evidenceSnippet ?? '') === normalizeLabel(observation.evidenceAnchor ?? observation.evidenceSnippet ?? '');
+    const sameStructuredSource = Boolean(last?.candidateId && observation.candidateId && last.candidateId === observation.candidateId);
     if (
       last &&
       last.kind === observation.kind &&
       last.kind === 'step' &&
       stepSemanticKey(last.label) === stepSemanticKey(observation.label)
     ) {
+      if (structuredPreserve && !(sameStructuredLabel && (sameStructuredEvidence || sameStructuredSource))) {
+        merged.push({
+          ...observation,
+          mergeSkippedBecauseStructured: true,
+        });
+        mergeSkippedBecauseStructured += 1;
+        continue;
+      }
       merged[merged.length - 1] = {
         ...last,
         evidenceSnippet: [last.evidenceSnippet, observation.evidenceSnippet].filter(Boolean).join(' '),
         role: last.role ?? observation.role,
         system: last.system ?? observation.system,
+        roles: uniqueStrings([...(last.roles ?? []), ...(observation.roles ?? []), last.role, observation.role]),
+        systems: uniqueStrings([...(last.systems ?? []), ...(observation.systems ?? []), last.system, observation.system]),
+        explicitRoles: uniqueStrings([...(last.explicitRoles ?? []), ...(observation.explicitRoles ?? [])]),
+        explicitSystems: uniqueStrings([...(last.explicitSystems ?? []), ...(observation.explicitSystems ?? [])]),
+        suppressedInferredRoles: uniqueStrings([...(last.suppressedInferredRoles ?? []), ...(observation.suppressedInferredRoles ?? [])]),
+        suppressedInferredSystems: uniqueStrings([...(last.suppressedInferredSystems ?? []), ...(observation.suppressedInferredSystems ?? [])]),
         timestampRaw: last.timestampRaw ?? observation.timestampRaw,
         timestampIso: last.timestampIso ?? observation.timestampIso,
         timestampQuality:
@@ -159,10 +182,15 @@ function mergeConsecutiveDuplicates(observations: ProcessMiningObservation[]): {
     }
   }
 
-  return { observations: merged, mergedCount };
+  return { observations: merged, mergedCount, mergeSkippedBecauseStructured };
 }
 
-export function repairDerivedObservations(observations: ProcessMiningObservation[]): {
+export function repairDerivedObservations(
+  observations: ProcessMiningObservation[],
+  options?: {
+    preserveStructuredSteps?: boolean;
+  },
+): {
   observations: ProcessMiningObservation[];
   report: RepairReport;
 } {
@@ -179,12 +207,22 @@ export function repairDerivedObservations(observations: ProcessMiningObservation
     reclassifiedIssues: 0,
     splitSteps: 0,
     mergedDuplicates: 0,
+    mergeSkippedBecauseStructured: 0,
     notes: [],
   };
 
   for (const [caseId, caseObservations] of grouped.entries()) {
     const nextCase: ProcessMiningObservation[] = [];
     for (const observation of sortCaseObservations(caseObservations)) {
+      const preserveStructuredStep = Boolean(options?.preserveStructuredSteps && observation.stepWasPreserved);
+      if (preserveStructuredStep) {
+        nextCase.push({
+          ...observation,
+          originalStepLabel: observation.originalStepLabel ?? observation.label,
+          stepWasPreserved: true,
+        });
+        continue;
+      }
       const splitParts = getSplitSuggestion(observation, false);
       if (splitParts && splitParts.length >= 2) {
         splitParts.forEach((part, index) => {
@@ -217,6 +255,7 @@ export function repairDerivedObservations(observations: ProcessMiningObservation
 
     const merged = mergeConsecutiveDuplicates(nextCase);
     report.mergedDuplicates += merged.mergedCount;
+    report.mergeSkippedBecauseStructured += merged.mergeSkippedBecauseStructured;
     repaired = [...repaired, ...merged.observations.map((observation, index) => ({
       ...observation,
       sourceCaseId: caseId === '__unassigned__' ? observation.sourceCaseId : caseId,
@@ -235,6 +274,9 @@ export function repairDerivedObservations(observations: ProcessMiningObservation
   }
   if (report.mergedDuplicates > 0) {
     report.notes.push(`${report.mergedDuplicates} doppelte Folgeschritte wurden zusammengeführt.`);
+  }
+  if (report.mergeSkippedBecauseStructured > 0) {
+    report.notes.push(`${report.mergeSkippedBecauseStructured} semantische Zusammenführungen wurden im Structured-Modus bewusst übersprungen.`);
   }
 
   return { observations: repaired, report };

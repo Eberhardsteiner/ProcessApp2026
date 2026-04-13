@@ -252,6 +252,26 @@ export function AugmentationStep({
         ]}
       />
 
+      {QA_SURFACES_ENABLED && (
+        <div ref={releaseRef}>
+          <ReleaseReadinessPanel
+            state={state}
+            version={version}
+            settings={settings}
+            onJump={key => {
+              if (key === 'report') scrollToSection(reportRef);
+              else if (key === 'governance') scrollToSection(governanceRef);
+              else if (key === 'security') scrollToSection(securityRef);
+              else if (key === 'pilot') scrollToSection(pilotRef);
+              else if (key === 'acceptance') scrollToSection(acceptanceRef);
+              else if (key === 'connectors') scrollToSection(connectorsRef);
+              else if (key === 'quality' || key === 'basis') scrollToSection(snapshotRef);
+              else if (key === 'analysis') scrollToSection(detailsRef);
+            }}
+          />
+        </div>
+      )}
+
       <div ref={reportRef}>
         <ProcessMiningReportPanel
           report={state.reportSnapshot}
