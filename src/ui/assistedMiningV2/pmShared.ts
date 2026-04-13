@@ -263,7 +263,6 @@ export function buildAnalysisModeNotice(params: {
       return 'Aktuell liegt ein Mischdokument vor. Die Ergebnisse zeigen einen vorsichtigen Prozessentwurf mit getrennten Struktur- und Narrativanteilen.';
     }
     return 'Aktuell liegt nur ein einzelner Fall oder eine defensiv gehaltene Quelle vor. Die Ergebnisse zeigen einen Prozessentwurf und noch kein belastbares Mining-Muster.';
-    return 'Aktuell liegt nur ein einzelner Fall vor. Die Ergebnisse zeigen einen Prozessentwurf aus diesem Fall, noch kein belastbares Mining-Muster.';
   }
   if (mode === 'exploratory-mining') {
     return `Es liegen ${caseCount} belastbar auswertbare Fälle oder Quellen vor. Das reicht für einen vorsichtigen Fallvergleich, aber noch nicht für harte Standardquoten wie in einem echten Eventlog.`;

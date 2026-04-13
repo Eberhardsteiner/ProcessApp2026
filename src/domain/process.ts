@@ -894,36 +894,6 @@ export interface DerivationSummary {
     acceptedColumnMappings?: TableColumnMapping[];
     rejectedColumnMappings?: TableColumnMapping[];
     mappingConfidence?: number;
-      rowOrderCoherence: number;
-      caseCoherence: number;
-    };
-    inferredSchema: Array<{
-      columnIndex: number;
-      header: string;
-      inferredSemanticType:
-        | 'case-id'
-        | 'activity'
-        | 'timestamp'
-        | 'start-timestamp'
-        | 'end-timestamp'
-        | 'order-index'
-        | 'resource'
-        | 'role'
-        | 'system'
-        | 'status'
-        | 'lifecycle'
-        | 'comment'
-        | 'note'
-        | 'amount'
-        | 'location'
-        | 'free-text-support'
-        | 'unknown';
-      confidence: number;
-      supportingSignals: string[];
-      conflictingSignals: string[];
-      accepted: boolean;
-      fallbackUse?: string;
-    }>;
     eventlogEligibility: {
       eligible: boolean;
       reasons: string[];
@@ -949,7 +919,6 @@ export interface DerivationSummary {
   mixedDocumentSegments?: MixedDocumentSegmentSummary;
   multiCaseSummary?: DerivationMultiCaseSummary;
   repairNotes?: string[];
-  extractionCandidates?: ExtractionCandidate[];
   candidateReview?: ExtractionCandidateReview;
   engineVersion?: string;
   provenance?: 'local' | 'ai';

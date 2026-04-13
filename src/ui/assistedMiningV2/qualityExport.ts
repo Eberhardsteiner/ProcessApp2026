@@ -2,7 +2,6 @@ import type {
   ExtractionCandidate,
   Process,
   ProcessMiningAssistedV2State,
-  ProcessMiningObservation,
   ProcessVersion,
   SourceRoutingContext,
 } from '../../domain/process';
@@ -12,7 +11,7 @@ import type { WorkspaceIntegrityReport } from './workspaceIntegrity';
 import { computeMiningReadiness } from './analysisReadiness';
 import { computeDataMaturity } from './dataMaturity';
 import { buildReviewOverview } from './reviewSuggestions';
-import { buildVerifiedAnalysisFacts, normalizeWhitespace } from './pmShared';
+import { buildVerifiedAnalysisFacts, normalizeWhitespace, uniqueStrings } from './pmShared';
 import {
   buildQualityAssessmentBundle,
   levelFromScore,
@@ -115,11 +114,7 @@ export interface ProcessMiningQualityExportFile {
   analysisResults: {
     qualitySummary?: ProcessMiningAssistedV2State['qualitySummary'];
     lastDerivationSummary?: ProcessMiningAssistedV2State['lastDerivationSummary'];
-    tablePipeline?: ProcessMiningAssistedV2State['lastDerivationSummary'] extends infer T
-      ? T extends { tablePipeline?: infer U }
-        ? U
-        : never
-      : never;
+    tablePipeline?: NonNullable<ProcessMiningAssistedV2State['lastDerivationSummary']>['tablePipeline'];
     routing?: {
       routingClass: string;
       routingConfidence: string;
@@ -127,11 +122,7 @@ export interface ProcessMiningQualityExportFile {
       fallbackReason?: string;
     };
     extractionEvidence?: {
-      candidateStats?: ProcessMiningAssistedV2State['lastDerivationSummary'] extends infer T
-        ? T extends { candidateStats?: infer U }
-          ? U
-          : never
-        : never;
+      candidateStats?: NonNullable<ProcessMiningAssistedV2State['lastDerivationSummary']>['candidateStats'];
       rejectedOrSupportCandidates?: Array<{
         candidateType: string;
         normalizedLabel: string;
@@ -140,6 +131,20 @@ export interface ProcessMiningQualityExportFile {
         downgradeReason?: string;
         evidenceAnchor: string;
       }>;
+      structuredPreserve?: {
+        applied: boolean;
+        preservedSteps: Array<{
+          label: string;
+          originalStepLabel?: string;
+          canonicalStepFamily?: string;
+          stepWasPreserved?: boolean;
+          mergeSkippedBecauseStructured?: boolean;
+          explicitRoles?: string[];
+          explicitSystems?: string[];
+          suppressedInferredRoles?: string[];
+          suppressedInferredSystems?: string[];
+        }>;
+      };
     };
     discoverySummary?: ProcessMiningAssistedV2State['discoverySummary'];
     conformanceSummary?: ProcessMiningAssistedV2State['conformanceSummary'];
@@ -150,8 +155,13 @@ export interface ProcessMiningQualityExportFile {
       overall: 'high' | 'medium' | 'low';
       dimensions: Array<{
         key: QualityDimensionKey;
+        label: string;
+        score: number;
+        level: 'high' | 'medium' | 'low';
+        reason: string;
+      }>;
       scoringProfile?: {
-        mode: 'process-draft' | 'comparison' | 'eventlog-table' | 'weak-raw-table';
+        mode: QualityScoringProfileSnapshot['mode'];
         weights: Record<string, number>;
         evidenceTypes: string[];
         blockerRules: string[];
@@ -159,22 +169,6 @@ export interface ProcessMiningQualityExportFile {
       scoringReasons?: string[];
       blockerReasons?: string[];
       confidenceAdjustments?: string[];
-      overall: 'high' | 'medium' | 'low';
-      dimensions: Array<{
-        key:
-          | 'documentTypeDetection'
-          | 'structureFidelity'
-          | 'stepClarity'
-          | 'roleQuality'
-          | 'systemQuality'
-          | 'domainConsistency'
-          | 'evidenceCoverage'
-          | 'conservativeHandling';
-        label: string;
-        score: number;
-        level: 'high' | 'medium' | 'low';
-        reason: string;
-      }>;
     };
   };
   sourceMaterial: {
@@ -235,15 +229,26 @@ function buildSafeSettings(settings: AppSettings): Record<string, unknown> {
   };
 }
 
-function getStepObservations(state: ProcessMiningAssistedV2State): ProcessMiningObservation[] {
+interface ExportIdentity {
+  resolvedTitle: string;
+  titleSource: 'process' | 'version' | 'source-label' | 'case-name';
+  consistency: 'consistent' | 'adjusted' | 'conflicted';
+  runtimeProcessTitle: string;
+  versionTitleSnapshot?: string;
+  sourceLabel?: string;
+  caseNameHints: string[];
+  adjustments: string[];
+}
+
+function getStepObservations(state: ProcessMiningAssistedV2State) {
   return state.observations.filter(observation => observation.kind === 'step');
 }
 
 function getIssueCount(state: ProcessMiningAssistedV2State): number {
   return (
-    state.lastDerivationSummary?.issueSignals?.length ??
-    state.qualitySummary?.issueObservationCount ??
-    state.observations.filter(observation => observation.kind === 'issue').length
+    state.lastDerivationSummary?.issueSignals?.length
+    ?? state.qualitySummary?.issueObservationCount
+    ?? state.observations.filter(observation => observation.kind === 'issue').length
   );
 }
 
@@ -265,16 +270,7 @@ function resolveExportIdentity(params: {
   process: Process;
   version: ProcessVersion;
   state: ProcessMiningAssistedV2State;
-}): {
-  resolvedTitle: string;
-  titleSource: 'process' | 'version' | 'source-label' | 'case-name';
-  consistency: 'consistent' | 'adjusted' | 'conflicted';
-  runtimeProcessTitle: string;
-  versionTitleSnapshot?: string;
-  sourceLabel?: string;
-  caseNameHints: string[];
-  adjustments: string[];
-} {
+}): ExportIdentity {
   const runtimeTitle = normalizeWhitespace(params.process.title || '');
   const versionTitle = normalizeWhitespace(params.version.titleSnapshot || '');
   const sourceLabel = params.state.lastDerivationSummary?.sourceLabel;
@@ -382,11 +378,7 @@ function buildExportIntegrityReport(params: {
   const extraIssues = [...params.base.issues];
 
   params.identity.adjustments.forEach((message, index) => {
-    extraIssues.push({
-      id: `export-title-adjustment-${index + 1}`,
-      level: 'warning',
-      message,
-    });
+    extraIssues.push({ id: `export-title-adjustment-${index + 1}`, level: 'warning', message });
   });
 
   if (params.verifiedCaseCount !== params.rawCaseCount) {
@@ -396,28 +388,25 @@ function buildExportIntegrityReport(params: {
       message: `Export nutzt ${params.verifiedCaseCount} verifizierte ${params.verifiedCaseCount === 1 ? 'Quelle' : 'Fälle'}, obwohl ${params.rawCaseCount} rohe Case-Objekte im Arbeitsstand vorliegen.`,
     });
   }
-
   if (params.summaryMode && params.summaryMode !== params.verifiedAnalysisMode) {
     extraIssues.push({
       id: 'export-analysismode-adjusted',
       level: 'warning',
-      message: `Analysemodus wurde im Export von „${params.summaryMode}“ auf „${params.verifiedAnalysisMode}“ zurueckgebunden, weil nur verifizierte Pipeline-Fakten zaehlen.`,
+      message: `Analysemodus wurde im Export von „${params.summaryMode}“ auf „${params.verifiedAnalysisMode}“ zurückgebunden, weil nur verifizierte Pipeline-Fakten zählen.`,
     });
   }
-
   if (params.rawEventlogEligibility && !params.verifiedEventlogEligibility) {
     extraIssues.push({
       id: 'export-eventlog-gate',
       level: 'critical',
-      message: 'Eventlog-Eignung wurde im Export gesperrt, weil Case-Anker, Zeitanker oder Aktivitaetskanal nicht sauber genug verifiziert sind.',
+      message: 'Eventlog-Eignung wurde im Export gesperrt, weil Case-Anker, Zeitanker oder Aktivitätskanal nicht sauber genug verifiziert sind.',
     });
   }
-
   if (params.reconstructedSingleCase) {
     extraIssues.push({
       id: 'export-single-case-reconstruction',
       level: 'warning',
-      message: 'Eine rekonstruierte Single-Case-Spur bleibt fuer Export und Readiness defensiv behandelt und aktiviert keine Varianten- oder Timing-Freigaben.',
+      message: 'Eine rekonstruierte Single-Case-Spur bleibt für Export und Readiness defensiv behandelt und aktiviert keine Varianten- oder Timing-Freigaben.',
     });
   }
 
@@ -431,26 +420,18 @@ function buildExportIntegrityReport(params: {
       severity === 'healthy'
         ? 'Arbeitsstand wirkt konsistent.'
         : severity === 'repaired'
-        ? 'Export-Metadaten wurden fuer den operativen Analysezustand harmonisiert.'
+        ? 'Export-Metadaten wurden für den operativen Analysezustand harmonisiert.'
         : 'Export und Arbeitsstand enthalten noch kritische Inkonsistenzen.',
     summary:
       severity === 'healthy'
         ? 'Titel, Analysemodus, Case-Zahlen und Capability-Gates passen zu den verifizierten Pipeline-Fakten.'
         : severity === 'repaired'
         ? `${repairedCount} Metadaten- oder Gate-Abweichungen wurden im Export defensiv korrigiert.`
-        : `${criticalCount} kritische Export- oder Gate-Abweichungen sollten vor externer Weitergabe geprueft werden.`,
+        : `${criticalCount} kritische Export- oder Gate-Abweichungen sollten vor externer Weitergabe geprüft werden.`,
     issues: extraIssues,
     repairedCount,
     criticalCount,
   };
-function scoreToLevel(score: number): 'high' | 'medium' | 'low' {
-  if (score >= 0.75) return 'high';
-  if (score >= 0.45) return 'medium';
-  return 'low';
-}
-
-function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
 }
 
 export function buildQualityExportFile(params: {
@@ -488,19 +469,53 @@ export function buildQualityExportFile(params: {
     reconstructedSingleCase: verifiedFacts.reconstructedSingleCase,
   });
 
+  const lastSummary = state.lastDerivationSummary;
   const happyPath = version.sidecar.captureDraft?.happyPath ?? [];
   const stepObservations = getStepObservations(state);
   const issueCount = getIssueCount(state);
-  const evidenceBackedSteps =
-    state.qualitySummary?.stepObservationsWithEvidence ??
-    stepObservations.filter(step => Boolean(normalizeWhitespace(step.evidenceSnippet ?? ''))).length;
-  const roleBackedSteps =
-    state.qualitySummary?.stepObservationsWithRole ??
-    stepObservations.filter(step => Boolean(normalizeWhitespace(step.role ?? ''))).length;
-  const systemBackedSteps =
-    state.qualitySummary?.stepObservationsWithSystem ??
-    stepObservations.filter(step => Boolean(normalizeWhitespace(step.system ?? ''))).length;
-  const realTimeObservations = verifiedFacts.realTimeStepCount;
+  const evidenceBackedSteps = state.qualitySummary?.stepObservationsWithEvidence
+    ?? stepObservations.filter(step => Boolean(normalizeWhitespace(step.evidenceSnippet ?? ''))).length;
+  const roleBackedSteps = state.qualitySummary?.stepObservationsWithRole
+    ?? stepObservations.filter(step => Boolean(normalizeWhitespace(step.role ?? ''))).length;
+  const systemBackedSteps = state.qualitySummary?.stepObservationsWithSystem
+    ?? stepObservations.filter(step => Boolean(normalizeWhitespace(step.system ?? ''))).length;
+  const scoringWeights = qualityBundle.scoringProfile.dimensionWeights.reduce<Record<string, number>>((acc, item) => {
+    acc[item.key] = item.weight;
+    return acc;
+  }, {});
+  const dimensionRows = qualityBundle.dimensions.map(item => ({
+    key: item.key,
+    label: item.label,
+    score: item.score,
+    level: levelFromScore(item.score),
+    reason: item.rationale[0] ?? item.summary,
+  }));
+  const scoringReasons = uniqueStrings([
+    ...qualityBundle.scoringProfile.scoringReasons,
+    ...qualityBundle.dimensions.flatMap(item => item.scoringReasons ?? []),
+  ]).slice(0, 12);
+  const blockerReasons = uniqueStrings([
+    ...qualityBundle.scoringProfile.blockerReasons,
+    ...qualityBundle.dimensions.flatMap(item => item.blockerReasons ?? []),
+    ...qualityBundle.blockers,
+  ]).slice(0, 12);
+  const confidenceAdjustments = uniqueStrings([
+    ...qualityBundle.scoringProfile.confidenceAdjustments,
+    ...qualityBundle.dimensions.flatMap(item => item.confidenceAdjustments ?? []),
+  ]).slice(0, 12);
+  const preservedSteps = stepObservations
+    .filter(step => Boolean(step.stepWasPreserved || step.originalStepLabel || step.explicitRoles?.length || step.explicitSystems?.length))
+    .map(step => ({
+      label: step.label,
+      originalStepLabel: step.originalStepLabel,
+      canonicalStepFamily: step.canonicalStepFamily,
+      stepWasPreserved: step.stepWasPreserved,
+      mergeSkippedBecauseStructured: step.mergeSkippedBecauseStructured,
+      explicitRoles: step.explicitRoles,
+      explicitSystems: step.explicitSystems,
+      suppressedInferredRoles: step.suppressedInferredRoles,
+      suppressedInferredSystems: step.suppressedInferredSystems,
+    }));
 
   return {
     schemaVersion: 'pm-analysis-quality-export-v2',
@@ -546,10 +561,10 @@ export function buildQualityExportFile(params: {
         outcome: version.endToEndDefinition.outcome,
         doneCriteria: version.endToEndDefinition.doneCriteria,
       },
-      sourceRouting: state.lastDerivationSummary?.routingContext
+      sourceRouting: lastSummary?.routingContext
         ? {
-            ...state.lastDerivationSummary.routingContext,
-            classificationReasons: state.lastDerivationSummary.sourceProfile?.classificationReasons ?? [],
+            ...lastSummary.routingContext,
+            classificationReasons: lastSummary.sourceProfile?.classificationReasons ?? [],
           }
         : undefined,
       sourceIdentity: exportIdentity,
@@ -598,9 +613,9 @@ export function buildQualityExportFile(params: {
       strengths: qualityBundle.strengths,
       watchpoints: qualityBundle.watchpoints,
       blockers: qualityBundle.blockers,
-      recommendedFocus: [...qualityBundle.recommendedFocus, ...readiness.nextActions, ...dataMaturity.actions.map(action => action.label)].filter(
-        (value, index, values) => value && values.indexOf(value) === index,
-      ).slice(0, 8),
+      recommendedFocus: [...qualityBundle.recommendedFocus, ...readiness.nextActions, ...dataMaturity.actions.map(action => action.label)]
+        .filter((value, index, values) => value && values.indexOf(value) === index)
+        .slice(0, 8),
       scoringProfile: qualityBundle.scoringProfile,
     },
     qualityControl: {
@@ -632,7 +647,7 @@ export function buildQualityExportFile(params: {
     },
     analysisResults: {
       qualitySummary: state.qualitySummary,
-      lastDerivationSummary: state.lastDerivationSummary,
+      lastDerivationSummary: lastSummary,
       tablePipeline: lastSummary?.tablePipeline,
       routing: lastSummary?.routingContext
         ? {
@@ -656,6 +671,10 @@ export function buildQualityExportFile(params: {
                 downgradeReason: candidate.downgradeReason,
                 evidenceAnchor: candidate.evidenceAnchor,
               })),
+            structuredPreserve: {
+              applied: Boolean(lastSummary.structuredPreserveApplied || preservedSteps.length > 0),
+              preservedSteps,
+            },
           }
         : undefined,
       discoverySummary: state.discoverySummary,
@@ -665,43 +684,31 @@ export function buildQualityExportFile(params: {
       handoverDrafts: state.handoverDrafts,
       qualityAssessment: {
         overall: qualityBundle.overallLevel,
-        dimensions: qualityBundle.dimensions.map(item => ({
-          key: item.key,
-          label: item.label,
-          score: item.score,
-          level: levelFromScore(item.score),
-          reason: item.rationale[0] ?? item.summary,
-        })),
+        dimensions: dimensionRows,
         scoringProfile: {
-          mode,
-          weights: activeProfile.weights,
-          evidenceTypes: activeProfile.evidenceTypes,
-          blockerRules: activeProfile.blockerRules,
+          mode: qualityBundle.scoringProfile.mode,
+          weights: scoringWeights,
+          evidenceTypes: qualityBundle.scoringProfile.validEvidenceTypes,
+          blockerRules: qualityBundle.scoringProfile.blockerRules,
         },
-        scoringReasons: [
-          `Mode-spezifische Gewichtung aktiv: ${mode}.`,
-          `Routing-Klasse: ${routingClass ?? 'unbekannt'}.`,
-          `Semantische Schrittklarheit: ${(semanticStepShare * 100).toFixed(0)}%.`,
-        ],
+        scoringReasons,
         blockerReasons,
         confidenceAdjustments,
-        overall,
-        dimensions: dimensionScores,
       },
     },
     sourceMaterial: {
       cases: state.cases,
       observations: state.observations,
-      supportSignals: state.lastDerivationSummary?.issueEvidence ?? [],
-      extractionCandidates: state.lastDerivationSummary?.extractionCandidates ?? [],
-      candidateReview: state.lastDerivationSummary?.candidateReview,
+      supportSignals: lastSummary?.issueEvidence ?? [],
+      extractionCandidates: lastSummary?.extractionCandidates ?? [],
+      candidateReview: lastSummary?.candidateReview,
       counts: {
         cases: verifiedFacts.caseCount,
         rawCaseRecords: state.cases.length,
         observations: state.observations.length,
         steps: stepObservations.length,
         issues: issueCount,
-        realTimeObservations,
+        realTimeObservations: verifiedFacts.realTimeStepCount,
         evidenceBackedSteps,
         roleBackedSteps,
         systemBackedSteps,

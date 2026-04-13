@@ -32,6 +32,7 @@ import { MiningWorkspaceOverview } from './MiningWorkspaceOverview';
 import { QualityExportPanel } from './QualityExportPanel';
 import { applyConsistentPatch } from './stateConsistency';
 import { hardenWorkspaceState, type WorkspaceIntegrityReport } from './workspaceIntegrity';
+import { WorkspaceIntegrityPanel } from './WorkspaceIntegrityPanel';
 import { HelpPopover } from '../components/HelpPopover';
 import type { HelpKey } from '../help/helpTexts';
 import { QA_SURFACES_ENABLED } from '../../config/runtimeMode';

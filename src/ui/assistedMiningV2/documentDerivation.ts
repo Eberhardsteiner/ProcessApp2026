@@ -1965,105 +1965,22 @@ function buildExtractionCandidates(
   });
 
   return reviewExtractionCandidates(candidates);
-const WEAK_STEP_LABEL_RE = /^(mail|e-?mail|chat|kommentar|notiz|hinweis|offen|ticket|frage|status|todo)$/i;
-const ACTIVITY_STEP_RE = /\b(pr[üu]fen|bearbeiten|anlegen|validieren|freigeben|abstimmen|dokumentieren|versenden|zuordnen|abschlie[ßs]en|eskalieren|bereitstellen|bestellen|recherchieren|koordinieren)\b/i;
-
-function buildExtractionCandidates(
-  observations: ProcessMiningObservation[],
-  routingContext: SourceRoutingContext,
-): ExtractionCandidate[] {
-  const candidates: ExtractionCandidate[] = [];
-  for (const observation of observations) {
-    const anchor = observation.evidenceSnippet?.trim() || '';
-    const contextWindow = normalizeWhitespace(`${observation.label} ${observation.evidenceSnippet ?? ''}`).slice(0, 320);
-    const isWeakStep = observation.kind === 'step' && (
-      anchor.length < 12 ||
-      WEAK_STEP_LABEL_RE.test(observation.label.trim()) ||
-      !ACTIVITY_STEP_RE.test(contextWindow)
-    );
-    const stepStatus: ExtractionCandidate['status'] = observation.kind === 'step'
-      ? (isWeakStep ? 'rejected' : 'merged')
-      : observation.kind === 'issue'
-      ? 'support-only'
-      : 'candidate';
-    const rejectionReason = observation.kind === 'step' && isWeakStep
-      ? anchor.length < 12
-        ? 'Kein belastbarer Evidenzanker am Schritt.'
-        : WEAK_STEP_LABEL_RE.test(observation.label.trim())
-        ? 'Nur schwaches Kurzlabel ohne belastbaren Prozessbezug.'
-        : 'Kein stabiler Aktivitätscharakter im lokalen Kontext.'
-      : undefined;
-
-    candidates.push({
-      candidateId: `${observation.id}-base`,
-      candidateType: observation.kind === 'step' ? 'step' : observation.kind === 'issue' ? 'signal' : 'support',
-      rawLabel: observation.label,
-      normalizedLabel: observation.kind === 'step' ? canonicalizeProcessStepLabel({ title: observation.label, body: observation.evidenceSnippet, fallback: observation.label, index: observation.sequenceIndex }) : observation.label,
-      evidenceAnchor: anchor || observation.label,
-      contextWindow,
-      confidence: observation.kind === 'step' && !isWeakStep ? 'medium' : 'low',
-      originChannel: 'imported-observation',
-      sourceFragmentType: anchor.includes('|') ? 'table-row' : 'sentence',
-      routingClass: routingContext.routingClass,
-      sourceRef: observation.id,
-      status: stepStatus,
-      rejectionReason,
-      downgradeReason: stepStatus === 'support-only' ? 'Signal oder Hinweis, kein Kernschritt.' : undefined,
-    });
-
-    if (observation.kind === 'step' && observation.role) {
-      candidates.push({
-        candidateId: `${observation.id}-role`,
-        candidateType: 'role',
-        rawLabel: observation.role,
-        normalizedLabel: sentenceCase(observation.role),
-        evidenceAnchor: anchor || observation.role,
-        contextWindow,
-        confidence: anchor ? 'medium' : 'low',
-        originChannel: 'imported-observation',
-        sourceFragmentType: anchor.includes('|') ? 'table-row' : 'sentence',
-        routingClass: routingContext.routingClass,
-        sourceRef: observation.id,
-        status: anchor ? 'candidate' : 'support-only',
-        downgradeReason: anchor ? undefined : 'Rolle nur schwach ohne lokalen Evidenzanker.',
-      });
-    }
-
-    if (observation.kind === 'step' && observation.system) {
-      candidates.push({
-        candidateId: `${observation.id}-system`,
-        candidateType: 'system',
-        rawLabel: observation.system,
-        normalizedLabel: sentenceCase(observation.system),
-        evidenceAnchor: anchor || observation.system,
-        contextWindow,
-        confidence: anchor ? 'medium' : 'low',
-        originChannel: 'imported-observation',
-        sourceFragmentType: anchor.includes('|') ? 'table-row' : 'sentence',
-        routingClass: routingContext.routingClass,
-        sourceRef: observation.id,
-        status: anchor ? 'candidate' : 'support-only',
-        downgradeReason: anchor ? undefined : 'System nur schwach ohne lokalen Evidenzanker.',
-      });
-    }
-  }
-  return candidates;
 }
 
 function finalizeDerivationResult(result: DerivationResult): DerivationResult {
-  const repaired = repairDerivedObservations(result.observations);
-  const candidates = buildExtractionCandidates(
+  const preserveStructuredSteps = Boolean(result.method === 'structured' || result.summary.structuredPreserveApplied);
+  const repaired = repairDerivedObservations(result.observations, { preserveStructuredSteps });
+  const seededCandidates = buildExtractionCandidates(
     repaired.observations,
     result.routingContext,
     result.extractionCandidates ?? [],
     result.summary.issueEvidence ?? [],
   );
-  const candidateReview = buildExtractionCandidateReview(candidates);
   const acceptedStepIds = new Set(
-    candidates
+    seededCandidates
       .filter(candidate => candidate.candidateType === 'step' && candidate.status === 'merged')
       .map(candidate => candidate.sourceRef)
-      .filter(Boolean),
+      .filter((value): value is string => Boolean(value)),
   );
   const gatedObservations = repaired.observations.filter(observation => (
     observation.kind !== 'step' || acceptedStepIds.has(observation.id)
@@ -2076,20 +1993,26 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
   const provisionalStepLabels = uniqueStrings(
     gatedObservations
       .filter(observation => observation.kind === 'step')
-      .map(observation => observation.label),
+      .map(observation => observation.originalStepLabel ?? observation.label),
   );
-  const provisionalRoles = uniqueStrings([
-    ...candidates
-      .filter(candidate => candidate.candidateType === 'role' && candidate.status !== 'support-only' && Boolean(candidate.relatedCandidateId))
-      .map(candidate => candidate.normalizedLabel),
-    ...gatedObservations.map(observation => (observation.role ? rolePreferredValue(observation.role) : undefined)),
-  ]);
-  const provisionalSystems = uniqueStrings([
-    ...candidates
-      .filter(candidate => candidate.candidateType === 'system' && candidate.status !== 'support-only' && Boolean(candidate.relatedCandidateId))
-      .map(candidate => candidate.normalizedLabel),
-    ...gatedObservations.map(observation => (observation.system ? systemPreferredValue(observation.system) : undefined)),
-  ]);
+  const provisionalRoles = uniqueStrings(
+    gatedObservations.flatMap(observation => {
+      if (observation.kind !== 'step') return [];
+      const roleLabels = observation.roles ?? (observation.role ? [observation.role] : []);
+      return preserveStructuredSteps && observation.stepWasPreserved
+        ? roleLabels
+        : roleLabels.map(label => (label ? rolePreferredValue(label) : undefined));
+    }),
+  );
+  const provisionalSystems = uniqueStrings(
+    gatedObservations.flatMap(observation => {
+      if (observation.kind !== 'step') return [];
+      const systemLabels = observation.systems ?? (observation.system ? [observation.system] : []);
+      return preserveStructuredSteps && observation.stepWasPreserved
+        ? systemLabels
+        : systemLabels.map(label => (label ? systemPreferredValue(label) : undefined));
+    }),
+  );
   const domainIsolation = detectDomainIsolation({
     text: rawText,
     stepLabels: provisionalStepLabels,
@@ -2113,53 +2036,116 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     domainResult: domainIsolation,
   });
   const keptIssueLabels = new Set(keptIssueEvidence.map(entry => entry.label));
-  const filteredSupportObservations = gatedObservations
-    .filter(observation => observation.kind !== 'issue')
-    .map(observation => {
-      const normalizedRole = observation.role ? rolePreferredValue(observation.role) : undefined;
-      const normalizedSystem = observation.system ? systemPreferredValue(observation.system) : undefined;
-      return {
+  const secondaryDomainHint = domainIsolation.secondaryDomainLabels.length > 0
+    ? domainIsolation.secondaryDomainLabels.join(', ')
+    : undefined;
+
+  const filteredObservations = gatedObservations.flatMap(observation => {
+    if (observation.kind === 'issue') {
+      return keptIssueLabels.has(observation.label) ? [observation] : [];
+    }
+    if (observation.kind !== 'step') {
+      return [observation];
+    }
+
+    if (preserveStructuredSteps && observation.stepWasPreserved) {
+      const explicitRoles = uniqueStrings(observation.explicitRoles ?? []);
+      const explicitSystems = uniqueStrings(observation.explicitSystems ?? []);
+      const observedRoles = uniqueStrings(observation.roles ?? (observation.role ? [observation.role] : []));
+      const observedSystems = uniqueStrings(observation.systems ?? (observation.system ? [observation.system] : []));
+      const inferredRoles = excludeNormalizedValues(observedRoles, explicitRoles);
+      const inferredSystems = excludeNormalizedValues(observedSystems, explicitSystems);
+      const roleResult = preserveStructuredDomainLabels({
+        explicit: explicitRoles,
+        inferred: inferredRoles,
+        kind: 'role',
+        domainIsolation,
+      });
+      const systemResult = preserveStructuredDomainLabels({
+        explicit: explicitSystems,
+        inferred: inferredSystems,
+        kind: 'system',
+        domainIsolation,
+      });
+      const roles = uniqueStrings(roleResult.kept);
+      const systems = uniqueStrings(systemResult.kept);
+
+      return [{
         ...observation,
+        label: observation.originalStepLabel ?? observation.label,
+        originalStepLabel: observation.originalStepLabel ?? observation.label,
         role:
-          normalizedRole && filterRolesByDomain([normalizedRole], domainIsolation).length > 0
-            ? normalizedRole
-            : undefined,
+          (observation.role && includesNormalizedValue(roles, observation.role))
+            ? observation.role
+            : roles[0],
         system:
-          normalizedSystem && filterSystemsByDomain([normalizedSystem], domainIsolation).length > 0
-            ? normalizedSystem
-            : undefined,
-      };
-    });
-  const filteredIssueObservations = gatedObservations.filter(
-    observation => observation.kind === 'issue' && keptIssueLabels.has(observation.label),
+          (observation.system && includesNormalizedValue(systems, observation.system))
+            ? observation.system
+            : systems[0],
+        roles: roles.length > 0 ? roles : undefined,
+        systems: systems.length > 0 ? systems : undefined,
+        explicitRoles: explicitRoles.length > 0 ? explicitRoles : undefined,
+        explicitSystems: explicitSystems.length > 0 ? explicitSystems : undefined,
+        suppressedInferredRoles: roleResult.suppressed.length > 0 ? roleResult.suppressed : undefined,
+        suppressedInferredSystems: systemResult.suppressed.length > 0 ? systemResult.suppressed : undefined,
+        domainAligned: roleResult.suppressed.length === 0 && systemResult.suppressed.length === 0,
+        secondaryDomainHint,
+        stepWasPreserved: true,
+      }];
+    }
+
+    const normalizedRoles = uniqueStrings(
+      (observation.roles ?? (observation.role ? [observation.role] : []))
+        .map(label => (label ? rolePreferredValue(label) : undefined)),
+    );
+    const normalizedSystems = uniqueStrings(
+      (observation.systems ?? (observation.system ? [observation.system] : []))
+        .map(label => (label ? systemPreferredValue(label) : undefined)),
+    );
+    const keptRoles = filterRolesByDomain(normalizedRoles, domainIsolation);
+    const keptSystems = filterSystemsByDomain(normalizedSystems, domainIsolation);
+
+    return [{
+      ...observation,
+      role: keptRoles[0],
+      system: keptSystems[0],
+      roles: keptRoles.length > 0 ? keptRoles : undefined,
+      systems: keptSystems.length > 0 ? keptSystems : undefined,
+      domainAligned: keptRoles.length === normalizedRoles.length && keptSystems.length === normalizedSystems.length,
+      secondaryDomainHint,
+    }];
+  });
+
+  const stepObservations = filteredObservations.filter(
+    (observation): observation is ProcessMiningObservation => observation.kind === 'step',
   );
-  const filteredObservations = [...filteredSupportObservations, ...filteredIssueObservations];
-  const stepLabels = uniqueStrings(
-    filteredObservations
-      .filter(observation => observation.kind === 'step')
-      .map(observation => observation.label),
+  const stepLabels = uniqueStrings(stepObservations.map(observation => observation.originalStepLabel ?? observation.label));
+  const roles = uniqueStrings(
+    stepObservations.flatMap(observation => observation.roles ?? (observation.role ? [observation.role] : [])),
   );
-  const roles = filterRolesByDomain(
-    uniqueStrings([
-      ...filteredSupportObservations.map(observation => observation.role),
-    ]),
-    domainIsolation,
-  );
-  const systems = filterSystemsByDomain(
-    uniqueStrings([
-      ...filteredSupportObservations.map(observation => observation.system),
-    ]),
-    domainIsolation,
+  const systems = uniqueStrings(
+    stepObservations.flatMap(observation => observation.systems ?? (observation.system ? [observation.system] : [])),
   );
   const issueSignals = uniqueStrings(keptIssueEvidence.map(entry => entry.label));
-  const droppedRoleLabels = provisionalRoles.filter(label => label && !roles.includes(label));
-  const droppedSystemLabels = provisionalSystems.filter(label => label && !systems.includes(label));
-  const domainNotes = [
+  const droppedRoleLabels = provisionalRoles.filter(label => label && !includesNormalizedValue(roles, label));
+  const droppedSystemLabels = provisionalSystems.filter(label => label && !includesNormalizedValue(systems, label));
+  const domainNotes = uniqueStrings([
     domainIsolation.note,
     droppedLabels.length > 0 ? `Fachfremde Signale ausgeblendet: ${droppedLabels.join(', ')}.` : undefined,
-    droppedRoleLabels.length > 0 ? `Domänenfremde Rollen ausgeblendet: ${droppedRoleLabels.join(', ')}.` : undefined,
-    droppedSystemLabels.length > 0 ? `Domänenfremde Systeme ausgeblendet: ${droppedSystemLabels.join(', ')}.` : undefined,
-  ].filter((value): value is string => Boolean(value));
+    droppedRoleLabels.length > 0
+      ? preserveStructuredSteps
+        ? `Nur inferierte, domänenfremde Rollen wurden als Sekundärhinweis unterdrückt: ${droppedRoleLabels.join(', ')}.`
+        : `Domänenfremde Rollen ausgeblendet: ${droppedRoleLabels.join(', ')}.`
+      : undefined,
+    droppedSystemLabels.length > 0
+      ? preserveStructuredSteps
+        ? `Nur inferierte, domänenfremde Systeme wurden als Sekundärhinweis unterdrückt: ${droppedSystemLabels.join(', ')}.`
+        : `Domänenfremde Systeme ausgeblendet: ${droppedSystemLabels.join(', ')}.`
+      : undefined,
+    preserveStructuredSteps
+      ? 'Structured-Preserve aktiv: Explizite strukturierte Rollen- und Systemevidenz bleibt trotz Domain-Gate erhalten.'
+      : undefined,
+  ]);
   const repairNotes = uniqueStrings([
     ...(repaired.report.notes.length > 0 ? repaired.report.notes : result.summary.repairNotes ?? []),
     ...domainNotes,
@@ -2180,8 +2166,17 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
         classificationReasons: uniqueStrings([
           ...(result.summary.sourceProfile.classificationReasons ?? []),
           ...(domainIsolation.note ? [domainIsolation.note] : []),
-          droppedLabels.length > 0 ? 'Fachfremde Signalsätze werden nur bei starker Evidenz übernommen' : '',
-        ]).filter(Boolean),
+          droppedLabels.length > 0 ? 'Fachfremde Signalsätze werden nur bei starker Evidenz übernommen.' : undefined,
+          preserveStructuredSteps
+            ? 'Structured-Preserve behandelt Originalstruktur als Primärwahrheit; Normalisierung, Repair und Domain-Gate bleiben Hilfsschichten.'
+            : undefined,
+          preserveStructuredSteps && droppedRoleLabels.length > 0
+            ? 'Explizite strukturierte Rollen bleiben erhalten; nur inferierte Zusatzrollen werden domänensensitiv unterdrückt.'
+            : undefined,
+          preserveStructuredSteps && droppedSystemLabels.length > 0
+            ? 'Explizite strukturierte Systeme bleiben erhalten; nur inferierte Zusatzsysteme werden domänensensitiv unterdrückt.'
+            : undefined,
+        ]),
       }
     : result.summary.sourceProfile;
 
@@ -2192,37 +2187,10 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
         ...(sourceProfile.extractionPlan ?? []),
       ]).slice(0, 5)
     : undefined;
-  const stepLabels = uniqueStrings(
-    gatedObservations
-      .filter(observation => observation.kind === 'step')
-      .map(observation => observation.label),
-  );
-  const roles = uniqueStrings([
-    ...result.roles,
-    ...candidates
-      .filter(candidate => candidate.candidateType === 'role' && candidate.status !== 'rejected')
-      .map(candidate => candidate.normalizedLabel),
-  ]);
-  const systems = uniqueStrings([
-    ...result.systems,
-    ...candidates
-      .filter(candidate => candidate.candidateType === 'system' && candidate.status !== 'rejected')
-      .map(candidate => candidate.normalizedLabel),
-  ]);
-  const issueSignals = uniqueStrings([
-    ...result.issueSignals,
-    ...gatedObservations.filter(observation => observation.kind === 'issue').map(observation => observation.label),
-  ]);
-  const repairNotes = repaired.report.notes.length > 0 ? repaired.report.notes : result.summary.repairNotes;
-  const sourceProfile = result.summary.sourceProfile;
-  const multiCaseSummary = buildMultiCaseSummary(repaired.observations);
-  const analysisStrategies = sourceProfile ? buildAnalysisStrategies(sourceProfile.inputProfileLabel) : undefined;
   const caseCount = Math.max(result.summary.caseCount, result.cases.length);
   const lowEvidence = stepLabels.length < 3 || result.documentKind === 'weak-material' || result.documentKind === 'unknown';
-  const forceConservative = caseCount <= 1 && lowEvidence;
-  const finalConfidence: DerivationSummary['confidence'] = forceConservative
-    ? 'low'
-    : result.summary.confidence;
+  const forceConservative = !preserveStructuredSteps && caseCount <= 1 && lowEvidence;
+  const finalConfidence: DerivationSummary['confidence'] = forceConservative ? 'low' : result.summary.confidence;
   const conservativeWarning = forceConservative
     ? 'Konservative Auswertung aktiv: Datenbasis ist schwach, daher werden Ergebnisse nur als vorläufiger Prozessentwurf ausgewiesen.'
     : undefined;
@@ -2236,11 +2204,79 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     ...domainNotes,
   ]).join(' ').trim();
   const finalDocumentSummary = [
-    forceConservative
-      ? 'Vorläufiger Prozessentwurf mit erhöhter Unsicherheit.'
-      : '',
+    forceConservative ? 'Vorläufiger Prozessentwurf mit erhöhter Unsicherheit.' : undefined,
+    preserveStructuredSteps
+      ? 'Structured-Preserve aktiv: Quellschritte, explizite Rollen und explizite Systeme bleiben Primärwahrheit.'
+      : undefined,
     documentSummary,
-  ].filter(Boolean).join(' ');
+  ].filter(Boolean).join(' ').trim();
+
+  const finalCandidates = buildExtractionCandidates(
+    filteredObservations,
+    result.routingContext,
+    seededCandidates,
+    keptIssueEvidence,
+  );
+  const stepObservationByCandidateId = new Map(
+    stepObservations
+      .filter(observation => Boolean(observation.candidateId))
+      .map(observation => [observation.candidateId!, observation]),
+  );
+  const finalizedCandidateList = reviewExtractionCandidates(
+    finalCandidates.map(candidate => {
+      if (candidate.candidateType === 'step') {
+        const observation = stepObservationByCandidateId.get(candidate.candidateId);
+        if (!observation) return candidate;
+        return {
+          ...candidate,
+          normalizedLabel: observation.stepWasPreserved
+            ? (observation.originalStepLabel ?? observation.label)
+            : candidate.normalizedLabel,
+          originalStepLabel: observation.originalStepLabel ?? candidate.originalStepLabel,
+          canonicalStepFamily: observation.canonicalStepFamily ?? candidate.canonicalStepFamily,
+          stepWasPreserved: observation.stepWasPreserved ?? candidate.stepWasPreserved,
+          mergeSkippedBecauseStructured: observation.mergeSkippedBecauseStructured ?? candidate.mergeSkippedBecauseStructured,
+          explicitRoles: observation.explicitRoles ?? candidate.explicitRoles,
+          explicitSystems: observation.explicitSystems ?? candidate.explicitSystems,
+          suppressedInferredRoles: observation.suppressedInferredRoles ?? candidate.suppressedInferredRoles,
+          suppressedInferredSystems: observation.suppressedInferredSystems ?? candidate.suppressedInferredSystems,
+          domainAligned: observation.domainAligned ?? candidate.domainAligned,
+          secondaryDomainHint: observation.secondaryDomainHint ?? candidate.secondaryDomainHint,
+        };
+      }
+
+      if ((candidate.candidateType === 'role' || candidate.candidateType === 'system') && candidate.relatedCandidateId) {
+        const observation = stepObservationByCandidateId.get(candidate.relatedCandidateId);
+        if (!observation) return candidate;
+        const finalLabels = candidate.candidateType === 'role'
+          ? observation.roles ?? (observation.role ? [observation.role] : [])
+          : observation.systems ?? (observation.system ? [observation.system] : []);
+        const suppressedLabels = candidate.candidateType === 'role'
+          ? observation.suppressedInferredRoles ?? []
+          : observation.suppressedInferredSystems ?? [];
+        if (includesNormalizedValue(suppressedLabels, candidate.rawLabel) || includesNormalizedValue(suppressedLabels, candidate.normalizedLabel)) {
+          return {
+            ...candidate,
+            status: 'support-only' as const,
+            downgradeReason: candidate.candidateType === 'role'
+              ? 'Inferierte Rolle wurde im Structured-Pfad wegen Domain-Isolation nur als Sekundärhinweis markiert.'
+              : 'Inferiertes System wurde im Structured-Pfad wegen Domain-Isolation nur als Sekundärhinweis markiert.',
+          };
+        }
+        if (includesNormalizedValue(finalLabels, candidate.rawLabel) || includesNormalizedValue(finalLabels, candidate.normalizedLabel)) {
+          return {
+            ...candidate,
+            status: candidate.status === 'support-only' ? 'candidate' : candidate.status,
+            downgradeReason: undefined,
+          };
+        }
+      }
+
+      return candidate;
+    }),
+  );
+  const candidateReview = buildExtractionCandidateReview(finalizedCandidateList);
+  const currentTimestamp = new Date().toISOString();
 
   return {
     ...result,
@@ -2251,27 +2287,28 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       analysisProfileHint: sourceProfile?.extractionFocus ?? caseItem.analysisProfileHint,
       analysisStrategies: analysisStrategies ?? caseItem.analysisStrategies,
       routingContext: result.routingContext ?? caseItem.routingContext,
-      updatedAt: new Date().toISOString(),
+      updatedAt: currentTimestamp,
     })),
     observations: filteredObservations,
     roles,
     systems,
     issueSignals,
-    derivedSteps: filteredObservations
-    observations: gatedObservations,
-    roles,
-    systems,
-    issueSignals,
-    derivedSteps: gatedObservations
-      .filter(observation => observation.kind === 'step')
-      .map(observation => ({
-        label: observation.label,
-        role: observation.role,
-        evidenceSnippet: observation.evidenceSnippet,
-      })),
+    derivedSteps: stepObservations.map(observation => ({
+      label: observation.originalStepLabel ?? observation.label,
+      role: observation.role,
+      evidenceSnippet: observation.evidenceSnippet,
+      originalStepLabel: observation.originalStepLabel,
+      canonicalStepFamily: observation.canonicalStepFamily,
+      stepWasPreserved: observation.stepWasPreserved,
+      mergeSkippedBecauseStructured: observation.mergeSkippedBecauseStructured,
+      explicitRoles: observation.explicitRoles,
+      explicitSystems: observation.explicitSystems,
+      suppressedInferredRoles: observation.suppressedInferredRoles,
+      suppressedInferredSystems: observation.suppressedInferredSystems,
+    })),
     summary: {
       ...result.summary,
-      observationCount: filteredObservations.length,
+      observationCount: stepObservations.length,
       stepLabels,
       warnings: finalWarnings,
       confidence: finalConfidence,
@@ -2279,28 +2316,26 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       systems,
       issueSignals,
       issueEvidence: keptIssueEvidence,
+      structuredPreserveApplied: preserveStructuredSteps,
       documentSummary: finalDocumentSummary,
       routingContext: result.routingContext,
-      documentSummary: finalDocumentSummary,
-      routingContext: result.routingContext,
-      extractionCandidates: candidates,
+      extractionCandidates: finalizedCandidateList,
       candidateStats: {
-        total: candidates.length,
-        mergedCoreSteps: candidates.filter(candidate => candidate.candidateType === 'step' && candidate.status === 'merged').length,
-        supportOnly: candidates.filter(candidate => candidate.status === 'support-only').length,
-        rejected: candidates.filter(candidate => candidate.status === 'rejected').length,
+        total: finalizedCandidateList.length,
+        mergedCoreSteps: candidateReview.mergedCoreSteps,
+        supportOnly: candidateReview.supportOnlyCandidates,
+        rejected: candidateReview.rejectedCoreSteps,
       },
       repairNotes,
       sourceProfile,
       multiCaseSummary,
-      extractionCandidates: candidates,
       candidateReview,
       engineVersion: ENGINE_VERSION,
-      updatedAt: new Date().toISOString(),
+      updatedAt: currentTimestamp,
     },
     warnings: finalWarnings,
     confidence: finalConfidence,
-    extractionCandidates: candidates,
+    extractionCandidates: finalizedCandidateList,
   };
 }
 
@@ -2496,15 +2531,6 @@ export function deriveProcessArtifactsFromText(input: DerivationInput): Derivati
       .filter(candidate => candidate.candidateType === 'system' && Boolean(candidate.relatedCandidateId))
       .map(candidate => candidate.normalizedLabel),
   );
-  const fallbackIssueEvidence = extractIssueEvidence(rawText, domainContext);
-  const enrichedFallbackObservations = [
-    ...usableObservations,
-    ...buildIssueObservations({
-      caseId: fallbackCase.id,
-      startIndex: usableObservations.length,
-      issueEvidence: fallbackIssueEvidence,
-    }),
-  ];
 
   const summary: DerivationSummary = {
     sourceLabel: sourceName,
@@ -2615,16 +2641,6 @@ export function deriveFromMultipleTexts(
         routingSignals: aggregatedRoutingSignals,
         fallbackReason: summaries.find(summary => summary.routingContext?.fallbackReason)?.routingContext?.fallbackReason,
       };
-  const combinedRoutingContext: SourceRoutingContext = {
-    routingClass: (inputs.length > 1 ? 'mixed-document' : (routingWinner?.[0] as SourceRoutingContext['routingClass'] | undefined)) ?? 'weak-raw-table',
-    routingConfidence: inputs.length > 1 ? 'medium' : (summaries[0]?.routingContext?.routingConfidence ?? 'low'),
-    routingSignals: [
-      `sources=${inputs.length}`,
-      `routingSpread=${uniqueStrings(routingClasses).join(',') || 'none'}`,
-      ...(summaries.flatMap(summary => summary.routingContext?.routingSignals ?? []).slice(0, 4)),
-    ],
-    fallbackReason: summaries.find(summary => summary.routingContext?.fallbackReason)?.routingContext?.fallbackReason,
-  };
   const combinedSummary: DerivationSummary = {
     sourceLabel: options?.sourceLabel ?? (inputs.length === 1 ? inputs[0].name : `${inputs.length} importierte Beschreibungen`),
     method: summaries.some(summary => summary.method === 'structured')

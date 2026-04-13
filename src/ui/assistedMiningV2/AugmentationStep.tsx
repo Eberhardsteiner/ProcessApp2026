@@ -38,6 +38,7 @@ import { StepQuickJumpBar } from './StepQuickJumpBar';
 import { WorkbenchSection } from './WorkbenchSection';
 import { StepStageHeader } from './StepStageHeader';
 import { StepMetricGrid } from './StepMetricGrid';
+import { ReleaseReadinessPanel } from './ReleaseReadinessPanel';
 import { QA_SURFACES_ENABLED } from '../../config/runtimeMode';
 
 const LazyAssistedMiningQaSection = QA_SURFACES_ENABLED
@@ -106,6 +107,7 @@ export function AugmentationStep({
   const deviations = state.conformanceSummary?.deviationNotes ?? [];
   const hotspotIssues = state.enhancementSummary?.issues ?? [];
 
+  const releaseRef = useRef<HTMLDivElement>(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
   const qaRef = useRef<HTMLDivElement>(null);
@@ -260,12 +262,18 @@ export function AugmentationStep({
             settings={settings}
             onJump={key => {
               if (key === 'report') scrollToSection(reportRef);
-              else if (key === 'governance') scrollToSection(governanceRef);
-              else if (key === 'security') scrollToSection(securityRef);
-              else if (key === 'pilot') scrollToSection(pilotRef);
-              else if (key === 'acceptance') scrollToSection(acceptanceRef);
-              else if (key === 'connectors') scrollToSection(connectorsRef);
-              else if (key === 'quality' || key === 'basis') scrollToSection(snapshotRef);
+              else if (key === 'quality') scrollToSection(qaRef);
+              else if (key === 'basis') scrollToSection(releaseRef);
+              else if (
+                key === 'governance'
+                || key === 'security'
+                || key === 'pilot'
+                || key === 'acceptance'
+                || key === 'connectors'
+                || key === 'collaboration'
+              ) {
+                scrollToSection(releaseRef);
+              }
               else if (key === 'analysis') scrollToSection(detailsRef);
             }}
           />
