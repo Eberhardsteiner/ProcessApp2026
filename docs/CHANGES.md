@@ -1,3 +1,9 @@
+## v0.45.1 – Generalisierte Structured-Invarianten und externer Mutationslauf
+
+- strukturierte Sollprozessquellen bleiben in Export, Discovery, Review und Quality-Layern konsistent auf preserved Primärschritte rückgebunden, statt wieder auf generische Familienlabels umzufallen
+- Rollen- und Systemwerte werden bis in finale Exportebenen atomisiert, als Vollmengen erhalten und zwischen explicit, inferred, support-only und suppressed sauber getrennt
+- `qa/engine-invariants` ergänzt einen rein externen Runner mit strukturabgeleiteten Erwartungen, Mutationsgenerator und Export-Lab, ohne Fixture-Erkennung im operativen Analysepfad
+
 ## v0.45.0 – Phase 2 abgeschlossen mit lokalem Gate-Scaffold
 
 - `qa/phase-gates` liegt jetzt direkt im Repository mit Fixture-Quellen, echten DOCX-Fixtures, Export-Runner und maschinenlesbaren PG01/PG02-Erwartungen

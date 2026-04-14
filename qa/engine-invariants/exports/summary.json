@@ -1,0 +1,209 @@
+{
+  "runAt": "2026-04-14T19:39:59.496Z",
+  "appVersion": "v0.45.1 (0.45.1)",
+  "totalChecks": 20,
+  "passedChecks": 20,
+  "failedChecks": 0,
+  "results": [
+    {
+      "fixtureId": "structured-explicit-workflow-md",
+      "mutationId": null,
+      "fixtureFamily": "structured-explicit-workflow",
+      "sourcePath": "qa/engine-invariants/fixtures/structured-explicit-workflow.md",
+      "exportPath": "qa/engine-invariants/exports/structured-explicit-workflow-md.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 6
+    },
+    {
+      "fixtureId": "structured-explicit-workflow-md",
+      "mutationId": "headings-neutral",
+      "fixtureFamily": "structured-explicit-workflow",
+      "sourcePath": "qa/engine-invariants/mutations/structured-explicit-workflow-md/structured-explicit-workflow--headings-neutral.md",
+      "exportPath": "qa/engine-invariants/exports/structured-explicit-workflow-md--headings-neutral.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 6
+    },
+    {
+      "fixtureId": "structured-explicit-workflow-md",
+      "mutationId": "step-synonyms",
+      "fixtureFamily": "structured-explicit-workflow",
+      "sourcePath": "qa/engine-invariants/mutations/structured-explicit-workflow-md/structured-explicit-workflow--step-synonyms.md",
+      "exportPath": "qa/engine-invariants/exports/structured-explicit-workflow-md--step-synonyms.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 6
+    },
+    {
+      "fixtureId": "structured-explicit-workflow-md",
+      "mutationId": "column-order",
+      "fixtureFamily": "structured-explicit-workflow",
+      "sourcePath": "qa/engine-invariants/mutations/structured-explicit-workflow-md/structured-explicit-workflow--column-order.md",
+      "exportPath": "qa/engine-invariants/exports/structured-explicit-workflow-md--column-order.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 6
+    },
+    {
+      "fixtureId": "structured-explicit-workflow-md",
+      "mutationId": "separator-shift",
+      "fixtureFamily": "structured-explicit-workflow",
+      "sourcePath": "qa/engine-invariants/mutations/structured-explicit-workflow-md/structured-explicit-workflow--separator-shift.md",
+      "exportPath": "qa/engine-invariants/exports/structured-explicit-workflow-md--separator-shift.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 6
+    },
+    {
+      "fixtureId": "structured-multivalue-context-md",
+      "mutationId": null,
+      "fixtureFamily": "structured-multivalue-context",
+      "sourcePath": "qa/engine-invariants/fixtures/structured-multivalue-context.md",
+      "exportPath": "qa/engine-invariants/exports/structured-multivalue-context-md.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 5
+    },
+    {
+      "fixtureId": "structured-multivalue-context-md",
+      "mutationId": "headings-neutral",
+      "fixtureFamily": "structured-multivalue-context",
+      "sourcePath": "qa/engine-invariants/mutations/structured-multivalue-context-md/structured-multivalue-context--headings-neutral.md",
+      "exportPath": "qa/engine-invariants/exports/structured-multivalue-context-md--headings-neutral.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 5
+    },
+    {
+      "fixtureId": "structured-multivalue-context-md",
+      "mutationId": "step-synonyms",
+      "fixtureFamily": "structured-multivalue-context",
+      "sourcePath": "qa/engine-invariants/mutations/structured-multivalue-context-md/structured-multivalue-context--step-synonyms.md",
+      "exportPath": "qa/engine-invariants/exports/structured-multivalue-context-md--step-synonyms.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 5
+    },
+    {
+      "fixtureId": "structured-multivalue-context-md",
+      "mutationId": "column-order",
+      "fixtureFamily": "structured-multivalue-context",
+      "sourcePath": "qa/engine-invariants/mutations/structured-multivalue-context-md/structured-multivalue-context--column-order.md",
+      "exportPath": "qa/engine-invariants/exports/structured-multivalue-context-md--column-order.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 5
+    },
+    {
+      "fixtureId": "structured-multivalue-context-md",
+      "mutationId": "separator-shift",
+      "fixtureFamily": "structured-multivalue-context",
+      "sourcePath": "qa/engine-invariants/mutations/structured-multivalue-context-md/structured-multivalue-context--separator-shift.md",
+      "exportPath": "qa/engine-invariants/exports/structured-multivalue-context-md--separator-shift.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 5
+    },
+    {
+      "fixtureId": "structured-explicit-workflow-legacy-docx",
+      "mutationId": null,
+      "fixtureFamily": "structured-explicit-workflow",
+      "sourcePath": "qa/phase-gates/fixtures/PG01_structured_preserve_merge_guard.docx",
+      "exportPath": "qa/engine-invariants/exports/structured-explicit-workflow-legacy-docx.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 6
+    },
+    {
+      "fixtureId": "structured-explicit-workflow-legacy-docx",
+      "mutationId": "headings-neutral",
+      "fixtureFamily": "structured-explicit-workflow",
+      "sourcePath": "qa/engine-invariants/mutations/structured-explicit-workflow-legacy-docx/PG01_structured_preserve_merge_guard--headings-neutral.md",
+      "exportPath": "qa/engine-invariants/exports/structured-explicit-workflow-legacy-docx--headings-neutral.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 6
+    },
+    {
+      "fixtureId": "structured-explicit-workflow-legacy-docx",
+      "mutationId": "step-synonyms",
+      "fixtureFamily": "structured-explicit-workflow",
+      "sourcePath": "qa/engine-invariants/mutations/structured-explicit-workflow-legacy-docx/PG01_structured_preserve_merge_guard--step-synonyms.md",
+      "exportPath": "qa/engine-invariants/exports/structured-explicit-workflow-legacy-docx--step-synonyms.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 6
+    },
+    {
+      "fixtureId": "structured-explicit-workflow-legacy-docx",
+      "mutationId": "column-order",
+      "fixtureFamily": "structured-explicit-workflow",
+      "sourcePath": "qa/engine-invariants/mutations/structured-explicit-workflow-legacy-docx/PG01_structured_preserve_merge_guard--column-order.md",
+      "exportPath": "qa/engine-invariants/exports/structured-explicit-workflow-legacy-docx--column-order.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 6
+    },
+    {
+      "fixtureId": "structured-explicit-workflow-legacy-docx",
+      "mutationId": "separator-shift",
+      "fixtureFamily": "structured-explicit-workflow",
+      "sourcePath": "qa/engine-invariants/mutations/structured-explicit-workflow-legacy-docx/PG01_structured_preserve_merge_guard--separator-shift.md",
+      "exportPath": "qa/engine-invariants/exports/structured-explicit-workflow-legacy-docx--separator-shift.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 6
+    },
+    {
+      "fixtureId": "structured-multivalue-context-legacy-docx",
+      "mutationId": null,
+      "fixtureFamily": "structured-multivalue-context",
+      "sourcePath": "qa/phase-gates/fixtures/PG02_explicit_roles_systems_multivalue.docx",
+      "exportPath": "qa/engine-invariants/exports/structured-multivalue-context-legacy-docx.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 5
+    },
+    {
+      "fixtureId": "structured-multivalue-context-legacy-docx",
+      "mutationId": "headings-neutral",
+      "fixtureFamily": "structured-multivalue-context",
+      "sourcePath": "qa/engine-invariants/mutations/structured-multivalue-context-legacy-docx/PG02_explicit_roles_systems_multivalue--headings-neutral.md",
+      "exportPath": "qa/engine-invariants/exports/structured-multivalue-context-legacy-docx--headings-neutral.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 5
+    },
+    {
+      "fixtureId": "structured-multivalue-context-legacy-docx",
+      "mutationId": "step-synonyms",
+      "fixtureFamily": "structured-multivalue-context",
+      "sourcePath": "qa/engine-invariants/mutations/structured-multivalue-context-legacy-docx/PG02_explicit_roles_systems_multivalue--step-synonyms.md",
+      "exportPath": "qa/engine-invariants/exports/structured-multivalue-context-legacy-docx--step-synonyms.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 5
+    },
+    {
+      "fixtureId": "structured-multivalue-context-legacy-docx",
+      "mutationId": "column-order",
+      "fixtureFamily": "structured-multivalue-context",
+      "sourcePath": "qa/engine-invariants/mutations/structured-multivalue-context-legacy-docx/PG02_explicit_roles_systems_multivalue--column-order.md",
+      "exportPath": "qa/engine-invariants/exports/structured-multivalue-context-legacy-docx--column-order.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 5
+    },
+    {
+      "fixtureId": "structured-multivalue-context-legacy-docx",
+      "mutationId": "separator-shift",
+      "fixtureFamily": "structured-multivalue-context",
+      "sourcePath": "qa/engine-invariants/mutations/structured-multivalue-context-legacy-docx/PG02_explicit_roles_systems_multivalue--separator-shift.md",
+      "exportPath": "qa/engine-invariants/exports/structured-multivalue-context-legacy-docx--separator-shift.json",
+      "passed": true,
+      "errors": [],
+      "explicitStepCount": 5
+    }
+  ]
+}

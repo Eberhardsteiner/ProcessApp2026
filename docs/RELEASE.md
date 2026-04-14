@@ -2,8 +2,8 @@
 
 ## Aktueller Produktstand
 
-- Sichtbare App-Version: `v0.45.0`
-- Freigabestatus: Phase 2 lokal abgeschlossen; PG01 und verschärftes PG02 sind auf derselben finalen Build-Version grün
+- Sichtbare App-Version: `v0.45.1`
+- Freigabestatus: generalisierte Structured-Invarianten extern abgesichert; strukturierte Fixtures und Mutationen laufen außerhalb der Runtime gegen dieselbe Build-Version
 
 ## Wofür dieser Stand gedacht ist
 
@@ -24,6 +24,7 @@ npm run release:check
 npm run governance:check
 npm run hardening:check
 npm run security:check
+npm run engine-invariants:check
 ```
 
 Der Release-Check fasst jetzt lokale Kernprüfungen für:

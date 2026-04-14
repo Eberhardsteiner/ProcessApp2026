@@ -53,6 +53,7 @@ const SECTION_RE = /^\s*(\d+)\.\s+/;
 const TABLE_HEADER_HINT_RE = /\b(schritt|prozessschritt|aktivität|rolle|verantwortlich|zuständig|ergebnis|output|system|entscheidung|freigabe|beschreibung|termin|frist)\b/i;
 const PSEUDO_LABEL_RE = /^(\d+\.?|[|/\-–—]+|[A-ZÄÖÜa-zäöüß]+\s*\|\s*\d+\.?)$/;
 const NAMED_SECTION_RE = /^\s*((?:\d+(?:\.\d+)*)|[A-ZÄÖÜ])\.?\s+(.+)$/;
+const MARKDOWN_HEADING_RE = /^\s*#{1,6}\s+(.+)$/;
 const PIPE_SEPARATOR_RE = /^\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?$/;
 
 type HeaderKey =
@@ -172,7 +173,8 @@ function splitNamedSections(text: string): NamedSection[] {
   for (const rawLine of lines) {
     const line = rawLine.trim();
     const match = line.match(NAMED_SECTION_RE);
-    if (match) {
+    const markdownMatch = line.match(MARKDOWN_HEADING_RE);
+    if (match || markdownMatch) {
       if (current) {
         const body = current.buffer.join('\n').trim();
         sections.push({
@@ -182,7 +184,9 @@ function splitNamedSections(text: string): NamedSection[] {
           raw: [current.heading, body].filter(Boolean).join('\n'),
         });
       }
-      current = { number: match[1], heading: match[2], buffer: [] };
+      current = match
+        ? { number: match[1], heading: match[2], buffer: [] }
+        : { heading: markdownMatch?.[1] ?? line.replace(/^#+\s*/, ''), buffer: [] };
       continue;
     }
     if (!current) continue;
@@ -364,13 +368,9 @@ function enrichStepsWithRoleRows(steps: StructuredProcedureStep[], roles: Struct
   }));
 
   return steps.map(step => {
-    const parsedColumns = step.evidenceSnippet.split('|').map(part => cleanCell(part)).filter(Boolean) as string[];
-    const evidenceRoles = parsedColumns.length >= 4 ? splitStructuredValues(parsedColumns[2]) : [];
-    const evidenceSystems = parsedColumns.length >= 5 ? splitStructuredValues(parsedColumns[3]) : [];
     const explicitRoles = uniqueCaseInsensitive([
       ...(step.explicitRoles ?? []),
       ...splitStructuredValues(step.responsible),
-      ...evidenceRoles,
     ]);
     const explicitRoleRows = preparedRoles.filter(role =>
       explicitRoles.some(explicitRole => canonicalRoleLabel(explicitRole) === role.canonicalName || normalizeMatchText(explicitRole) === normalizeMatchText(role.name)),
@@ -378,7 +378,6 @@ function enrichStepsWithRoleRows(steps: StructuredProcedureStep[], roles: Struct
     const localExplicitSystems = uniqueCaseInsensitive([
       ...(step.explicitSystems ?? []),
       ...splitStructuredValues(step.system),
-      ...evidenceSystems,
     ]);
     const explicitSystems = uniqueCaseInsensitive([
       ...localExplicitSystems,

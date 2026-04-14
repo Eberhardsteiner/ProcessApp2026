@@ -1,0 +1,32 @@
+{
+  "fixtures": [
+    {
+      "id": "structured-explicit-workflow-md",
+      "fixtureFamily": "structured-explicit-workflow",
+      "sourcePath": "qa/engine-invariants/fixtures/structured-explicit-workflow.md",
+      "runtimeSourceType": "docx",
+      "includeMutations": true
+    },
+    {
+      "id": "structured-multivalue-context-md",
+      "fixtureFamily": "structured-multivalue-context",
+      "sourcePath": "qa/engine-invariants/fixtures/structured-multivalue-context.md",
+      "runtimeSourceType": "docx",
+      "includeMutations": true
+    },
+    {
+      "id": "structured-explicit-workflow-legacy-docx",
+      "fixtureFamily": "structured-explicit-workflow",
+      "sourcePath": "qa/phase-gates/fixtures/PG01_structured_preserve_merge_guard.docx",
+      "runtimeSourceType": "docx",
+      "includeMutations": true
+    },
+    {
+      "id": "structured-multivalue-context-legacy-docx",
+      "fixtureFamily": "structured-multivalue-context",
+      "sourcePath": "qa/phase-gates/fixtures/PG02_explicit_roles_systems_multivalue.docx",
+      "runtimeSourceType": "docx",
+      "includeMutations": true
+    }
+  ]
+}

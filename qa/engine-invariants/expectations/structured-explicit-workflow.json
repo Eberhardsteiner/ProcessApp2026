@@ -1,0 +1,11 @@
+{
+  "fixtureFamily": "structured-explicit-workflow",
+  "requiresStructuredWorkflow": true,
+  "requiresPreservedStepParity": true,
+  "requiresPreservedOrder": true,
+  "requiresMergeProtection": true,
+  "requiresAtomicFinalLists": true,
+  "requiresPrimaryPreserveLabels": true,
+  "requiresClassificationConsistency": true,
+  "requiresNonCriticalDomainConsistencyWithoutConflict": true
+}

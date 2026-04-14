@@ -1,7 +1,9 @@
 import type {
+  DerivationSummary,
   ExtractionCandidate,
   Process,
   ProcessMiningAssistedV2State,
+  ProcessMiningObservation,
   ProcessVersion,
   SourceRoutingContext,
 } from '../../domain/process';
@@ -21,11 +23,76 @@ import {
   type QualityDimensionStatus,
   type QualityScoringProfileSnapshot,
 } from './qualityScoring';
+import {
+  atomizeStructuredValues as atomizeStructuredEntityValues,
+  includesStructuredValue,
+  pickPrimaryStructuredValue,
+  sanitizeStructuredValueCollections,
+} from './structuredValueHygiene';
 
 function atomizeStructuredValues(values: Array<string | undefined>): string[] {
-  return uniqueStrings(
-    values.flatMap(value => normalizeWhitespace(value ?? '').split(/[,/;]|\s+und\s+/i).map(part => normalizeWhitespace(part))),
-  );
+  return atomizeStructuredEntityValues(values);
+}
+
+function sanitizeObservationEntitiesForExport(observation: ProcessMiningObservation): ProcessMiningObservation {
+  if (observation.kind !== 'step') return observation;
+  const roleCollections = sanitizeStructuredValueCollections({
+    final: observation.roles ?? (observation.role ? [observation.role] : []),
+    explicit: observation.explicitRoles,
+    inferred: observation.inferredRoles,
+    supportOnly: observation.supportOnlyRoles,
+    suppressed: observation.suppressedInferredRoles,
+  });
+  const systemCollections = sanitizeStructuredValueCollections({
+    final: observation.systems ?? (observation.system ? [observation.system] : []),
+    explicit: observation.explicitSystems,
+    inferred: observation.inferredSystems,
+    supportOnly: observation.supportOnlySystems,
+    suppressed: observation.suppressedInferredSystems,
+  });
+
+  return {
+    ...observation,
+    primaryRole: includesStructuredValue(roleCollections.finalValues, observation.primaryRole)
+      ? observation.primaryRole
+      : pickPrimaryStructuredValue(roleCollections.finalValues),
+    primarySystem: includesStructuredValue(systemCollections.finalValues, observation.primarySystem)
+      ? observation.primarySystem
+      : pickPrimaryStructuredValue(systemCollections.finalValues),
+    role: includesStructuredValue(roleCollections.finalValues, observation.role)
+      ? observation.role
+      : pickPrimaryStructuredValue(roleCollections.finalValues),
+    system: includesStructuredValue(systemCollections.finalValues, observation.system)
+      ? observation.system
+      : pickPrimaryStructuredValue(systemCollections.finalValues),
+    roles: roleCollections.finalValues.length > 0 ? roleCollections.finalValues : undefined,
+    systems: systemCollections.finalValues.length > 0 ? systemCollections.finalValues : undefined,
+    explicitRoles: roleCollections.explicitValues.length > 0 ? roleCollections.explicitValues : undefined,
+    explicitSystems: systemCollections.explicitValues.length > 0 ? systemCollections.explicitValues : undefined,
+    inferredRoles: roleCollections.inferredValues.length > 0 ? roleCollections.inferredValues : undefined,
+    inferredSystems: systemCollections.inferredValues.length > 0 ? systemCollections.inferredValues : undefined,
+    supportOnlyRoles: roleCollections.supportOnlyValues.length > 0 ? roleCollections.supportOnlyValues : undefined,
+    supportOnlySystems: systemCollections.supportOnlyValues.length > 0 ? systemCollections.supportOnlyValues : undefined,
+    suppressedInferredRoles: roleCollections.suppressedValues.length > 0 ? roleCollections.suppressedValues : undefined,
+    suppressedInferredSystems: systemCollections.suppressedValues.length > 0 ? systemCollections.suppressedValues : undefined,
+  };
+}
+
+function sanitizeDerivationSummaryForExport(summary?: DerivationSummary): DerivationSummary | undefined {
+  if (!summary) return summary;
+  return {
+    ...summary,
+    roles: atomizeStructuredValues(summary.roles ?? []),
+    systems: atomizeStructuredValues(summary.systems ?? []),
+    explicitRoles: atomizeStructuredValues(summary.explicitRoles ?? []),
+    explicitSystems: atomizeStructuredValues(summary.explicitSystems ?? []),
+    inferredRoles: atomizeStructuredValues(summary.inferredRoles ?? []),
+    inferredSystems: atomizeStructuredValues(summary.inferredSystems ?? []),
+    supportOnlyRoles: atomizeStructuredValues(summary.supportOnlyRoles ?? []),
+    supportOnlySystems: atomizeStructuredValues(summary.supportOnlySystems ?? []),
+    suppressedRoles: atomizeStructuredValues(summary.suppressedRoles ?? []),
+    suppressedSystems: atomizeStructuredValues(summary.suppressedSystems ?? []),
+  };
 }
 
 export interface ProcessMiningQualityExportFile {
@@ -476,40 +543,47 @@ export function buildQualityExportFile(params: {
   integrity: WorkspaceIntegrityReport;
 }): ProcessMiningQualityExportFile {
   const { process, version, state, settings, integrity } = params;
+  const sanitizedObservations = state.observations.map(sanitizeObservationEntitiesForExport);
+  const sanitizedSummary = sanitizeDerivationSummaryForExport(state.lastDerivationSummary);
+  const normalizedState: ProcessMiningAssistedV2State = {
+    ...state,
+    observations: sanitizedObservations,
+    lastDerivationSummary: sanitizedSummary,
+  };
   const verifiedFacts = buildVerifiedAnalysisFacts({
-    cases: state.cases,
-    observations: state.observations,
-    lastDerivationSummary: state.lastDerivationSummary,
-    qualitySummary: state.qualitySummary,
+    cases: normalizedState.cases,
+    observations: normalizedState.observations,
+    lastDerivationSummary: normalizedState.lastDerivationSummary,
+    qualitySummary: normalizedState.qualitySummary,
   });
-  const exportIdentity = resolveExportIdentity({ process, version, state });
-  const readiness = computeMiningReadiness({ state, version });
-  const reviewOverview = buildReviewOverview({ cases: state.cases, observations: state.observations });
+  const exportIdentity = resolveExportIdentity({ process, version, state: normalizedState });
+  const readiness = computeMiningReadiness({ state: normalizedState, version });
+  const reviewOverview = buildReviewOverview({ cases: normalizedState.cases, observations: normalizedState.observations });
   const dataMaturity = computeDataMaturity({
-    state,
+    state: normalizedState,
     version,
     reviewSuggestionCount: reviewOverview.suggestionCount,
   });
-  const qualityBundle = buildQualityAssessmentBundle({ state, version });
+  const qualityBundle = buildQualityAssessmentBundle({ state: normalizedState, version });
   const exportIntegrity = buildExportIntegrityReport({
     base: integrity,
     identity: exportIdentity,
     verifiedCaseCount: verifiedFacts.caseCount,
-    rawCaseCount: state.cases.length,
+    rawCaseCount: normalizedState.cases.length,
     verifiedAnalysisMode: verifiedFacts.analysisMode,
-    summaryMode: state.lastDerivationSummary?.analysisMode,
+    summaryMode: normalizedState.lastDerivationSummary?.analysisMode,
     verifiedEventlogEligibility: verifiedFacts.verifiedEventlogEligibility,
-    rawEventlogEligibility: state.lastDerivationSummary?.tablePipeline?.eventlogEligibility.eligible,
+    rawEventlogEligibility: normalizedState.lastDerivationSummary?.tablePipeline?.eventlogEligibility.eligible,
     reconstructedSingleCase: verifiedFacts.reconstructedSingleCase,
   });
 
-  const lastSummary = state.lastDerivationSummary;
+  const lastSummary = normalizedState.lastDerivationSummary;
   const happyPath = version.sidecar.captureDraft?.happyPath ?? [];
-  const stepObservations = getStepObservations(state);
+  const stepObservations = getStepObservations(normalizedState);
   const liveDiscovery = stepObservations.length > 0
     ? computeV2Discovery({
-        cases: state.cases,
-        observations: state.observations,
+        cases: normalizedState.cases,
+        observations: normalizedState.observations,
         lastDerivationSummary: lastSummary,
       })
     : undefined;
@@ -521,22 +595,22 @@ export function buildQualityExportFile(params: {
         topSteps: liveDiscovery.coreProcess,
         analysisMode: liveDiscovery.analysisMode,
         sampleNotice: liveDiscovery.sampleNotice,
-        notes: state.discoverySummary?.notes,
+        notes: normalizedState.discoverySummary?.notes,
         updatedAt: liveDiscovery.computedAt,
       }
-    : state.discoverySummary;
+    : normalizedState.discoverySummary;
   const exportState = effectiveDiscoverySummary
     ? {
-        ...state,
+        ...normalizedState,
         discoverySummary: effectiveDiscoverySummary,
       }
-    : state;
-  const issueCount = getIssueCount(state);
-  const evidenceBackedSteps = state.qualitySummary?.stepObservationsWithEvidence
+    : normalizedState;
+  const issueCount = getIssueCount(normalizedState);
+  const evidenceBackedSteps = normalizedState.qualitySummary?.stepObservationsWithEvidence
     ?? stepObservations.filter(step => Boolean(normalizeWhitespace(step.evidenceSnippet ?? ''))).length;
-  const roleBackedSteps = state.qualitySummary?.stepObservationsWithRole
+  const roleBackedSteps = normalizedState.qualitySummary?.stepObservationsWithRole
     ?? stepObservations.filter(step => Boolean(normalizeWhitespace(step.primaryRole ?? step.role ?? '')) || Boolean(step.roles?.length)).length;
-  const systemBackedSteps = state.qualitySummary?.stepObservationsWithSystem
+  const systemBackedSteps = normalizedState.qualitySummary?.stepObservationsWithSystem
     ?? stepObservations.filter(step => Boolean(normalizeWhitespace(step.primarySystem ?? step.system ?? '')) || Boolean(step.systems?.length)).length;
   const scoringWeights = qualityBundle.scoringProfile.dimensionWeights.reduce<Record<string, number>>((acc, item) => {
     acc[item.key] = item.weight;
@@ -634,8 +708,8 @@ export function buildQualityExportFile(params: {
         status: version.status,
         updatedAt: version.updatedAt,
       },
-      currentStep: state.currentStep,
-      operatingMode: state.operatingMode,
+      currentStep: normalizedState.currentStep,
+      operatingMode: normalizedState.operatingMode,
       settings: buildSafeSettings(settings),
       comparisonBasis: {
         happyPathStepLabels: happyPath.map(step => step.label),
@@ -653,7 +727,7 @@ export function buildQualityExportFile(params: {
       sourceIdentity: exportIdentity,
       verifiedAnalysis: {
         caseCount: verifiedFacts.caseCount,
-        rawCaseRecords: state.cases.length,
+        rawCaseRecords: normalizedState.cases.length,
         analysisMode: verifiedFacts.analysisMode,
         verifiedEventlogEligibility: verifiedFacts.verifiedEventlogEligibility,
         compareCapabilityAllowed: verifiedFacts.compareCapabilityAllowed,
@@ -729,7 +803,7 @@ export function buildQualityExportFile(params: {
           : 'Soll-Ist-Aussagen beruhen derzeit auf lokal abgeleiteter Vergleichsbasis und sollten entsprechend vorsichtig gelesen werden.',
     },
     analysisResults: {
-      qualitySummary: state.qualitySummary,
+      qualitySummary: normalizedState.qualitySummary,
       lastDerivationSummary: lastSummary,
       tablePipeline: lastSummary?.tablePipeline,
       routing: lastSummary?.routingContext
@@ -783,10 +857,10 @@ export function buildQualityExportFile(params: {
           }
         : undefined,
       discoverySummary: effectiveDiscoverySummary,
-      conformanceSummary: state.conformanceSummary,
-      enhancementSummary: state.enhancementSummary,
-      reportSnapshot: state.reportSnapshot,
-      handoverDrafts: state.handoverDrafts,
+      conformanceSummary: normalizedState.conformanceSummary,
+      enhancementSummary: normalizedState.enhancementSummary,
+      reportSnapshot: normalizedState.reportSnapshot,
+      handoverDrafts: normalizedState.handoverDrafts,
       qualityAssessment: {
         overall: qualityBundle.overallLevel,
         dimensions: dimensionRows,
@@ -809,8 +883,8 @@ export function buildQualityExportFile(params: {
       candidateReview: lastSummary?.candidateReview,
       counts: {
         cases: verifiedFacts.caseCount,
-        rawCaseRecords: state.cases.length,
-        observations: state.observations.length,
+        rawCaseRecords: normalizedState.cases.length,
+        observations: normalizedState.observations.length,
         steps: stepObservations.length,
         issues: issueCount,
         realTimeObservations: verifiedFacts.realTimeStepCount,
@@ -820,7 +894,7 @@ export function buildQualityExportFile(params: {
       },
     },
     workspaceArtifacts: {
-      augmentationNotes: state.augmentationNotes,
+      augmentationNotes: normalizedState.augmentationNotes,
     },
     rawWorkspaceState: exportState,
   };

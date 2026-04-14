@@ -444,6 +444,44 @@ function mapDocumentClassToRoutingClass(classType: StructuredDocumentClass): Doc
   }
 }
 
+function mapRoutingClassToResolvedDocumentClass(
+  routingClass: SourceRoutingClass,
+): StructuredDocumentClass | undefined {
+  switch (routingClass) {
+    case 'structured-procedure':
+      return 'structured-target-procedure';
+    case 'semi-structured-procedure':
+      return 'semi-structured-procedure';
+    case 'narrative-case':
+      return 'narrative-case';
+    case 'mixed-document':
+      return 'mixed-document';
+    default:
+      return undefined;
+  }
+}
+
+function harmonizeRoutingSignals(
+  routingClass: SourceRoutingClass,
+  routingSignals: string[],
+): string[] {
+  const resolvedDocumentClass = mapRoutingClassToResolvedDocumentClass(routingClass);
+  const normalizedSignals: string[] = [];
+
+  if (resolvedDocumentClass) {
+    normalizedSignals.push(`documentClassifier=${resolvedDocumentClass}`);
+  }
+
+  for (const signal of routingSignals) {
+    if (!signal || signal.startsWith('documentClassifier=')) continue;
+    if (!normalizedSignals.includes(signal)) {
+      normalizedSignals.push(signal);
+    }
+  }
+
+  return normalizedSignals;
+}
+
 function buildRoutingContext(
   routingClass: SourceRoutingClass,
   score: number,
@@ -453,7 +491,7 @@ function buildRoutingContext(
   return {
     routingClass,
     routingConfidence: confidenceFromScore(score),
-    routingSignals,
+    routingSignals: harmonizeRoutingSignals(routingClass, routingSignals),
     ...(extra?.fallbackReason ? { fallbackReason: extra.fallbackReason } : {}),
   };
 }
@@ -494,9 +532,14 @@ function inferDocumentPrimaryClass(params: {
   confidenceFloor?: number;
 } {
   const { signals, structureDensity, tableDensity, narrativeDensity } = params;
+  const tableWorkflowPromotion =
+    tableDensity >= 0.18 &&
+    signals.consistentTableShare >= 0.28 &&
+    signals.activityShare >= 0.18 &&
+    (signals.roleShare >= 0.08 || signals.systemShare >= 0.08);
   const canPromoteSemiStructuredDocument =
     isDocumentSourceType(params.sourceType) &&
-    structureDensity >= 0.42 &&
+    (structureDensity >= 0.42 || tableWorkflowPromotion) &&
     signals.activityShare >= 0.22 &&
     narrativeDensity < 0.18;
 
@@ -554,13 +597,13 @@ function inferDocumentPrimaryClass(params: {
   }
 
   if (
-    structureDensity >= 0.24 &&
+    (structureDensity >= 0.24 || tableWorkflowPromotion) &&
     signals.activityShare >= 0.18 &&
     narrativeDensity < 0.18 &&
     signals.caseShare < 0.12
   ) {
     return {
-      routingClass: structureDensity >= 0.42 ? 'structured-procedure' : 'semi-structured-procedure',
+      routingClass: structureDensity >= 0.42 || tableWorkflowPromotion ? 'structured-procedure' : 'semi-structured-procedure',
       reason: 'documentPrimary=structured-flow',
       confidenceFloor: 0.56,
     };

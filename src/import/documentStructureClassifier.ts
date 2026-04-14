@@ -64,11 +64,26 @@ export function classifyDocumentStructure(text: string): DocumentStructureClassi
   const reasons: string[] = [];
   let classType: StructuredDocumentClass = 'weak-material';
   let confidence: 'high' | 'medium' | 'low' = 'low';
+  const explicitWorkflowTableSignals =
+    signals.tableRows >= 6 &&
+    signals.headings >= 2 &&
+    signals.flowBlocks >= 2 &&
+    signals.roleBlocks >= 1;
 
-  if (structureScore >= 18 && signals.tableRows >= 2 && signals.numbering >= 2) {
+  if (
+    structureScore >= 18 &&
+    (
+      (signals.tableRows >= 2 && signals.numbering >= 2) ||
+      explicitWorkflowTableSignals
+    )
+  ) {
     classType = 'structured-target-procedure';
     confidence = density >= 0.35 ? 'high' : 'medium';
-    reasons.push('Viele Strukturmarker mit Tabellen- und Nummerierungsblöcken erkannt.');
+    reasons.push(
+      explicitWorkflowTableSignals
+        ? 'Klare Workflow-Tabellen mit Rollen-, Ablauf- und Abschnittssignalen erkannt.'
+        : 'Viele Strukturmarker mit Tabellen- und Nummerierungsblöcken erkannt.',
+    );
   } else if (structureScore >= 12 && (signals.numbering >= 2 || signals.headings >= 2)) {
     classType = 'semi-structured-procedure';
     confidence = structureScore >= 16 ? 'high' : 'medium';

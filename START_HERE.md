@@ -1,4 +1,4 @@
-> Aktueller Produktstand: **v0.45.0**
+> Aktueller Produktstand: **v0.45.1**
 
 # Start hier
 
@@ -78,6 +78,13 @@ npm run build
 ## Optionale QA-/Release-Prüfungen
 
 Nur gezielt außerhalb des Standardpfads verwenden:
+
+```bash
+npm run engine-invariants:check
+```
+
+- Die generalisierte Structured-Invarianten-Suite liegt außerhalb der Runtime unter `qa/engine-invariants`.
+- Der Runner erzeugt Exporte, prüft strukturabgeleitete Invarianten und lässt zusätzlich Mutationsvarianten derselben Quellen gegen dieselben Regeln laufen.
 
 ```bash
 npm run bundle:summary

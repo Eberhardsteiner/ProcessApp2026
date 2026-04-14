@@ -1,0 +1,13 @@
+{
+  "fixtureFamily": "structured-multivalue-context",
+  "requiresStructuredWorkflow": true,
+  "requiresPreservedStepParity": true,
+  "requiresPreservedOrder": true,
+  "requiresMergeProtection": true,
+  "requiresAtomicFinalLists": true,
+  "requiresPrimaryPreserveLabels": true,
+  "requiresClassificationConsistency": true,
+  "requiresNonCriticalDomainConsistencyWithoutConflict": true,
+  "requiresMultivalueRoles": true,
+  "requiresMultivalueSystems": true
+}
