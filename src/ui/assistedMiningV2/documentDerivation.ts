@@ -57,6 +57,12 @@ import {
   createSystemCandidates,
   reviewExtractionCandidates,
 } from './evidenceModel';
+import {
+  atomizeStructuredValues,
+  includesStructuredValue,
+  pickPrimaryStructuredValue,
+  sanitizeStructuredValueCollections,
+} from './structuredValueHygiene';
 
 export interface DerivationInput {
   text: string;
@@ -1933,8 +1939,8 @@ function buildStructuredDerivation(params: {
     structuredSectionFallback,
     structuredWholeTextFallback,
   });
-  const explicitRoles = uniqueStrings(splitEntitySeedParts(explicitRolesFromSource).filter(isExplicitRoleSeed));
-  const explicitSystems = uniqueStrings(splitEntitySeedParts(explicitSystemsFromSource).filter(isExplicitSystemSeed));
+  const explicitRoles = atomizeStructuredValues(explicitRolesFromSource).filter(isExplicitRoleSeed);
+  const explicitSystems = atomizeStructuredValues(explicitSystemsFromSource).filter(isExplicitSystemSeed);
   const analysisStrategies = uniqueStrings([...buildAnalysisStrategies(sourceProfile.inputProfileLabel), ...(sourceProfile.extractionPlan ?? [])]).slice(0, 5);
   const normalizedWarnings = sanitizeStructuredWarnings({ warnings, routingContext });
   const caseItem = buildCase({
@@ -1963,10 +1969,16 @@ function buildStructuredDerivation(params: {
     warnings: normalizedWarnings,
     confidence,
     stepLabels: structuredArtifacts.derivedSteps.map(step => step.label),
-    roles: uniqueStrings([...roles, ...structuredArtifacts.roles]),
-    systems: uniqueStrings([...systems, ...structuredArtifacts.systems]),
+    roles: atomizeStructuredValues([...roles, ...structuredArtifacts.roles]),
+    systems: atomizeStructuredValues([...systems, ...structuredArtifacts.systems]),
     explicitRoles,
     explicitSystems,
+    inferredRoles: atomizeStructuredValues(structuredArtifacts.derivedSteps.flatMap(step => step.inferredRoles ?? [])),
+    inferredSystems: atomizeStructuredValues(structuredArtifacts.derivedSteps.flatMap(step => step.inferredSystems ?? [])),
+    supportOnlyRoles: atomizeStructuredValues(structuredArtifacts.derivedSteps.flatMap(step => step.supportOnlyRoles ?? [])),
+    supportOnlySystems: atomizeStructuredValues(structuredArtifacts.derivedSteps.flatMap(step => step.supportOnlySystems ?? [])),
+    suppressedRoles: atomizeStructuredValues(structuredArtifacts.derivedSteps.flatMap(step => step.suppressedInferredRoles ?? [])),
+    suppressedSystems: atomizeStructuredValues(structuredArtifacts.derivedSteps.flatMap(step => step.suppressedInferredSystems ?? [])),
     issueSignals,
     structuredPreserveApplied: !structuredRecallLoss,
     explicitStructuredStepCount,
@@ -2006,8 +2018,8 @@ function buildStructuredDerivation(params: {
     warnings: normalizedWarnings,
     confidence,
     derivedSteps: structuredArtifacts.derivedSteps,
-    roles: uniqueStrings([...roles, ...structuredArtifacts.roles]),
-    systems: uniqueStrings([...systems, ...structuredArtifacts.systems]),
+    roles: atomizeStructuredValues([...roles, ...structuredArtifacts.roles]),
+    systems: atomizeStructuredValues([...systems, ...structuredArtifacts.systems]),
     issueSignals,
     summary,
     routingContext,
@@ -2338,11 +2350,11 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       .filter(observation => observation.kind === 'step')
       .map(observation => observation.originalStepLabel ?? observation.label),
   );
-  const provisionalRoles = uniqueStrings(
+  const provisionalRoles = atomizeStructuredValues(
     [
       ...gatedObservations.flatMap(observation => {
         if (observation.kind !== 'step') return [];
-        const roleLabels = observation.roles ?? (observation.role ? [observation.role] : []);
+        const roleLabels = atomizeStructuredValues(observation.roles ?? (observation.role ? [observation.role] : []));
         return preserveStructuredSteps && observation.stepWasPreserved
           ? roleLabels
           : roleLabels.map(label => (label ? rolePreferredValue(label) : undefined));
@@ -2350,11 +2362,11 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       ...(preserveStructuredSteps ? result.summary.roles : []),
     ],
   );
-  const provisionalSystems = uniqueStrings(
+  const provisionalSystems = atomizeStructuredValues(
     [
       ...gatedObservations.flatMap(observation => {
         if (observation.kind !== 'step') return [];
-        const systemLabels = observation.systems ?? (observation.system ? [observation.system] : []);
+        const systemLabels = atomizeStructuredValues(observation.systems ?? (observation.system ? [observation.system] : []));
         return preserveStructuredSteps && observation.stepWasPreserved
           ? systemLabels
           : systemLabels.map(label => (label ? systemPreferredValue(label) : undefined));
@@ -2405,10 +2417,10 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     }
 
     if (preserveStructuredSteps && observation.stepWasPreserved) {
-      const explicitRoles = uniqueStrings(observation.explicitRoles ?? []);
-      const explicitSystems = uniqueStrings(observation.explicitSystems ?? []);
-      const observedRoles = uniqueStrings(observation.roles ?? (observation.role ? [observation.role] : []));
-      const observedSystems = uniqueStrings(observation.systems ?? (observation.system ? [observation.system] : []));
+      const explicitRoles = atomizeStructuredValues(observation.explicitRoles ?? []);
+      const explicitSystems = atomizeStructuredValues(observation.explicitSystems ?? []);
+      const observedRoles = atomizeStructuredValues(observation.roles ?? (observation.role ? [observation.role] : []));
+      const observedSystems = atomizeStructuredValues(observation.systems ?? (observation.system ? [observation.system] : []));
       const inferredRoles = excludeNormalizedValues(observedRoles, explicitRoles);
       const inferredSystems = excludeNormalizedValues(observedSystems, explicitSystems);
       const roleResult = preserveStructuredDomainLabels({
@@ -2423,64 +2435,88 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
         kind: 'system',
         domainIsolation,
       });
-      const roles = uniqueStrings(roleResult.kept);
-      const systems = uniqueStrings(systemResult.kept);
+      const roleCollections = sanitizeStructuredValueCollections({
+        final: roleResult.kept,
+        explicit: explicitRoles,
+        inferred: inferredRoles,
+        supportOnly: observation.supportOnlyRoles,
+        suppressed: [...(observation.suppressedInferredRoles ?? []), ...roleResult.suppressed],
+      });
+      const systemCollections = sanitizeStructuredValueCollections({
+        final: systemResult.kept,
+        explicit: explicitSystems,
+        inferred: inferredSystems,
+        supportOnly: observation.supportOnlySystems,
+        suppressed: [...(observation.suppressedInferredSystems ?? []), ...systemResult.suppressed],
+      });
+      const roles = roleCollections.finalValues;
+      const systems = systemCollections.finalValues;
 
       return [{
         ...observation,
         label: observation.originalStepLabel ?? observation.label,
         originalStepLabel: observation.originalStepLabel ?? observation.label,
-        primaryRole:
-          (observation.primaryRole && includesNormalizedValue(roles, observation.primaryRole))
-            ? observation.primaryRole
-            : roles[0],
-        primarySystem:
-          (observation.primarySystem && includesNormalizedValue(systems, observation.primarySystem))
-            ? observation.primarySystem
-            : systems[0],
-        role:
-          (observation.role && includesNormalizedValue(roles, observation.role))
-            ? observation.role
-            : roles[0],
-        system:
-          (observation.system && includesNormalizedValue(systems, observation.system))
-            ? observation.system
-            : systems[0],
+        primaryRole: includesStructuredValue(roles, observation.primaryRole) ? observation.primaryRole : pickPrimaryStructuredValue(roles),
+        primarySystem: includesStructuredValue(systems, observation.primarySystem) ? observation.primarySystem : pickPrimaryStructuredValue(systems),
+        role: includesStructuredValue(roles, observation.role) ? observation.role : pickPrimaryStructuredValue(roles),
+        system: includesStructuredValue(systems, observation.system) ? observation.system : pickPrimaryStructuredValue(systems),
         roles: roles.length > 0 ? roles : undefined,
         systems: systems.length > 0 ? systems : undefined,
-        explicitRoles: explicitRoles.length > 0 ? explicitRoles : undefined,
-        explicitSystems: explicitSystems.length > 0 ? explicitSystems : undefined,
-        inferredRoles: inferredRoles.length > 0 ? inferredRoles : undefined,
-        inferredSystems: inferredSystems.length > 0 ? inferredSystems : undefined,
-        suppressedInferredRoles: roleResult.suppressed.length > 0 ? roleResult.suppressed : undefined,
-        suppressedInferredSystems: systemResult.suppressed.length > 0 ? systemResult.suppressed : undefined,
-        domainAligned: roleResult.suppressed.length === 0 && systemResult.suppressed.length === 0,
+        explicitRoles: roleCollections.explicitValues.length > 0 ? roleCollections.explicitValues : undefined,
+        explicitSystems: systemCollections.explicitValues.length > 0 ? systemCollections.explicitValues : undefined,
+        inferredRoles: roleCollections.inferredValues.length > 0 ? roleCollections.inferredValues : undefined,
+        inferredSystems: systemCollections.inferredValues.length > 0 ? systemCollections.inferredValues : undefined,
+        supportOnlyRoles: roleCollections.supportOnlyValues.length > 0 ? roleCollections.supportOnlyValues : undefined,
+        supportOnlySystems: systemCollections.supportOnlyValues.length > 0 ? systemCollections.supportOnlyValues : undefined,
+        suppressedInferredRoles: roleCollections.suppressedValues.length > 0 ? roleCollections.suppressedValues : undefined,
+        suppressedInferredSystems: systemCollections.suppressedValues.length > 0 ? systemCollections.suppressedValues : undefined,
+        domainAligned: roleCollections.suppressedValues.length === 0 && systemCollections.suppressedValues.length === 0,
         secondaryDomainHint,
         stepWasPreserved: true,
       }];
     }
 
     const normalizedRoles = uniqueStrings(
-      (observation.roles ?? (observation.role ? [observation.role] : []))
+      atomizeStructuredValues(observation.roles ?? (observation.role ? [observation.role] : []))
         .map(label => (label ? rolePreferredValue(label) : undefined)),
     );
     const normalizedSystems = uniqueStrings(
-      (observation.systems ?? (observation.system ? [observation.system] : []))
+      atomizeStructuredValues(observation.systems ?? (observation.system ? [observation.system] : []))
         .map(label => (label ? systemPreferredValue(label) : undefined)),
     );
     const keptRoles = filterRolesByDomain(normalizedRoles, domainIsolation);
     const keptSystems = filterSystemsByDomain(normalizedSystems, domainIsolation);
+    const roleCollections = sanitizeStructuredValueCollections({
+      final: keptRoles,
+      explicit: observation.explicitRoles,
+      inferred: [...(observation.inferredRoles ?? []), ...keptRoles],
+      supportOnly: observation.supportOnlyRoles,
+      suppressed: observation.suppressedInferredRoles,
+    });
+    const systemCollections = sanitizeStructuredValueCollections({
+      final: keptSystems,
+      explicit: observation.explicitSystems,
+      inferred: [...(observation.inferredSystems ?? []), ...keptSystems],
+      supportOnly: observation.supportOnlySystems,
+      suppressed: observation.suppressedInferredSystems,
+    });
 
     return [{
       ...observation,
-      primaryRole: keptRoles[0],
-      primarySystem: keptSystems[0],
-      role: keptRoles[0],
-      system: keptSystems[0],
-      roles: keptRoles.length > 0 ? keptRoles : undefined,
-      systems: keptSystems.length > 0 ? keptSystems : undefined,
-      inferredRoles: keptRoles.length > 0 ? keptRoles : undefined,
-      inferredSystems: keptSystems.length > 0 ? keptSystems : undefined,
+      primaryRole: pickPrimaryStructuredValue(roleCollections.finalValues),
+      primarySystem: pickPrimaryStructuredValue(systemCollections.finalValues),
+      role: pickPrimaryStructuredValue(roleCollections.finalValues),
+      system: pickPrimaryStructuredValue(systemCollections.finalValues),
+      roles: roleCollections.finalValues.length > 0 ? roleCollections.finalValues : undefined,
+      systems: systemCollections.finalValues.length > 0 ? systemCollections.finalValues : undefined,
+      explicitRoles: roleCollections.explicitValues.length > 0 ? roleCollections.explicitValues : undefined,
+      explicitSystems: systemCollections.explicitValues.length > 0 ? systemCollections.explicitValues : undefined,
+      inferredRoles: roleCollections.inferredValues.length > 0 ? roleCollections.inferredValues : undefined,
+      inferredSystems: systemCollections.inferredValues.length > 0 ? systemCollections.inferredValues : undefined,
+      supportOnlyRoles: roleCollections.supportOnlyValues.length > 0 ? roleCollections.supportOnlyValues : undefined,
+      supportOnlySystems: systemCollections.supportOnlyValues.length > 0 ? systemCollections.supportOnlyValues : undefined,
+      suppressedInferredRoles: roleCollections.suppressedValues.length > 0 ? roleCollections.suppressedValues : undefined,
+      suppressedInferredSystems: systemCollections.suppressedValues.length > 0 ? systemCollections.suppressedValues : undefined,
       domainAligned: keptRoles.length === normalizedRoles.length && keptSystems.length === normalizedSystems.length,
       secondaryDomainHint,
     }];
@@ -2490,17 +2526,49 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     (observation): observation is ProcessMiningObservation => observation.kind === 'step',
   );
   const stepLabels = uniqueStrings(stepObservations.map(observation => observation.originalStepLabel ?? observation.label));
-  const roles = uniqueStrings([
+  const roles = atomizeStructuredValues([
     ...stepObservations.flatMap(observation => observation.roles ?? (observation.role ? [observation.role] : [])),
     ...(preserveStructuredSteps ? result.summary.roles : []),
   ]);
-  const systems = uniqueStrings([
+  const systems = atomizeStructuredValues([
     ...stepObservations.flatMap(observation => observation.systems ?? (observation.system ? [observation.system] : [])),
     ...(preserveStructuredSteps ? (result.summary.systems ?? []) : []),
   ]);
+  const explicitRoles = atomizeStructuredValues([
+    ...stepObservations.flatMap(observation => observation.explicitRoles ?? []),
+    ...(result.summary.explicitRoles ?? []),
+  ]);
+  const explicitSystems = atomizeStructuredValues([
+    ...stepObservations.flatMap(observation => observation.explicitSystems ?? []),
+    ...(result.summary.explicitSystems ?? []),
+  ]);
+  const inferredRoles = atomizeStructuredValues([
+    ...stepObservations.flatMap(observation => observation.inferredRoles ?? []),
+    ...(result.summary.inferredRoles ?? []),
+  ]);
+  const inferredSystems = atomizeStructuredValues([
+    ...stepObservations.flatMap(observation => observation.inferredSystems ?? []),
+    ...(result.summary.inferredSystems ?? []),
+  ]);
+  const supportOnlyRoles = atomizeStructuredValues([
+    ...stepObservations.flatMap(observation => observation.supportOnlyRoles ?? []),
+    ...(result.summary.supportOnlyRoles ?? []),
+  ]);
+  const supportOnlySystems = atomizeStructuredValues([
+    ...stepObservations.flatMap(observation => observation.supportOnlySystems ?? []),
+    ...(result.summary.supportOnlySystems ?? []),
+  ]);
+  const suppressedRoles = atomizeStructuredValues([
+    ...stepObservations.flatMap(observation => observation.suppressedInferredRoles ?? []),
+    ...(result.summary.suppressedRoles ?? []),
+  ]);
+  const suppressedSystems = atomizeStructuredValues([
+    ...stepObservations.flatMap(observation => observation.suppressedInferredSystems ?? []),
+    ...(result.summary.suppressedSystems ?? []),
+  ]);
   const issueSignals = uniqueStrings(keptIssueEvidence.map(entry => entry.label));
-  const droppedRoleLabels = provisionalRoles.filter(label => label && !includesNormalizedValue(roles, label));
-  const droppedSystemLabels = provisionalSystems.filter(label => label && !includesNormalizedValue(systems, label));
+  const droppedRoleLabels = provisionalRoles.filter(label => label && !includesStructuredValue(roles, label));
+  const droppedSystemLabels = provisionalSystems.filter(label => label && !includesStructuredValue(systems, label));
   const explicitStructuredStepCount = preserveStructuredSteps
     ? result.summary.explicitStructuredStepCount
     : undefined;
@@ -2549,8 +2617,8 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
         domainGateNote: effectiveDomainIsolationNote,
         domainScores: exposeStructuredDomainContext ? domainIsolation.scoreBoard : [],
         domainGateSuppressedSignals: droppedLabels,
-        domainGateSuppressedRoles: uniqueStrings(droppedRoleLabels),
-        domainGateSuppressedSystems: uniqueStrings(droppedSystemLabels),
+        domainGateSuppressedRoles: atomizeStructuredValues(droppedRoleLabels),
+        domainGateSuppressedSystems: atomizeStructuredValues(droppedSystemLabels),
         classificationReasons: sanitizeStructuredClassificationReasons({
           reasons: uniqueStrings([
             ...(result.summary.sourceProfile.classificationReasons ?? []),
@@ -2669,7 +2737,7 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
         const suppressedLabels = candidate.candidateType === 'role'
           ? observation.suppressedInferredRoles ?? []
           : observation.suppressedInferredSystems ?? [];
-        if (includesNormalizedValue(suppressedLabels, candidate.rawLabel) || includesNormalizedValue(suppressedLabels, candidate.normalizedLabel)) {
+        if (includesStructuredValue(suppressedLabels, candidate.rawLabel) || includesStructuredValue(suppressedLabels, candidate.normalizedLabel)) {
           return {
             ...candidate,
             status: 'support-only' as const,
@@ -2678,7 +2746,7 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
               : 'Inferiertes System wurde im Structured-Pfad wegen Domain-Isolation nur als Sekundärhinweis markiert.',
           };
         }
-        if (includesNormalizedValue(finalLabels, candidate.rawLabel) || includesNormalizedValue(finalLabels, candidate.normalizedLabel)) {
+        if (includesStructuredValue(finalLabels, candidate.rawLabel) || includesStructuredValue(finalLabels, candidate.normalizedLabel)) {
           return {
             ...candidate,
             status: candidate.status === 'support-only' ? 'candidate' : candidate.status,
@@ -2697,36 +2765,69 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     if (candidate.candidateType === 'role') {
       supportOnlyRoleMap.set(
         candidate.relatedCandidateId,
-        uniqueStrings([...(supportOnlyRoleMap.get(candidate.relatedCandidateId) ?? []), candidate.rawLabel]),
+        atomizeStructuredValues([...(supportOnlyRoleMap.get(candidate.relatedCandidateId) ?? []), candidate.rawLabel]),
       );
     } else if (candidate.candidateType === 'system') {
       supportOnlySystemMap.set(
         candidate.relatedCandidateId,
-        uniqueStrings([...(supportOnlySystemMap.get(candidate.relatedCandidateId) ?? []), candidate.rawLabel]),
+        atomizeStructuredValues([...(supportOnlySystemMap.get(candidate.relatedCandidateId) ?? []), candidate.rawLabel]),
       );
     }
   });
-  const enrichedStepObservations = stepObservations.map(observation => ({
-    ...observation,
-    primaryRole: observation.primaryRole ?? observation.role,
-    primarySystem: observation.primarySystem ?? observation.system,
-    inferredRoles: observation.inferredRoles ?? excludeNormalizedValues(
-      observation.roles ?? (observation.role ? [observation.role] : []),
-      observation.explicitRoles ?? [],
-    ),
-    inferredSystems: observation.inferredSystems ?? excludeNormalizedValues(
-      observation.systems ?? (observation.system ? [observation.system] : []),
-      observation.explicitSystems ?? [],
-    ),
-    supportOnlyRoles: uniqueStrings([
-      ...(observation.supportOnlyRoles ?? []),
-      ...((observation.candidateId && supportOnlyRoleMap.get(observation.candidateId)) ?? []),
-    ]),
-    supportOnlySystems: uniqueStrings([
-      ...(observation.supportOnlySystems ?? []),
-      ...((observation.candidateId && supportOnlySystemMap.get(observation.candidateId)) ?? []),
-    ]),
-  }));
+  const enrichedStepObservations = stepObservations.map(observation => {
+    const roleCollections = sanitizeStructuredValueCollections({
+      final: observation.roles ?? (observation.role ? [observation.role] : []),
+      explicit: observation.explicitRoles,
+      inferred: observation.inferredRoles ?? excludeNormalizedValues(
+        atomizeStructuredValues(observation.roles ?? (observation.role ? [observation.role] : [])),
+        atomizeStructuredValues(observation.explicitRoles ?? []),
+      ),
+      supportOnly: [
+        ...(observation.supportOnlyRoles ?? []),
+        ...((observation.candidateId && supportOnlyRoleMap.get(observation.candidateId)) ?? []),
+      ],
+      suppressed: observation.suppressedInferredRoles,
+    });
+    const systemCollections = sanitizeStructuredValueCollections({
+      final: observation.systems ?? (observation.system ? [observation.system] : []),
+      explicit: observation.explicitSystems,
+      inferred: observation.inferredSystems ?? excludeNormalizedValues(
+        atomizeStructuredValues(observation.systems ?? (observation.system ? [observation.system] : [])),
+        atomizeStructuredValues(observation.explicitSystems ?? []),
+      ),
+      supportOnly: [
+        ...(observation.supportOnlySystems ?? []),
+        ...((observation.candidateId && supportOnlySystemMap.get(observation.candidateId)) ?? []),
+      ],
+      suppressed: observation.suppressedInferredSystems,
+    });
+
+    return {
+      ...observation,
+      primaryRole: includesStructuredValue(roleCollections.finalValues, observation.primaryRole)
+        ? observation.primaryRole
+        : pickPrimaryStructuredValue(roleCollections.finalValues),
+      primarySystem: includesStructuredValue(systemCollections.finalValues, observation.primarySystem)
+        ? observation.primarySystem
+        : pickPrimaryStructuredValue(systemCollections.finalValues),
+      role: includesStructuredValue(roleCollections.finalValues, observation.role)
+        ? observation.role
+        : pickPrimaryStructuredValue(roleCollections.finalValues),
+      system: includesStructuredValue(systemCollections.finalValues, observation.system)
+        ? observation.system
+        : pickPrimaryStructuredValue(systemCollections.finalValues),
+      roles: roleCollections.finalValues.length > 0 ? roleCollections.finalValues : undefined,
+      systems: systemCollections.finalValues.length > 0 ? systemCollections.finalValues : undefined,
+      explicitRoles: roleCollections.explicitValues.length > 0 ? roleCollections.explicitValues : undefined,
+      explicitSystems: systemCollections.explicitValues.length > 0 ? systemCollections.explicitValues : undefined,
+      inferredRoles: roleCollections.inferredValues.length > 0 ? roleCollections.inferredValues : undefined,
+      inferredSystems: systemCollections.inferredValues.length > 0 ? systemCollections.inferredValues : undefined,
+      supportOnlyRoles: roleCollections.supportOnlyValues.length > 0 ? roleCollections.supportOnlyValues : undefined,
+      supportOnlySystems: systemCollections.supportOnlyValues.length > 0 ? systemCollections.supportOnlyValues : undefined,
+      suppressedInferredRoles: roleCollections.suppressedValues.length > 0 ? roleCollections.suppressedValues : undefined,
+      suppressedInferredSystems: systemCollections.suppressedValues.length > 0 ? systemCollections.suppressedValues : undefined,
+    };
+  });
   const enrichedObservationById = new Map(enrichedStepObservations.map(observation => [observation.id, observation]));
   const candidateReview = buildExtractionCandidateReview(finalizedCandidateList);
   const currentTimestamp = new Date().toISOString();
@@ -2779,6 +2880,14 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       confidence: finalConfidence,
       roles,
       systems,
+      explicitRoles,
+      explicitSystems,
+      inferredRoles,
+      inferredSystems,
+      supportOnlyRoles,
+      supportOnlySystems,
+      suppressedRoles,
+      suppressedSystems,
       issueSignals,
       issueEvidence: keptIssueEvidence,
       structuredPreserveApplied,

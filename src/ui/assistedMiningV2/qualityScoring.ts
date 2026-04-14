@@ -18,6 +18,7 @@ import {
   uniqueStrings,
   type AnalysisClaimStrength,
 } from './pmShared';
+import { atomizeStructuredValues } from './structuredValueHygiene';
 
 export type QualityDimensionKey =
   | 'documentTypeRecognition'
@@ -379,6 +380,72 @@ function detectScoringMode(params: {
   return 'process-draft';
 }
 
+function expectedDocumentClassForRouting(
+  routingClass?: SourceRoutingClass,
+): NonNullable<NonNullable<DerivationSummary['sourceProfile']>['documentClass']> | undefined {
+  switch (routingClass) {
+    case 'structured-procedure':
+      return 'structured-target-procedure';
+    case 'semi-structured-procedure':
+      return 'semi-structured-procedure';
+    case 'narrative-case':
+      return 'narrative-case';
+    case 'mixed-document':
+      return 'mixed-document';
+    case 'weak-raw-table':
+      return 'weak-material';
+    default:
+      return undefined;
+  }
+}
+
+function isRoutingDocumentClassConsistent(summary?: DerivationSummary): boolean {
+  const routingClass = summary?.routingContext?.routingClass;
+  const documentClass = summary?.sourceProfile?.documentClass;
+  const expectedDocumentClass = expectedDocumentClassForRouting(routingClass);
+  if (!expectedDocumentClass || !documentClass) return true;
+  return expectedDocumentClass === documentClass;
+}
+
+function isScoringModeConsistent(params: {
+  scoringMode: QualityScoringProfileMode;
+  summary?: DerivationSummary;
+}): boolean {
+  const routingClass = params.summary?.routingContext?.routingClass;
+  if (!routingClass) return true;
+  if (routingClass === 'eventlog-table') return params.scoringMode === 'eventlog-table';
+  if (routingClass === 'weak-raw-table') return params.scoringMode === 'weak-raw-table';
+  return params.scoringMode === 'process-draft' || params.scoringMode === 'comparison';
+}
+
+function hasStructuredSourceConflict(summary?: DerivationSummary): boolean {
+  if (!summary?.structuredPreserveApplied) return false;
+  const explicitStructuredStepCount = summary.explicitStructuredStepCount ?? 0;
+  const preservedStructuredStepCount = summary.preservedStructuredStepCount ?? 0;
+  if (explicitStructuredStepCount > 0 && preservedStructuredStepCount < explicitStructuredStepCount) return true;
+  return Boolean(summary.structuredRecallLoss);
+}
+
+function atomicEntityValuesForStep(step: ProcessMiningObservation, kind: 'role' | 'system'): string[] {
+  return atomizeStructuredValues(
+    kind === 'role'
+      ? [
+          ...(step.roles ?? []),
+          ...(step.explicitRoles ?? []),
+          ...(step.inferredRoles ?? []),
+          step.primaryRole,
+          step.role,
+        ]
+      : [
+          ...(step.systems ?? []),
+          ...(step.explicitSystems ?? []),
+          ...(step.inferredSystems ?? []),
+          step.primarySystem,
+          step.system,
+        ],
+  );
+}
+
 function candidateMap(candidates: ExtractionCandidate[]): Map<string, ExtractionCandidate> {
   return new Map(candidates.map(candidate => [candidate.candidateId, candidate]));
 }
@@ -569,27 +636,38 @@ function assessDocumentTypeRecognition(ctx: QualityScoringContext): QualityDimen
   const classReasons = profile?.classificationReasons ?? [];
   const passedCriteria = summary?.tablePipeline?.eventlogEligibility.minimumCriteria?.filter(item => item.passed).length ?? 0;
   const criteriaCount = summary?.tablePipeline?.eventlogEligibility.minimumCriteria?.length ?? 0;
+  const routingDocumentClassConsistent = isRoutingDocumentClassConsistent(summary);
+  const scoringModeConsistent = isScoringModeConsistent({ scoringMode: ctx.scoringMode, summary });
+  const structuredSourceConflict = hasStructuredSourceConflict(summary);
 
   let score = 18 + ctx.routingConfidenceValue * 18 + ctx.derivationConfidenceValue * 8;
   if (ctx.scoringMode === 'process-draft') {
     score += (summary?.documentKind && summary.documentKind !== 'unknown' ? 14 : 0)
       + (profile?.inputProfile && profile.inputProfile !== 'unclear' ? 12 : 0)
       + (profile?.documentClass ? 10 : 0)
-      + Math.min(10, classReasons.length * 3);
+      + Math.min(10, classReasons.length * 3)
+      + (summary?.structuredPreserveApplied ? 10 : 0)
+      + (routingDocumentClassConsistent ? 8 : -16)
+      + (scoringModeConsistent ? 6 : -14)
+      + (structuredSourceConflict ? -22 : 0);
   } else if (ctx.scoringMode === 'comparison') {
     score += Math.min(10, classReasons.length * 2)
       + (ctx.caseCount >= 2 ? 10 : 0)
-      + ((summary?.multiCaseSummary?.stabilityScore ?? 0) / 100) * 16;
+      + ((summary?.multiCaseSummary?.stabilityScore ?? 0) / 100) * 16
+      + (routingDocumentClassConsistent ? 8 : -16)
+      + (scoringModeConsistent ? 6 : -12);
   } else if (ctx.scoringMode === 'eventlog-table') {
     score += (summary?.routingContext?.routingClass === 'eventlog-table' ? 16 : 0)
       + (summary?.tablePipeline?.pipelineMode === 'eventlog-table' ? 16 : 0)
       + (summary?.tablePipeline?.mappingConfidence ?? 0) * 18
-      + ratio(passedCriteria, Math.max(criteriaCount, 1)) * 14;
+      + ratio(passedCriteria, Math.max(criteriaCount, 1)) * 14
+      + (scoringModeConsistent ? 8 : -18);
   } else {
     score += (summary?.routingContext?.routingClass === 'weak-raw-table' ? 18 : 0)
       + (summary?.tablePipeline?.pipelineMode === 'weak-raw-table' ? 16 : 0)
       + (summary?.routingContext?.fallbackReason ? 16 : 0)
-      + (summary?.tablePipeline?.eventlogEligibility.eligible ? -18 : 8);
+      + (summary?.tablePipeline?.eventlogEligibility.eligible ? -18 : 8)
+      + (scoringModeConsistent ? 8 : -18);
   }
 
   return createDimension(
@@ -608,6 +686,8 @@ function assessDocumentTypeRecognition(ctx: QualityScoringContext): QualityDimen
       profile?.inputProfileLabel ? `Quellprofil: ${profile.inputProfileLabel}.` : undefined,
       profile?.documentClassLabel ? `Dokumentenklasse: ${profile.documentClassLabel}.` : undefined,
       summary?.tablePipeline ? `Tabellenpfad: ${summary.tablePipeline.pipelineMode}.` : undefined,
+      !routingDocumentClassConsistent ? 'Routing und Dokumentklasse widersprechen sich aktuell.' : undefined,
+      !scoringModeConsistent ? 'Bewertungsmodus passt nicht sauber zum operativen Routingkontext.' : undefined,
     ],
     {
       routingClass: summary?.routingContext?.routingClass,
@@ -617,6 +697,9 @@ function assessDocumentTypeRecognition(ctx: QualityScoringContext): QualityDimen
       documentClass: profile?.documentClass,
       mappingConfidence: summary?.tablePipeline?.mappingConfidence,
       eventlogEligibility: summary?.tablePipeline?.eventlogEligibility.eligible,
+      routingDocumentClassConsistent,
+      scoringModeConsistent,
+      structuredSourceConflict,
     },
     [
       ctx.profile.dimensionInterpretation.documentTypeRecognition,
@@ -625,6 +708,8 @@ function assessDocumentTypeRecognition(ctx: QualityScoringContext): QualityDimen
     ],
     [
       ctx.summary?.warnings.length ? `${ctx.summary.warnings.length} Warnungen begrenzen die Klassifikationssicherheit.` : undefined,
+      !routingDocumentClassConsistent ? 'Inkonsistente Routing-/Dokumentklasse begrenzt hohe Statusstufen.' : undefined,
+      !scoringModeConsistent ? 'Inkonsistenter Bewertungsmodus begrenzt hohe Statusstufen.' : undefined,
     ],
   );
 }
@@ -642,11 +727,23 @@ function assessStructureFidelity(ctx: QualityScoringContext): QualityDimensionAs
   );
   const orderedTraceShare = summary?.tablePipeline?.traceStats?.orderedTraceShare ?? 0;
   const noCoreSimulation = ctx.scoringMode === 'weak-raw-table' ? clamp01(1 - ctx.steps.length / 3) : 0;
+  const explicitStructuredStepCount = summary?.explicitStructuredStepCount ?? 0;
+  const preservedStructuredStepCount = summary?.preservedStructuredStepCount ?? 0;
+  const structuredPreserveShare = explicitStructuredStepCount > 0
+    ? preservedStructuredStepCount / Math.max(explicitStructuredStepCount, 1)
+    : 0;
 
   let score = 0;
   if (ctx.scoringMode === 'process-draft') {
     const processBearingShare = ratio(summary?.sourceProfile?.processBearingSharePct ?? 0, 100);
-    score = 20 + orderingShare * 24 + ctx.semanticStepStats.contextBackedShare * 18 + processBearingShare * 16 + ctx.semanticStepStats.strongShare * 12;
+    score = 20
+      + orderingShare * 24
+      + ctx.semanticStepStats.contextBackedShare * 18
+      + processBearingShare * 16
+      + ctx.semanticStepStats.strongShare * 12
+      + (summary?.structuredPreserveApplied ? 10 : 0)
+      + (explicitStructuredStepCount > 0 ? structuredPreserveShare * 12 : 0)
+      - (summary?.structuredRecallLoss ? 26 : 0);
   } else if (ctx.scoringMode === 'comparison') {
     const caseCoverage = ratio(uniqueStrings(ctx.steps.map(step => step.sourceCaseId)).length, Math.max(ctx.caseCount, 1));
     score = 18 + orderingShare * 18 + caseCoverage * 18 + multiCaseStrength * 22 + ctx.semanticStepStats.strongShare * 10 + ctx.semanticStepStats.contextBackedShare * 10;
@@ -677,6 +774,7 @@ function assessStructureFidelity(ctx: QualityScoringContext): QualityDimensionAs
       ctx.scoringMode === 'comparison' ? `Stabilitätsmuster ${Math.round(multiCaseStrength * 100)} %.` : undefined,
       quality ? `${quality.casesWithOrdering} von ${quality.totalCases} Quellen mit belastbarer Reihenfolge.` : undefined,
       ctx.scoringMode === 'weak-raw-table' ? `Keine Kernschrittsimulation: ${Math.round(noCoreSimulation * 100)} %.` : undefined,
+      explicitStructuredStepCount > 0 ? `Structured-Preserve erhält ${preservedStructuredStepCount} von ${explicitStructuredStepCount} expliziten Ablaufzeilen.` : undefined,
     ],
     {
       orderingShare,
@@ -686,6 +784,9 @@ function assessStructureFidelity(ctx: QualityScoringContext): QualityDimensionAs
       coreRowCoverage,
       orderedTraceShare,
       noCoreSimulation,
+      explicitStructuredStepCount,
+      preservedStructuredStepCount,
+      structuredPreserveShare: Number(structuredPreserveShare.toFixed(2)),
     },
     [
       ctx.profile.dimensionInterpretation.structureFidelity,
@@ -754,14 +855,24 @@ function assessRoleOrSystemQuality(
 ): QualityDimensionAssessment {
   const quality = ctx.quality;
   const backedSteps = kind === 'role'
-    ? quality?.stepObservationsWithRole ?? ctx.steps.filter(step => Boolean(normalizeWhitespace(step.role ?? ''))).length
-    : quality?.stepObservationsWithSystem ?? ctx.steps.filter(step => Boolean(normalizeWhitespace(step.system ?? ''))).length;
+    ? quality?.stepObservationsWithRole ?? ctx.steps.filter(step => atomicEntityValuesForStep(step, 'role').length > 0).length
+    : quality?.stepObservationsWithSystem ?? ctx.steps.filter(step => atomicEntityValuesForStep(step, 'system').length > 0).length;
   const localAssignments = kind === 'role' ? ctx.localRoleAssignments : ctx.localSystemAssignments;
   const mapping = findBestMapping(ctx.summary, kind === 'role' ? ['role', 'resource'] : ['system']);
-  const uniqueValues = uniqueStrings(
+  const uniqueValues = atomizeStructuredValues(
     kind === 'role'
-      ? [...ctx.steps.map(step => step.role), ...(ctx.summary?.roles ?? [])]
-      : [...ctx.steps.map(step => step.system), ...(ctx.summary?.systems ?? [])],
+      ? [
+          ...ctx.steps.flatMap(step => atomicEntityValuesForStep(step, 'role')),
+          ...(ctx.summary?.roles ?? []),
+          ...(ctx.summary?.explicitRoles ?? []),
+          ...(ctx.summary?.inferredRoles ?? []),
+        ]
+      : [
+          ...ctx.steps.flatMap(step => atomicEntityValuesForStep(step, 'system')),
+          ...(ctx.summary?.systems ?? []),
+          ...(ctx.summary?.explicitSystems ?? []),
+          ...(ctx.summary?.inferredSystems ?? []),
+        ],
   );
   const coverage = ratio(backedSteps, Math.max(ctx.steps.length, 1));
   const localShare = ratio(localAssignments, Math.max(ctx.steps.length, 1));
@@ -813,35 +924,78 @@ function assessDomainConsistency(ctx: QualityScoringContext): QualityDimensionAs
   const topScore = domainScores[0]?.score ?? 0;
   const runnerUp = domainScores[1]?.score ?? 0;
   const mappingConflicts = (ctx.summary?.tablePipeline?.rejectedColumnMappings ?? []).filter(mapping => mapping.conflictingSignals.length > 0).length;
-  let score = 28 + ctx.routingConfidenceValue * 14;
-
-  if (ctx.scoringMode === 'process-draft' || ctx.scoringMode === 'comparison') {
-    score += (profile?.primaryDomainLabel ? 16 : 0)
-      + (profile?.domainGateNote ? 10 : 0)
-      + Math.min(12, Math.max(0, topScore - runnerUp));
-    if ((profile?.secondaryDomainLabels?.length ?? 0) > 2) score -= 8;
-  } else {
-    score += (ctx.summary?.tablePipeline?.mappingConfidence ?? 0) * 22
-      + clamp01(1 - mappingConflicts / Math.max(ctx.summary?.tablePipeline?.inferredSchema.length ?? 1, 1)) * 18
-      + ((ctx.summary?.tablePipeline?.tableProfile.caseCoherence ?? 0) * 10);
-    if (ctx.scoringMode === 'weak-raw-table' && ctx.summary?.routingContext?.fallbackReason) score += 8;
-  }
+  const routingDocumentClassConsistent = isRoutingDocumentClassConsistent(ctx.summary);
+  const scoringModeConsistent = isScoringModeConsistent({ scoringMode: ctx.scoringMode, summary: ctx.summary });
+  const competingPrimaryDomains = topScore >= 4 && runnerUp >= 4 && Math.abs(topScore - runnerUp) <= 2;
+  const suppressedConflictSignals = (profile?.domainGateSuppressedSignals?.length ?? 0) > 0 && competingPrimaryDomains;
+  const suppressedConflictRoles = (profile?.domainGateSuppressedRoles?.length ?? 0) > 0 && competingPrimaryDomains;
+  const suppressedConflictSystems = (profile?.domainGateSuppressedSystems?.length ?? 0) > 0 && competingPrimaryDomains;
+  const conflictReasons = uniqueStrings([
+    !routingDocumentClassConsistent ? 'Routing und Dokumentklasse widersprechen sich.' : undefined,
+    !scoringModeConsistent ? 'Bewertungsmodus widerspricht dem operativen Routingkontext.' : undefined,
+    competingPrimaryDomains
+      ? `Mindestens zwei belastbare Domänen konkurrieren fast gleich stark (${topScore} vs. ${runnerUp}).`
+      : undefined,
+    suppressedConflictSignals ? 'Mehrere starke fachfremde Signalsätze mussten aktiv ausgeblendet werden.' : undefined,
+    suppressedConflictRoles ? 'Mehrere fachfremde Rollenhinweise mussten aktiv ausgeblendet werden.' : undefined,
+    suppressedConflictSystems ? 'Mehrere fachfremde Systemhinweise mussten aktiv ausgeblendet werden.' : undefined,
+    ctx.scoringMode === 'eventlog-table' || ctx.scoringMode === 'weak-raw-table'
+      ? mappingConflicts > 0
+        ? `${mappingConflicts} reale Mappingkonflikte belasten die operative Domänenlesart.`
+        : undefined
+      : undefined,
+    hasStructuredSourceConflict(ctx.summary)
+      ? 'Structured-Preserve verlor explizite Ablaufzeilen und erzeugt damit einen realen Strukturkonflikt.'
+      : undefined,
+  ]);
+  const conflictPenalty = clamp(
+    (routingDocumentClassConsistent ? 0 : 22)
+    + (scoringModeConsistent ? 0 : 18)
+    + (competingPrimaryDomains ? 16 + Math.max(0, 6 - Math.abs(topScore - runnerUp)) : 0)
+    + (suppressedConflictSignals ? 8 : 0)
+    + (suppressedConflictRoles ? 6 : 0)
+    + (suppressedConflictSystems ? 6 : 0)
+    + ((ctx.scoringMode === 'eventlog-table' || ctx.scoringMode === 'weak-raw-table') ? Math.min(24, mappingConflicts * 6) : 0)
+    + (hasStructuredSourceConflict(ctx.summary) ? 24 : 0),
+    0,
+    72,
+  );
+  const neutralNoConflict = !profile?.primaryDomainLabel && conflictReasons.length === 0;
+  const consistencyBonus = clamp(
+    (ctx.routingConfidenceValue * 8)
+    + (ctx.derivationConfidenceValue * 6)
+    + (profile?.primaryDomainLabel && !competingPrimaryDomains ? Math.min(8, Math.max(0, topScore - runnerUp)) : 0)
+    + (neutralNoConflict ? 10 : 0)
+    + (ctx.summary?.structuredPreserveApplied && routingDocumentClassConsistent && scoringModeConsistent ? 8 : 0)
+    + ((ctx.scoringMode === 'eventlog-table' || ctx.scoringMode === 'weak-raw-table')
+      ? ((ctx.summary?.tablePipeline?.mappingConfidence ?? 0) * 8)
+      : 0),
+    0,
+    22,
+  );
+  const score = clamp(74 + consistencyBonus - conflictPenalty);
+  const summary =
+    conflictReasons.length === 0 && neutralNoConflict
+      ? 'Die Domänenlage bleibt bewusst neutral und konsistent; es gibt keine belastbaren Konfliktsignale.'
+      : conflictReasons.length === 0
+      ? 'Fachlicher Rahmen, Routing und operative Interpretation wirken konsistent.'
+      : score >= 68
+      ? 'Einzelne fachliche Spannungen sind sichtbar, aber noch nicht dominant widersprüchlich.'
+      : score >= 45
+      ? 'Mehrere reale fachliche oder operative Konfliktsignale bleiben sichtbar.'
+      : 'Reale Domänen-, Routing- oder Mappingkonflikte schränken die Interpretation deutlich ein.';
 
   return createDimension(
     ctx.profile,
     'domainConsistency',
     score,
-    score >= 85
-      ? 'Fachlicher Rahmen und operative Interpretation wirken konsistent.'
-      : score >= 68
-      ? 'Der fachliche Rahmen ist brauchbar, aber noch nicht maximal stabil.'
-      : score >= 45
-      ? 'Mehrere fachliche oder semantische Spannungen bleiben sichtbar.'
-      : 'Domänen- oder Semantikrahmen bleiben zu widersprüchlich.',
+    summary,
     [
       profile?.primaryDomainLabel ? `Primärdomäne: ${profile.primaryDomainLabel}.` : undefined,
+      (profile?.secondaryDomainLabels?.length ?? 0) > 0 ? `Sekundärdomänen: ${profile?.secondaryDomainLabels?.join(', ')}.` : undefined,
+      neutralNoConflict ? 'Keine belastbare Primärdomäne ist hier kein Widerspruch, solange Routing und Struktur konsistent bleiben.' : undefined,
       profile?.domainGateNote,
-      ctx.scoringMode !== 'process-draft' && ctx.scoringMode !== 'comparison' ? `${mappingConflicts} Mappingkonflikte in der Tabellensemantik.` : undefined,
+      ...conflictReasons,
     ],
     {
       primaryDomain: profile?.primaryDomainLabel ?? profile?.primaryDomainKey,
@@ -849,10 +1003,18 @@ function assessDomainConsistency(ctx: QualityScoringContext): QualityDimensionAs
       domainScores: domainScores.slice(0, 5),
       mappingConflicts,
       mappingConfidence: ctx.summary?.tablePipeline?.mappingConfidence,
+      routingDocumentClassConsistent,
+      scoringModeConsistent,
+      competingPrimaryDomains,
+      conflictCount: conflictReasons.length,
+      neutralNoConflict,
     },
     [
       ctx.profile.dimensionInterpretation.domainConsistency,
+      neutralNoConflict ? 'Neutrale Domänenlage wird nicht abgewertet, solange keine realen Konflikte sichtbar sind.' : undefined,
     ],
+    [],
+    score < 45 ? conflictReasons : [],
   );
 }
 

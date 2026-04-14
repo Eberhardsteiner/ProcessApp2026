@@ -6,6 +6,7 @@ import {
   labelsLikelySameProcessStep,
   stepSemanticKey,
 } from './semanticStepFamilies';
+import { atomizeStructuredValues } from './structuredValueHygiene';
 
 export type ReviewSuggestionType = 'rename' | 'reclassify' | 'split';
 
@@ -111,9 +112,7 @@ function getPrimarySystem(observation: ProcessMiningObservation): string | undef
 }
 
 function explodeStructuredValues(values: Array<string | undefined>): string[] {
-  return uniqueStrings(
-    values.flatMap(value => (value ?? '').split(/[,/;]|\s+und\s+/i).map(part => part.trim()).filter(Boolean)),
-  );
+  return atomizeStructuredValues(values);
 }
 
 function getObservationRolesFull(observation: ProcessMiningObservation): string[] {
@@ -159,6 +158,7 @@ export function getCanonicalLabelSuggestion(observation: ProcessMiningObservatio
 
 export function getSplitSuggestion(observation: ProcessMiningObservation, allowSoftSplit = true): string[] | null {
   if (observation.kind !== 'step') return null;
+  if (observation.stepWasPreserved) return null;
   if (inferStepFamily(observation.label) && !/[/;]/.test(observation.label)) return null;
   const parts = splitIntoParts(observation.label, allowSoftSplit);
   return parts.length >= 2 ? parts : null;
@@ -166,6 +166,7 @@ export function getSplitSuggestion(observation: ProcessMiningObservation, allowS
 
 export function shouldSuggestIssueReclassification(observation: ProcessMiningObservation): boolean {
   if (observation.kind !== 'step') return false;
+  if (observation.stepWasPreserved) return false;
   if (inferStepFamily(observation.label)) return false;
   const text = `${observation.label} ${observation.evidenceSnippet ?? ''}`;
   return ISSUE_STEP_RE.test(normalizeLabel(text));
@@ -183,7 +184,7 @@ function mergeConsecutiveDuplicates(observations: ProcessMiningObservation[]): {
 
   for (const observation of sorted) {
     const last = merged[merged.length - 1];
-    const structuredPreserve = Boolean(last?.stepWasPreserved && observation.stepWasPreserved);
+    const structuredPreserve = Boolean(last?.stepWasPreserved || observation.stepWasPreserved);
     const sameStructuredLabel =
       normalizeLabel(last?.originalStepLabel ?? last?.label ?? '') === normalizeLabel(observation.originalStepLabel ?? observation.label);
     const sameStructuredEvidence =

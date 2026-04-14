@@ -877,6 +877,12 @@ export interface DerivationSummary {
   systems?: string[];
   explicitRoles?: string[];
   explicitSystems?: string[];
+  inferredRoles?: string[];
+  inferredSystems?: string[];
+  supportOnlyRoles?: string[];
+  supportOnlySystems?: string[];
+  suppressedRoles?: string[];
+  suppressedSystems?: string[];
   issueSignals?: string[];
   issueEvidence?: Array<{ label: string; snippet: string }>;
   structuredPreserveApplied?: boolean;
