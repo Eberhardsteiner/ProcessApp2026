@@ -1,6 +1,6 @@
 {
   "schemaVersion": "pm-analysis-quality-export-v2",
-  "exportedAt": "2026-04-14T19:40:01.079Z",
+  "exportedAt": "2026-04-15T17:26:20.818Z",
   "appVersion": "v0.45.1 (0.45.1)",
   "purpose": "Dieser Export beschreibt ausschließlich den aktuellen operativen Analysezustand des ausgewerteten Materials.",
   "note": "Keine QA-, Benchmark-, Sample- oder Referenzlogik ist Bestandteil dieses Exportpfads. Das JSON dient als externes Bewertungsartefakt für genau diesen Analysezustand.",
@@ -42,7 +42,7 @@
       "versionId": "engine-invariant-version-pg02_explicit_roles_systems_multivalue",
       "versionLabel": "Invariant structured-multivalue-context",
       "status": "draft",
-      "updatedAt": "2026-04-14T19:40:01.071Z"
+      "updatedAt": "2026-04-15T17:26:20.809Z"
     },
     "currentStep": "augmentation",
     "operatingMode": "standard",
@@ -306,8 +306,7 @@
             "Service",
             "Teamleitung",
             "Fachbereich",
-            "Wissensmanagement",
-            "Qualitätsmanagement"
+            "Wissensmanagement"
           ]
         }
       },
@@ -843,7 +842,7 @@
       "stepObservationsWithEvidence": 5,
       "stepObservationsWithRole": 5,
       "stepObservationsWithSystem": 5,
-      "updatedAt": "2026-04-14T19:40:01.070Z"
+      "updatedAt": "2026-04-15T17:26:20.809Z"
     },
     "lastDerivationSummary": {
       "sourceLabel": "PG02_explicit_roles_systems_multivalue.docx",
@@ -871,8 +870,7 @@
         "Service",
         "Teamleitung",
         "Fachbereich",
-        "Wissensmanagement",
-        "Qualitätsmanagement"
+        "Wissensmanagement"
       ],
       "systems": [
         "CRM",
@@ -903,9 +901,7 @@
         "Mail",
         "Wissensdatenbank"
       ],
-      "inferredRoles": [
-        "Qualitätsmanagement"
-      ],
+      "inferredRoles": [],
       "inferredSystems": [],
       "supportOnlyRoles": [],
       "supportOnlySystems": [],
@@ -1017,7 +1013,7 @@
       ],
       "extractionCandidates": [
         {
-          "candidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+          "candidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
           "candidateType": "step",
           "rawLabel": "Fall erfassen",
           "normalizedLabel": "Fall erfassen",
@@ -1040,12 +1036,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
+          "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "41336328-42a2-4c3a-a61f-51dc7cfe5eef",
+          "candidateId": "ad10ab49-c466-4049-947c-fa880b033390",
           "candidateType": "role",
           "rawLabel": "Innendienst",
           "normalizedLabel": "Innendienst",
@@ -1056,13 +1052,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-          "relatedCandidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+          "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+          "relatedCandidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "e2e24b2a-a4bb-4ba4-9ea7-1800d34abac5",
+          "candidateId": "ed88f124-ffe3-4e6f-9fd5-4d63efee91ed",
           "candidateType": "role",
           "rawLabel": "Vertrieb",
           "normalizedLabel": "Vertrieb",
@@ -1073,13 +1069,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-          "relatedCandidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+          "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+          "relatedCandidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "9a655698-49fe-4509-a1bc-5a3bb5e36cad",
+          "candidateId": "e4039c3c-14d1-43f3-9687-8f6fb5250d5f",
           "candidateType": "system",
           "rawLabel": "CRM",
           "normalizedLabel": "CRM",
@@ -1090,13 +1086,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-          "relatedCandidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+          "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+          "relatedCandidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "36c0f9fe-01fb-4bd5-801f-e8fd72cb1ee7",
+          "candidateId": "61de4026-a115-4390-bffc-ffd8bfdcbfb8",
           "candidateType": "system",
           "rawLabel": "DMS",
           "normalizedLabel": "DMS",
@@ -1107,13 +1103,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-          "relatedCandidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+          "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+          "relatedCandidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+          "candidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
           "candidateType": "step",
           "rawLabel": "Technische Sicht einholen",
           "normalizedLabel": "Technische Sicht einholen",
@@ -1139,12 +1135,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
+          "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "0ca0d285-3f61-4a31-9df4-2df8c14ab320",
+          "candidateId": "746f4c81-fabb-499c-8302-66a55d089ccc",
           "candidateType": "role",
           "rawLabel": "Qualitätsmanagement",
           "normalizedLabel": "Qualitätsmanagement",
@@ -1155,13 +1151,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-          "relatedCandidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+          "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+          "relatedCandidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "cbbb525d-e8e6-43f5-b15f-4e298c8ab894",
+          "candidateId": "0da769fa-e314-48df-9e46-bfba884592a5",
           "candidateType": "role",
           "rawLabel": "Service",
           "normalizedLabel": "Service",
@@ -1172,13 +1168,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-          "relatedCandidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+          "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+          "relatedCandidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "ac72f378-c2c8-4097-bd4e-8fdf38c8bad2",
+          "candidateId": "54a123b3-adb1-4a1b-a0cf-b1f37cae78ed",
           "candidateType": "system",
           "rawLabel": "QMS",
           "normalizedLabel": "QMS",
@@ -1189,13 +1185,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-          "relatedCandidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+          "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+          "relatedCandidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "9ca43d99-4f76-4cb2-8c95-539907d3b7a7",
+          "candidateId": "02bff930-705f-406d-99a2-fe34bbc89443",
           "candidateType": "system",
           "rawLabel": "Ticketsystem",
           "normalizedLabel": "Ticketsystem",
@@ -1206,13 +1202,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-          "relatedCandidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+          "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+          "relatedCandidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+          "candidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
           "candidateType": "step",
           "rawLabel": "Freigabe abstimmen",
           "normalizedLabel": "Freigabe abstimmen",
@@ -1237,12 +1233,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
+          "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "f34a0e22-6f75-4ad7-bafe-9a1242a5776d",
+          "candidateId": "c77bf0d6-b9e5-41ba-a350-be5de3ab590e",
           "candidateType": "role",
           "rawLabel": "Teamleitung",
           "normalizedLabel": "Teamleitung",
@@ -1253,13 +1249,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-          "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+          "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+          "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "0126f7d8-1ecd-4d03-b38a-18d95441585a",
+          "candidateId": "e3a308a6-8ae5-41ce-837a-4cb95366403f",
           "candidateType": "role",
           "rawLabel": "Fachbereich",
           "normalizedLabel": "Fachbereich",
@@ -1270,13 +1266,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-          "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+          "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+          "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "30df6e5d-8f7f-4769-bc5a-b479a10a3adb",
+          "candidateId": "a4ae95fc-716f-4791-b2b7-fb068986a04e",
           "candidateType": "system",
           "rawLabel": "ERP",
           "normalizedLabel": "ERP",
@@ -1287,13 +1283,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-          "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+          "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+          "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "a430d5b3-576d-423e-9d08-2a7b16d83ad7",
+          "candidateId": "e53dacf5-6fd7-45a6-9730-7feed3485854",
           "candidateType": "system",
           "rawLabel": "BI",
           "normalizedLabel": "BI",
@@ -1304,13 +1300,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-          "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+          "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+          "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "caecd251-2afe-4ebf-8e96-666fee87f08e",
+          "candidateId": "4cbb60e3-d614-4e05-b154-836d5ed619a1",
           "candidateType": "system",
           "rawLabel": "Mail",
           "normalizedLabel": "Mail",
@@ -1321,13 +1317,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-          "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+          "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+          "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+          "candidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
           "candidateType": "step",
           "rawLabel": "Kundenentscheidung kommunizieren",
           "normalizedLabel": "Kundenentscheidung kommunizieren",
@@ -1350,12 +1346,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
+          "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "dd443cc9-b968-4b6b-a30f-c66234ccfac3",
+          "candidateId": "214973d5-6e3a-4a99-ad69-fca062f19234",
           "candidateType": "role",
           "rawLabel": "Innendienst",
           "normalizedLabel": "Innendienst",
@@ -1366,13 +1362,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-          "relatedCandidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+          "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+          "relatedCandidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "e3a4645d-abee-4f55-9ee6-180eb413a078",
+          "candidateId": "ff8904bb-c738-4c34-bb64-1a06fbd3a420",
           "candidateType": "role",
           "rawLabel": "Vertrieb",
           "normalizedLabel": "Vertrieb",
@@ -1383,13 +1379,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-          "relatedCandidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+          "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+          "relatedCandidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "f85b3357-e7b5-4c03-bfe9-74fad150ad4e",
+          "candidateId": "cb867910-8ddc-46e6-863e-5b1ea99e5655",
           "candidateType": "system",
           "rawLabel": "CRM",
           "normalizedLabel": "CRM",
@@ -1400,13 +1396,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-          "relatedCandidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+          "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+          "relatedCandidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "2dd821e9-9e8f-4c8f-a564-c7945a18cbc9",
+          "candidateId": "ae48da6a-6d60-4173-9253-4bfcc8799bac",
           "candidateType": "system",
           "rawLabel": "Mail",
           "normalizedLabel": "Mail",
@@ -1417,13 +1413,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-          "relatedCandidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+          "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+          "relatedCandidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+          "candidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
           "candidateType": "step",
           "rawLabel": "Abschluss sichern",
           "normalizedLabel": "Abschluss sichern",
@@ -1450,12 +1446,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
+          "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "bcece18c-b812-455b-9cf7-16c52e3cb5a3",
+          "candidateId": "cfc0f419-a745-4295-a97c-19021302ca0e",
           "candidateType": "role",
           "rawLabel": "Qualitätsmanagement",
           "normalizedLabel": "Qualitätsmanagement",
@@ -1466,13 +1462,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
-          "relatedCandidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+          "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+          "relatedCandidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "0fefcabb-4053-4569-9017-62adb649aa18",
+          "candidateId": "c0c42dc1-66c7-4454-816e-a24a548b685f",
           "candidateType": "role",
           "rawLabel": "Wissensmanagement",
           "normalizedLabel": "Wissensmanagement",
@@ -1483,13 +1479,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
-          "relatedCandidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+          "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+          "relatedCandidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "8afb3dc3-57c3-4748-bb9f-a20954781093",
+          "candidateId": "7b02c998-0637-4501-9800-c246b8379643",
           "candidateType": "system",
           "rawLabel": "DMS",
           "normalizedLabel": "DMS",
@@ -1500,13 +1496,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
-          "relatedCandidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+          "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+          "relatedCandidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "0e2acc51-f6f5-4a39-bba3-a8e52bd30781",
+          "candidateId": "1a4da24c-e668-4178-8478-49e5b592cc6d",
           "candidateType": "system",
           "rawLabel": "Wissensdatenbank",
           "normalizedLabel": "Wissensdatenbank",
@@ -1517,13 +1513,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
-          "relatedCandidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+          "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+          "relatedCandidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "ee80b71c-86b8-4255-be3f-e9cfc03f04ba",
+          "candidateId": "88721ea0-76e5-496f-9724-ef9f0769725a",
           "candidateType": "signal",
           "rawLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
           "normalizedLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
@@ -1539,7 +1535,7 @@
           "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
         },
         {
-          "candidateId": "a8d516a5-a6c5-4128-ad18-e58e1ed68e80",
+          "candidateId": "90b6ba16-fcf6-48f8-beee-7820988fee4d",
           "candidateType": "signal",
           "rawLabel": "Kommunikation muss Unsicherheit professionell abfedern",
           "normalizedLabel": "Kommunikation muss Unsicherheit professionell abfedern",
@@ -1555,7 +1551,7 @@
           "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
         },
         {
-          "candidateId": "9ad58a79-1e24-4589-8474-6774a24c1a4c",
+          "candidateId": "71260360-7fa2-4196-8952-3f768c8273b1",
           "candidateType": "signal",
           "rawLabel": "Freigaben verlangsamen die Umsetzung",
           "normalizedLabel": "Freigaben verlangsamen die Umsetzung",
@@ -1571,7 +1567,7 @@
           "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
         },
         {
-          "candidateId": "3712c350-1c1e-4964-b311-c99a47347dda",
+          "candidateId": "b01cd639-c32c-4c6c-b9c9-e98eab89cc76",
           "candidateType": "signal",
           "rawLabel": "Implizite Koordination bindet viele Beteiligte",
           "normalizedLabel": "Implizite Koordination bindet viele Beteiligte",
@@ -1589,7 +1585,7 @@
       ],
       "engineVersion": "pm-local-engine-v4.3",
       "provenance": "local",
-      "updatedAt": "2026-04-14T19:40:01.070Z",
+      "updatedAt": "2026-04-15T17:26:20.809Z",
       "candidateStats": {
         "total": 30,
         "mergedCoreSteps": 5,
@@ -1890,7 +1886,7 @@
       "analysisMode": "process-draft",
       "sampleNotice": "Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.",
       "notes": "",
-      "updatedAt": "2026-04-14T19:40:01.079Z"
+      "updatedAt": "2026-04-15T17:26:20.818Z"
     },
     "conformanceSummary": {
       "checkedSteps": 5,
@@ -1899,7 +1895,7 @@
       "analysisMode": "process-draft",
       "sampleNotice": "Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.",
       "notes": "",
-      "updatedAt": "2026-04-14T19:40:01.076Z"
+      "updatedAt": "2026-04-15T17:26:20.815Z"
     },
     "enhancementSummary": {
       "issueCount": 7,
@@ -1943,7 +1939,7 @@
       "analysisMode": "process-draft",
       "sampleNotice": "Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.",
       "notes": "",
-      "updatedAt": "2026-04-14T19:40:01.077Z"
+      "updatedAt": "2026-04-15T17:26:20.815Z"
     },
     "reportSnapshot": {
       "title": "Mining-Überblick · Engine Invariant PG02_explicit_roles_systems_multivalue",
@@ -1966,7 +1962,7 @@
         "Mit dieser verifizierten Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.",
         "Ohne verifizierte Zeitbasis bleiben Aussagen zu Durchlauf- oder Wartezeiten bewusst zurückhaltend."
       ],
-      "markdown": "# Mining-Überblick · Engine Invariant PG02_explicit_roles_systems_multivalue\n\n**Stand:** 14.4.2026, 21:40:01\n**Einordnung:** Prozessentwurf\n**Datenreife:** Belastbarer Prozessentwurf\n\n## Management-Zusammenfassung\n\nFür den Prozess „Engine Invariant PG02_explicit_roles_systems_multivalue“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern. Im Soll-Abgleich zeigt sich aktuell keine dominierende Abweichung. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\n## Die Geschichte des aktuell erkennbaren Prozesses\n\nDie aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern.\n\nDer Soll-Abgleich zeigt aktuell keine dominante Abweichung. Das spricht dafür, dass die erkannte Hauptlinie grob zum vorhandenen Happy Path passt.\n\nAls wichtigster Reibungspunkt zeigt sich derzeit freigaben verlangsamen die umsetzung. Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Rolle | Verantwortung | Systeme | | Innendienst | Erfassung und Kommunikation | CRM, Mail | | Vertrieb | Kundensicht und Entscheidungsvorbereitung | CRM, DMS | | Qualitätssicherung | technische Bewertung | QMS, DMS | | | Schritt | Verantwortung | Systeme | Ergebnis | | 1 | Fall erfassen | Innendienst; Vertrieb | CRM;\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.\n\n## Wichtigste Befunde\n\n- Hauptlinie erkannt: Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern.\n- Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.\n- 5 Schritte sind bereits mit Belegstellen abgesichert.\n\n## Nächste sinnvolle Schritte\n\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n- Wenn möglich verifizierbare Datums- oder Uhrzeitangaben ergänzen, bevor zeitbasierte Hotspots interpretiert werden.\n\n## Wichtige Einordnung der Belastbarkeit\n\n- Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.\n- Die Ergebnisse zeigen derzeit vor allem einen Prozessentwurf und keine belastbaren Unternehmensquoten.\n- Mit dieser verifizierten Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.\n- Ohne verifizierte Zeitbasis bleiben Aussagen zu Durchlauf- oder Wartezeiten bewusst zurückhaltend.",
+      "markdown": "# Mining-Überblick · Engine Invariant PG02_explicit_roles_systems_multivalue\n\n**Stand:** 15.4.2026, 19:26:20\n**Einordnung:** Prozessentwurf\n**Datenreife:** Belastbarer Prozessentwurf\n\n## Management-Zusammenfassung\n\nFür den Prozess „Engine Invariant PG02_explicit_roles_systems_multivalue“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern. Im Soll-Abgleich zeigt sich aktuell keine dominierende Abweichung. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\n## Die Geschichte des aktuell erkennbaren Prozesses\n\nDie aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern.\n\nDer Soll-Abgleich zeigt aktuell keine dominante Abweichung. Das spricht dafür, dass die erkannte Hauptlinie grob zum vorhandenen Happy Path passt.\n\nAls wichtigster Reibungspunkt zeigt sich derzeit freigaben verlangsamen die umsetzung. Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Rolle | Verantwortung | Systeme | | Innendienst | Erfassung und Kommunikation | CRM, Mail | | Vertrieb | Kundensicht und Entscheidungsvorbereitung | CRM, DMS | | Qualitätssicherung | technische Bewertung | QMS, DMS | | | Schritt | Verantwortung | Systeme | Ergebnis | | 1 | Fall erfassen | Innendienst; Vertrieb | CRM;\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.\n\n## Wichtigste Befunde\n\n- Hauptlinie erkannt: Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern.\n- Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.\n- 5 Schritte sind bereits mit Belegstellen abgesichert.\n\n## Nächste sinnvolle Schritte\n\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n- Wenn möglich verifizierbare Datums- oder Uhrzeitangaben ergänzen, bevor zeitbasierte Hotspots interpretiert werden.\n\n## Wichtige Einordnung der Belastbarkeit\n\n- Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.\n- Die Ergebnisse zeigen derzeit vor allem einen Prozessentwurf und keine belastbaren Unternehmensquoten.\n- Mit dieser verifizierten Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.\n- Ohne verifizierte Zeitbasis bleiben Aussagen zu Durchlauf- oder Wartezeiten bewusst zurückhaltend.",
       "analysisMode": "process-draft",
       "basis": {
         "caseCount": 1,
@@ -1978,14 +1974,14 @@
         "readinessHeadline": "Ein erster Prozessentwurf ist vorhanden.",
         "maturityLabel": "Belastbarer Prozessentwurf"
       },
-      "generatedAt": "2026-04-14T19:40:01.077Z"
+      "generatedAt": "2026-04-15T17:26:20.816Z"
     },
     "handoverDrafts": [
       {
         "audience": "management",
         "label": "Management-Kurzbrief",
         "summary": "Knapper Überblick für Entscheidungsträger mit Kernaussage, Risiken und nächsten Schritten.",
-        "text": "Management-Kurzbrief | Engine Invariant PG02_explicit_roles_systems_multivalue\n\nStand: 14.4.2026, 21:40:01\nEinordnung: Prozessentwurf\n\nKernaussage\nFür den Prozess „Engine Invariant PG02_explicit_roles_systems_multivalue“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern. Im Soll-Abgleich zeigt sich aktuell keine dominierende Abweichung. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\nWichtigste Befunde\n- Hauptlinie erkannt: Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern.\n- Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.\n- 5 Schritte sind bereits mit Belegstellen abgesichert.\n\nEmpfohlene nächste Schritte\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n\nEinordnung der Belastbarkeit\nAktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten."
+        "text": "Management-Kurzbrief | Engine Invariant PG02_explicit_roles_systems_multivalue\n\nStand: 15.4.2026, 19:26:20\nEinordnung: Prozessentwurf\n\nKernaussage\nFür den Prozess „Engine Invariant PG02_explicit_roles_systems_multivalue“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern. Im Soll-Abgleich zeigt sich aktuell keine dominierende Abweichung. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\nWichtigste Befunde\n- Hauptlinie erkannt: Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern.\n- Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.\n- 5 Schritte sind bereits mit Belegstellen abgesichert.\n\nEmpfohlene nächste Schritte\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n\nEinordnung der Belastbarkeit\nAktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten."
       },
       {
         "audience": "process_owner",
@@ -2115,7 +2111,7 @@
   "sourceMaterial": {
     "cases": [
       {
-        "id": "b6c48273-ab6f-41f8-84e7-33be521496bb",
+        "id": "67a3e77c-62a4-463d-b7db-1abf2d6c8bbd",
         "name": "PG02 · Structured Preserve · Explicit Roles and Systems",
         "narrative": "PG02 · Structured Preserve · Explicit Roles and Systems\n\nDieses Prüfdokument testet, ob explizite Mehrfachrollen und Mehrfachsysteme aus einem hochwertigen strukturierten Sollprozessdokument bis in den finalen Export erhalten bleiben.\n\n1. Zielbild\n\nEin klar strukturierter Sollprozess mit expliziten Mehrfachrollen und Mehrfachsystemen pro Schritt soll ohne Kollaps auf Einzelwerte erhalten bleiben.\n\n2. Rollen und Systeme\n\n| Rolle | Verantwortung | Systeme |\n| Innendienst | Erfassung und Kommunikation | CRM, Mail |\n| Vertrieb | Kundensicht und Entscheidungsvorbereitung | CRM, DMS |\n| Qualitätssicherung | technische Bewertung | QMS, DMS |\n| Service | operative Sicht | Ticketsystem, Mail |\n| Teamleitung | Freigabe | ERP, BI |\n| Fachbereich | Fachentscheidung | ERP, Mail |\n| Wissensmanagement | Abschlusssicherung | DMS, Wissensdatenbank |\n\n3. Standardablauf\n\n| Nr. | Schritt | Verantwortung | Systeme | Ergebnis |\n| 1 | Fall erfassen | Innendienst; Vertrieb | CRM; DMS | Fall angelegt |\n| 2 | Technische Sicht einholen | Qualitätssicherung; Service | QMS; Ticketsystem | Bewertung angefragt |\n| 3 | Freigabe abstimmen | Teamleitung; Fachbereich | ERP; BI; Mail | Freigabepfad geklärt |\n| 4 | Kundenentscheidung kommunizieren | Innendienst; Vertrieb | CRM; Mail | Mitteilung versandt |\n| 5 | Abschluss sichern | Qualitätssicherung; Wissensmanagement | DMS; Wissensdatenbank | Abschluss dokumentiert |\n\n4. Abnahme für diesen Micro-Test\n\nAlle 5 Kernschritte sollen erhalten bleiben. Mehrfachrollen und Mehrfachsysteme müssen als Vollmenge sichtbar bleiben und dürfen nicht auf nur einen Wert pro Schritt kollabieren. Der Test ist nur bestanden, wenn explizite Structured-Evidenz Vorrang vor späterer Verdichtung hat.",
         "rawText": "PG02 · Structured Preserve · Explicit Roles and Systems\n\nDieses Prüfdokument testet, ob explizite Mehrfachrollen und Mehrfachsysteme aus einem hochwertigen strukturierten Sollprozessdokument bis in den finalen Export erhalten bleiben.\n\n1. Zielbild\n\nEin klar strukturierter Sollprozess mit expliziten Mehrfachrollen und Mehrfachsystemen pro Schritt soll ohne Kollaps auf Einzelwerte erhalten bleiben.\n\n2. Rollen und Systeme\n\n| Rolle | Verantwortung | Systeme |\n| Innendienst | Erfassung und Kommunikation | CRM, Mail |\n| Vertrieb | Kundensicht und Entscheidungsvorbereitung | CRM, DMS |\n| Qualitätssicherung | technische Bewertung | QMS, DMS |\n| Service | operative Sicht | Ticketsystem, Mail |\n| Teamleitung | Freigabe | ERP, BI |\n| Fachbereich | Fachentscheidung | ERP, Mail |\n| Wissensmanagement | Abschlusssicherung | DMS, Wissensdatenbank |\n\n3. Standardablauf\n\n| Nr. | Schritt | Verantwortung | Systeme | Ergebnis |\n| 1 | Fall erfassen | Innendienst; Vertrieb | CRM; DMS | Fall angelegt |\n| 2 | Technische Sicht einholen | Qualitätssicherung; Service | QMS; Ticketsystem | Bewertung angefragt |\n| 3 | Freigabe abstimmen | Teamleitung; Fachbereich | ERP; BI; Mail | Freigabepfad geklärt |\n| 4 | Kundenentscheidung kommunizieren | Innendienst; Vertrieb | CRM; Mail | Mitteilung versandt |\n| 5 | Abschluss sichern | Qualitätssicherung; Wissensmanagement | DMS; Wissensdatenbank | Abschluss dokumentiert |\n\n4. Abnahme für diesen Micro-Test\n\nAlle 5 Kernschritte sollen erhalten bleiben. Mehrfachrollen und Mehrfachsysteme müssen als Vollmenge sichtbar bleiben und dürfen nicht auf nur einen Wert pro Schritt kollabieren. Der Test ist nur bestanden, wenn explizite Structured-Evidenz Vorrang vor späterer Verdichtung hat.",
@@ -2138,19 +2134,19 @@
           "Entscheidungen und Rollen ergänzen",
           "Zusatzmaterial nur unterstützend nutzen"
         ],
-        "createdAt": "2026-04-14T19:40:01.059Z",
-        "updatedAt": "2026-04-14T19:40:01.070Z"
+        "createdAt": "2026-04-15T17:26:20.800Z",
+        "updatedAt": "2026-04-15T17:26:20.809Z"
       }
     ],
     "observations": [
       {
-        "id": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-        "sourceCaseId": "b6c48273-ab6f-41f8-84e7-33be521496bb",
+        "id": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+        "sourceCaseId": "67a3e77c-62a4-463d-b7db-1abf2d6c8bbd",
         "label": "Fall erfassen",
         "originalStepLabel": "Fall erfassen",
         "stepWasPreserved": true,
         "evidenceSnippet": "1 | Fall erfassen | Innendienst; Vertrieb | CRM; DMS | Fall angelegt",
-        "candidateId": "22390935-fe05-47e9-91f8-3b71ba0bf720",
+        "candidateId": "e74c4d1a-905f-4470-ad65-93e1c22567fa",
         "evidenceAnchor": "1 | Fall erfassen | Innendienst; Vertrieb | CRM; DMS | Fall angelegt",
         "contextWindow": "Fall erfassen | Fall angelegt | 1 | Fall erfassen | Innendienst; Vertrieb | CRM; DMS | Fall angelegt",
         "originChannel": "table-row",
@@ -2179,16 +2175,16 @@
         "kind": "step",
         "sequenceIndex": 0,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-14T19:40:01.060Z"
+        "createdAt": "2026-04-15T17:26:20.801Z"
       },
       {
-        "id": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-        "sourceCaseId": "b6c48273-ab6f-41f8-84e7-33be521496bb",
+        "id": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+        "sourceCaseId": "67a3e77c-62a4-463d-b7db-1abf2d6c8bbd",
         "label": "Technische Sicht einholen",
         "originalStepLabel": "Technische Sicht einholen",
         "stepWasPreserved": true,
         "evidenceSnippet": "2 | Technische Sicht einholen | Qualitätssicherung; Service | QMS; Ticketsystem | Bewertung angefragt",
-        "candidateId": "9adbdb99-e295-48b6-809e-0db9767fda39",
+        "candidateId": "587c1882-5ddb-475f-9784-27f1aae9a885",
         "evidenceAnchor": "2 | Technische Sicht einholen | Qualitätssicherung; Service | QMS; Ticketsystem | Bewertung angefragt",
         "contextWindow": "Technische Sicht einholen | Bewertung angefragt | 2 | Technische Sicht einholen | Qualitätssicherung; Service | QMS; Ticketsystem | Bewertung angefragt",
         "originChannel": "table-row",
@@ -2220,17 +2216,17 @@
         "kind": "step",
         "sequenceIndex": 1,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-14T19:40:01.060Z"
+        "createdAt": "2026-04-15T17:26:20.802Z"
       },
       {
-        "id": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-        "sourceCaseId": "b6c48273-ab6f-41f8-84e7-33be521496bb",
+        "id": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+        "sourceCaseId": "67a3e77c-62a4-463d-b7db-1abf2d6c8bbd",
         "label": "Freigabe abstimmen",
         "originalStepLabel": "Freigabe abstimmen",
         "canonicalStepFamily": "Lösung mit Fachbereichen abstimmen",
         "stepWasPreserved": true,
         "evidenceSnippet": "3 | Freigabe abstimmen | Teamleitung; Fachbereich | ERP; BI; Mail | Freigabepfad geklärt",
-        "candidateId": "3385266a-00f9-4abb-a93d-98686601cd82",
+        "candidateId": "01f8106f-2c23-4080-8694-846ed712854a",
         "evidenceAnchor": "3 | Freigabe abstimmen | Teamleitung; Fachbereich | ERP; BI; Mail | Freigabepfad geklärt",
         "contextWindow": "Freigabe abstimmen | Freigabepfad geklärt | 3 | Freigabe abstimmen | Teamleitung; Fachbereich | ERP; BI; Mail | Freigabepfad geklärt",
         "originChannel": "table-row",
@@ -2261,16 +2257,16 @@
         "kind": "step",
         "sequenceIndex": 2,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-14T19:40:01.061Z"
+        "createdAt": "2026-04-15T17:26:20.802Z"
       },
       {
-        "id": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-        "sourceCaseId": "b6c48273-ab6f-41f8-84e7-33be521496bb",
+        "id": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+        "sourceCaseId": "67a3e77c-62a4-463d-b7db-1abf2d6c8bbd",
         "label": "Kundenentscheidung kommunizieren",
         "originalStepLabel": "Kundenentscheidung kommunizieren",
         "stepWasPreserved": true,
         "evidenceSnippet": "4 | Kundenentscheidung kommunizieren | Innendienst; Vertrieb | CRM; Mail | Mitteilung versandt",
-        "candidateId": "247fa985-1e20-4917-b5eb-bee716f45ccd",
+        "candidateId": "ad3b81e5-c13a-4ccf-8ab8-f0d610e64574",
         "evidenceAnchor": "4 | Kundenentscheidung kommunizieren | Innendienst; Vertrieb | CRM; Mail | Mitteilung versandt",
         "contextWindow": "Kundenentscheidung kommunizieren | Mitteilung versandt | 4 | Kundenentscheidung kommunizieren | Innendienst; Vertrieb | CRM; Mail | Mitteilung versandt",
         "originChannel": "table-row",
@@ -2299,17 +2295,17 @@
         "kind": "step",
         "sequenceIndex": 3,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-14T19:40:01.061Z"
+        "createdAt": "2026-04-15T17:26:20.802Z"
       },
       {
-        "id": "92fff144-8109-4738-b98d-841f2925c545",
-        "sourceCaseId": "b6c48273-ab6f-41f8-84e7-33be521496bb",
+        "id": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+        "sourceCaseId": "67a3e77c-62a4-463d-b7db-1abf2d6c8bbd",
         "label": "Abschluss sichern",
         "originalStepLabel": "Abschluss sichern",
         "canonicalStepFamily": "Status dokumentieren und Fall nachhalten",
         "stepWasPreserved": true,
         "evidenceSnippet": "5 | Abschluss sichern | Qualitätssicherung; Wissensmanagement | DMS; Wissensdatenbank | Abschluss dokumentiert",
-        "candidateId": "98a36e7b-9d3f-47ba-bece-fb071a50af88",
+        "candidateId": "e3d59808-8a7c-49c5-b15c-6649cbb8161d",
         "evidenceAnchor": "5 | Abschluss sichern | Qualitätssicherung; Wissensmanagement | DMS; Wissensdatenbank | Abschluss dokumentiert",
         "contextWindow": "Abschluss sichern | Abschluss dokumentiert | 5 | Abschluss sichern | Qualitätssicherung; Wissensmanagement | DMS; Wissensdatenbank | Abschluss dokumentiert",
         "originChannel": "table-row",
@@ -2341,7 +2337,7 @@
         "kind": "step",
         "sequenceIndex": 4,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-14T19:40:01.061Z"
+        "createdAt": "2026-04-15T17:26:20.803Z"
       }
     ],
     "supportSignals": [
@@ -2364,7 +2360,7 @@
     ],
     "extractionCandidates": [
       {
-        "candidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+        "candidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
         "candidateType": "step",
         "rawLabel": "Fall erfassen",
         "normalizedLabel": "Fall erfassen",
@@ -2387,12 +2383,12 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
+        "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
         "status": "merged",
         "supportClass": "core-step"
       },
       {
-        "candidateId": "41336328-42a2-4c3a-a61f-51dc7cfe5eef",
+        "candidateId": "ad10ab49-c466-4049-947c-fa880b033390",
         "candidateType": "role",
         "rawLabel": "Innendienst",
         "normalizedLabel": "Innendienst",
@@ -2403,13 +2399,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-        "relatedCandidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+        "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+        "relatedCandidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "e2e24b2a-a4bb-4ba4-9ea7-1800d34abac5",
+        "candidateId": "ed88f124-ffe3-4e6f-9fd5-4d63efee91ed",
         "candidateType": "role",
         "rawLabel": "Vertrieb",
         "normalizedLabel": "Vertrieb",
@@ -2420,13 +2416,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-        "relatedCandidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+        "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+        "relatedCandidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "9a655698-49fe-4509-a1bc-5a3bb5e36cad",
+        "candidateId": "e4039c3c-14d1-43f3-9687-8f6fb5250d5f",
         "candidateType": "system",
         "rawLabel": "CRM",
         "normalizedLabel": "CRM",
@@ -2437,13 +2433,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-        "relatedCandidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+        "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+        "relatedCandidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "36c0f9fe-01fb-4bd5-801f-e8fd72cb1ee7",
+        "candidateId": "61de4026-a115-4390-bffc-ffd8bfdcbfb8",
         "candidateType": "system",
         "rawLabel": "DMS",
         "normalizedLabel": "DMS",
@@ -2454,13 +2450,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-        "relatedCandidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+        "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+        "relatedCandidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+        "candidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
         "candidateType": "step",
         "rawLabel": "Technische Sicht einholen",
         "normalizedLabel": "Technische Sicht einholen",
@@ -2486,12 +2482,12 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
+        "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
         "status": "merged",
         "supportClass": "core-step"
       },
       {
-        "candidateId": "0ca0d285-3f61-4a31-9df4-2df8c14ab320",
+        "candidateId": "746f4c81-fabb-499c-8302-66a55d089ccc",
         "candidateType": "role",
         "rawLabel": "Qualitätsmanagement",
         "normalizedLabel": "Qualitätsmanagement",
@@ -2502,13 +2498,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-        "relatedCandidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+        "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+        "relatedCandidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "cbbb525d-e8e6-43f5-b15f-4e298c8ab894",
+        "candidateId": "0da769fa-e314-48df-9e46-bfba884592a5",
         "candidateType": "role",
         "rawLabel": "Service",
         "normalizedLabel": "Service",
@@ -2519,13 +2515,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-        "relatedCandidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+        "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+        "relatedCandidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "ac72f378-c2c8-4097-bd4e-8fdf38c8bad2",
+        "candidateId": "54a123b3-adb1-4a1b-a0cf-b1f37cae78ed",
         "candidateType": "system",
         "rawLabel": "QMS",
         "normalizedLabel": "QMS",
@@ -2536,13 +2532,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-        "relatedCandidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+        "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+        "relatedCandidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "9ca43d99-4f76-4cb2-8c95-539907d3b7a7",
+        "candidateId": "02bff930-705f-406d-99a2-fe34bbc89443",
         "candidateType": "system",
         "rawLabel": "Ticketsystem",
         "normalizedLabel": "Ticketsystem",
@@ -2553,13 +2549,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-        "relatedCandidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+        "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+        "relatedCandidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+        "candidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
         "candidateType": "step",
         "rawLabel": "Freigabe abstimmen",
         "normalizedLabel": "Freigabe abstimmen",
@@ -2584,12 +2580,12 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
+        "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
         "status": "merged",
         "supportClass": "core-step"
       },
       {
-        "candidateId": "f34a0e22-6f75-4ad7-bafe-9a1242a5776d",
+        "candidateId": "c77bf0d6-b9e5-41ba-a350-be5de3ab590e",
         "candidateType": "role",
         "rawLabel": "Teamleitung",
         "normalizedLabel": "Teamleitung",
@@ -2600,13 +2596,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-        "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+        "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+        "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "0126f7d8-1ecd-4d03-b38a-18d95441585a",
+        "candidateId": "e3a308a6-8ae5-41ce-837a-4cb95366403f",
         "candidateType": "role",
         "rawLabel": "Fachbereich",
         "normalizedLabel": "Fachbereich",
@@ -2617,13 +2613,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-        "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+        "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+        "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "30df6e5d-8f7f-4769-bc5a-b479a10a3adb",
+        "candidateId": "a4ae95fc-716f-4791-b2b7-fb068986a04e",
         "candidateType": "system",
         "rawLabel": "ERP",
         "normalizedLabel": "ERP",
@@ -2634,13 +2630,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-        "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+        "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+        "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "a430d5b3-576d-423e-9d08-2a7b16d83ad7",
+        "candidateId": "e53dacf5-6fd7-45a6-9730-7feed3485854",
         "candidateType": "system",
         "rawLabel": "BI",
         "normalizedLabel": "BI",
@@ -2651,13 +2647,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-        "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+        "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+        "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "caecd251-2afe-4ebf-8e96-666fee87f08e",
+        "candidateId": "4cbb60e3-d614-4e05-b154-836d5ed619a1",
         "candidateType": "system",
         "rawLabel": "Mail",
         "normalizedLabel": "Mail",
@@ -2668,13 +2664,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-        "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+        "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+        "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+        "candidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
         "candidateType": "step",
         "rawLabel": "Kundenentscheidung kommunizieren",
         "normalizedLabel": "Kundenentscheidung kommunizieren",
@@ -2697,12 +2693,12 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
+        "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
         "status": "merged",
         "supportClass": "core-step"
       },
       {
-        "candidateId": "dd443cc9-b968-4b6b-a30f-c66234ccfac3",
+        "candidateId": "214973d5-6e3a-4a99-ad69-fca062f19234",
         "candidateType": "role",
         "rawLabel": "Innendienst",
         "normalizedLabel": "Innendienst",
@@ -2713,13 +2709,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-        "relatedCandidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+        "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+        "relatedCandidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "e3a4645d-abee-4f55-9ee6-180eb413a078",
+        "candidateId": "ff8904bb-c738-4c34-bb64-1a06fbd3a420",
         "candidateType": "role",
         "rawLabel": "Vertrieb",
         "normalizedLabel": "Vertrieb",
@@ -2730,13 +2726,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-        "relatedCandidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+        "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+        "relatedCandidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "f85b3357-e7b5-4c03-bfe9-74fad150ad4e",
+        "candidateId": "cb867910-8ddc-46e6-863e-5b1ea99e5655",
         "candidateType": "system",
         "rawLabel": "CRM",
         "normalizedLabel": "CRM",
@@ -2747,13 +2743,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-        "relatedCandidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+        "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+        "relatedCandidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "2dd821e9-9e8f-4c8f-a564-c7945a18cbc9",
+        "candidateId": "ae48da6a-6d60-4173-9253-4bfcc8799bac",
         "candidateType": "system",
         "rawLabel": "Mail",
         "normalizedLabel": "Mail",
@@ -2764,13 +2760,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-        "relatedCandidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+        "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+        "relatedCandidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+        "candidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
         "candidateType": "step",
         "rawLabel": "Abschluss sichern",
         "normalizedLabel": "Abschluss sichern",
@@ -2797,12 +2793,12 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
+        "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
         "status": "merged",
         "supportClass": "core-step"
       },
       {
-        "candidateId": "bcece18c-b812-455b-9cf7-16c52e3cb5a3",
+        "candidateId": "cfc0f419-a745-4295-a97c-19021302ca0e",
         "candidateType": "role",
         "rawLabel": "Qualitätsmanagement",
         "normalizedLabel": "Qualitätsmanagement",
@@ -2813,13 +2809,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
-        "relatedCandidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+        "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+        "relatedCandidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "0fefcabb-4053-4569-9017-62adb649aa18",
+        "candidateId": "c0c42dc1-66c7-4454-816e-a24a548b685f",
         "candidateType": "role",
         "rawLabel": "Wissensmanagement",
         "normalizedLabel": "Wissensmanagement",
@@ -2830,13 +2826,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
-        "relatedCandidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+        "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+        "relatedCandidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "8afb3dc3-57c3-4748-bb9f-a20954781093",
+        "candidateId": "7b02c998-0637-4501-9800-c246b8379643",
         "candidateType": "system",
         "rawLabel": "DMS",
         "normalizedLabel": "DMS",
@@ -2847,13 +2843,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
-        "relatedCandidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+        "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+        "relatedCandidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "0e2acc51-f6f5-4a39-bba3-a8e52bd30781",
+        "candidateId": "1a4da24c-e668-4178-8478-49e5b592cc6d",
         "candidateType": "system",
         "rawLabel": "Wissensdatenbank",
         "normalizedLabel": "Wissensdatenbank",
@@ -2864,13 +2860,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
-        "relatedCandidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+        "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+        "relatedCandidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "ee80b71c-86b8-4255-be3f-e9cfc03f04ba",
+        "candidateId": "88721ea0-76e5-496f-9724-ef9f0769725a",
         "candidateType": "signal",
         "rawLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
         "normalizedLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
@@ -2886,7 +2882,7 @@
         "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
       },
       {
-        "candidateId": "a8d516a5-a6c5-4128-ad18-e58e1ed68e80",
+        "candidateId": "90b6ba16-fcf6-48f8-beee-7820988fee4d",
         "candidateType": "signal",
         "rawLabel": "Kommunikation muss Unsicherheit professionell abfedern",
         "normalizedLabel": "Kommunikation muss Unsicherheit professionell abfedern",
@@ -2902,7 +2898,7 @@
         "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
       },
       {
-        "candidateId": "9ad58a79-1e24-4589-8474-6774a24c1a4c",
+        "candidateId": "71260360-7fa2-4196-8952-3f768c8273b1",
         "candidateType": "signal",
         "rawLabel": "Freigaben verlangsamen die Umsetzung",
         "normalizedLabel": "Freigaben verlangsamen die Umsetzung",
@@ -2918,7 +2914,7 @@
         "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
       },
       {
-        "candidateId": "3712c350-1c1e-4964-b311-c99a47347dda",
+        "candidateId": "b01cd639-c32c-4c6c-b9c9-e98eab89cc76",
         "candidateType": "signal",
         "rawLabel": "Implizite Koordination bindet viele Beteiligte",
         "normalizedLabel": "Implizite Koordination bindet viele Beteiligte",
@@ -2962,7 +2958,7 @@
     "operatingMode": "standard",
     "cases": [
       {
-        "id": "b6c48273-ab6f-41f8-84e7-33be521496bb",
+        "id": "67a3e77c-62a4-463d-b7db-1abf2d6c8bbd",
         "name": "PG02 · Structured Preserve · Explicit Roles and Systems",
         "narrative": "PG02 · Structured Preserve · Explicit Roles and Systems\n\nDieses Prüfdokument testet, ob explizite Mehrfachrollen und Mehrfachsysteme aus einem hochwertigen strukturierten Sollprozessdokument bis in den finalen Export erhalten bleiben.\n\n1. Zielbild\n\nEin klar strukturierter Sollprozess mit expliziten Mehrfachrollen und Mehrfachsystemen pro Schritt soll ohne Kollaps auf Einzelwerte erhalten bleiben.\n\n2. Rollen und Systeme\n\n| Rolle | Verantwortung | Systeme |\n| Innendienst | Erfassung und Kommunikation | CRM, Mail |\n| Vertrieb | Kundensicht und Entscheidungsvorbereitung | CRM, DMS |\n| Qualitätssicherung | technische Bewertung | QMS, DMS |\n| Service | operative Sicht | Ticketsystem, Mail |\n| Teamleitung | Freigabe | ERP, BI |\n| Fachbereich | Fachentscheidung | ERP, Mail |\n| Wissensmanagement | Abschlusssicherung | DMS, Wissensdatenbank |\n\n3. Standardablauf\n\n| Nr. | Schritt | Verantwortung | Systeme | Ergebnis |\n| 1 | Fall erfassen | Innendienst; Vertrieb | CRM; DMS | Fall angelegt |\n| 2 | Technische Sicht einholen | Qualitätssicherung; Service | QMS; Ticketsystem | Bewertung angefragt |\n| 3 | Freigabe abstimmen | Teamleitung; Fachbereich | ERP; BI; Mail | Freigabepfad geklärt |\n| 4 | Kundenentscheidung kommunizieren | Innendienst; Vertrieb | CRM; Mail | Mitteilung versandt |\n| 5 | Abschluss sichern | Qualitätssicherung; Wissensmanagement | DMS; Wissensdatenbank | Abschluss dokumentiert |\n\n4. Abnahme für diesen Micro-Test\n\nAlle 5 Kernschritte sollen erhalten bleiben. Mehrfachrollen und Mehrfachsysteme müssen als Vollmenge sichtbar bleiben und dürfen nicht auf nur einen Wert pro Schritt kollabieren. Der Test ist nur bestanden, wenn explizite Structured-Evidenz Vorrang vor späterer Verdichtung hat.",
         "rawText": "PG02 · Structured Preserve · Explicit Roles and Systems\n\nDieses Prüfdokument testet, ob explizite Mehrfachrollen und Mehrfachsysteme aus einem hochwertigen strukturierten Sollprozessdokument bis in den finalen Export erhalten bleiben.\n\n1. Zielbild\n\nEin klar strukturierter Sollprozess mit expliziten Mehrfachrollen und Mehrfachsystemen pro Schritt soll ohne Kollaps auf Einzelwerte erhalten bleiben.\n\n2. Rollen und Systeme\n\n| Rolle | Verantwortung | Systeme |\n| Innendienst | Erfassung und Kommunikation | CRM, Mail |\n| Vertrieb | Kundensicht und Entscheidungsvorbereitung | CRM, DMS |\n| Qualitätssicherung | technische Bewertung | QMS, DMS |\n| Service | operative Sicht | Ticketsystem, Mail |\n| Teamleitung | Freigabe | ERP, BI |\n| Fachbereich | Fachentscheidung | ERP, Mail |\n| Wissensmanagement | Abschlusssicherung | DMS, Wissensdatenbank |\n\n3. Standardablauf\n\n| Nr. | Schritt | Verantwortung | Systeme | Ergebnis |\n| 1 | Fall erfassen | Innendienst; Vertrieb | CRM; DMS | Fall angelegt |\n| 2 | Technische Sicht einholen | Qualitätssicherung; Service | QMS; Ticketsystem | Bewertung angefragt |\n| 3 | Freigabe abstimmen | Teamleitung; Fachbereich | ERP; BI; Mail | Freigabepfad geklärt |\n| 4 | Kundenentscheidung kommunizieren | Innendienst; Vertrieb | CRM; Mail | Mitteilung versandt |\n| 5 | Abschluss sichern | Qualitätssicherung; Wissensmanagement | DMS; Wissensdatenbank | Abschluss dokumentiert |\n\n4. Abnahme für diesen Micro-Test\n\nAlle 5 Kernschritte sollen erhalten bleiben. Mehrfachrollen und Mehrfachsysteme müssen als Vollmenge sichtbar bleiben und dürfen nicht auf nur einen Wert pro Schritt kollabieren. Der Test ist nur bestanden, wenn explizite Structured-Evidenz Vorrang vor späterer Verdichtung hat.",
@@ -2985,19 +2981,19 @@
           "Entscheidungen und Rollen ergänzen",
           "Zusatzmaterial nur unterstützend nutzen"
         ],
-        "createdAt": "2026-04-14T19:40:01.059Z",
-        "updatedAt": "2026-04-14T19:40:01.070Z"
+        "createdAt": "2026-04-15T17:26:20.800Z",
+        "updatedAt": "2026-04-15T17:26:20.809Z"
       }
     ],
     "observations": [
       {
-        "id": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-        "sourceCaseId": "b6c48273-ab6f-41f8-84e7-33be521496bb",
+        "id": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+        "sourceCaseId": "67a3e77c-62a4-463d-b7db-1abf2d6c8bbd",
         "label": "Fall erfassen",
         "originalStepLabel": "Fall erfassen",
         "stepWasPreserved": true,
         "evidenceSnippet": "1 | Fall erfassen | Innendienst; Vertrieb | CRM; DMS | Fall angelegt",
-        "candidateId": "22390935-fe05-47e9-91f8-3b71ba0bf720",
+        "candidateId": "e74c4d1a-905f-4470-ad65-93e1c22567fa",
         "evidenceAnchor": "1 | Fall erfassen | Innendienst; Vertrieb | CRM; DMS | Fall angelegt",
         "contextWindow": "Fall erfassen | Fall angelegt | 1 | Fall erfassen | Innendienst; Vertrieb | CRM; DMS | Fall angelegt",
         "originChannel": "table-row",
@@ -3026,16 +3022,16 @@
         "kind": "step",
         "sequenceIndex": 0,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-14T19:40:01.060Z"
+        "createdAt": "2026-04-15T17:26:20.801Z"
       },
       {
-        "id": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-        "sourceCaseId": "b6c48273-ab6f-41f8-84e7-33be521496bb",
+        "id": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+        "sourceCaseId": "67a3e77c-62a4-463d-b7db-1abf2d6c8bbd",
         "label": "Technische Sicht einholen",
         "originalStepLabel": "Technische Sicht einholen",
         "stepWasPreserved": true,
         "evidenceSnippet": "2 | Technische Sicht einholen | Qualitätssicherung; Service | QMS; Ticketsystem | Bewertung angefragt",
-        "candidateId": "9adbdb99-e295-48b6-809e-0db9767fda39",
+        "candidateId": "587c1882-5ddb-475f-9784-27f1aae9a885",
         "evidenceAnchor": "2 | Technische Sicht einholen | Qualitätssicherung; Service | QMS; Ticketsystem | Bewertung angefragt",
         "contextWindow": "Technische Sicht einholen | Bewertung angefragt | 2 | Technische Sicht einholen | Qualitätssicherung; Service | QMS; Ticketsystem | Bewertung angefragt",
         "originChannel": "table-row",
@@ -3067,17 +3063,17 @@
         "kind": "step",
         "sequenceIndex": 1,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-14T19:40:01.060Z"
+        "createdAt": "2026-04-15T17:26:20.802Z"
       },
       {
-        "id": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-        "sourceCaseId": "b6c48273-ab6f-41f8-84e7-33be521496bb",
+        "id": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+        "sourceCaseId": "67a3e77c-62a4-463d-b7db-1abf2d6c8bbd",
         "label": "Freigabe abstimmen",
         "originalStepLabel": "Freigabe abstimmen",
         "canonicalStepFamily": "Lösung mit Fachbereichen abstimmen",
         "stepWasPreserved": true,
         "evidenceSnippet": "3 | Freigabe abstimmen | Teamleitung; Fachbereich | ERP; BI; Mail | Freigabepfad geklärt",
-        "candidateId": "3385266a-00f9-4abb-a93d-98686601cd82",
+        "candidateId": "01f8106f-2c23-4080-8694-846ed712854a",
         "evidenceAnchor": "3 | Freigabe abstimmen | Teamleitung; Fachbereich | ERP; BI; Mail | Freigabepfad geklärt",
         "contextWindow": "Freigabe abstimmen | Freigabepfad geklärt | 3 | Freigabe abstimmen | Teamleitung; Fachbereich | ERP; BI; Mail | Freigabepfad geklärt",
         "originChannel": "table-row",
@@ -3108,16 +3104,16 @@
         "kind": "step",
         "sequenceIndex": 2,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-14T19:40:01.061Z"
+        "createdAt": "2026-04-15T17:26:20.802Z"
       },
       {
-        "id": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-        "sourceCaseId": "b6c48273-ab6f-41f8-84e7-33be521496bb",
+        "id": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+        "sourceCaseId": "67a3e77c-62a4-463d-b7db-1abf2d6c8bbd",
         "label": "Kundenentscheidung kommunizieren",
         "originalStepLabel": "Kundenentscheidung kommunizieren",
         "stepWasPreserved": true,
         "evidenceSnippet": "4 | Kundenentscheidung kommunizieren | Innendienst; Vertrieb | CRM; Mail | Mitteilung versandt",
-        "candidateId": "247fa985-1e20-4917-b5eb-bee716f45ccd",
+        "candidateId": "ad3b81e5-c13a-4ccf-8ab8-f0d610e64574",
         "evidenceAnchor": "4 | Kundenentscheidung kommunizieren | Innendienst; Vertrieb | CRM; Mail | Mitteilung versandt",
         "contextWindow": "Kundenentscheidung kommunizieren | Mitteilung versandt | 4 | Kundenentscheidung kommunizieren | Innendienst; Vertrieb | CRM; Mail | Mitteilung versandt",
         "originChannel": "table-row",
@@ -3146,17 +3142,17 @@
         "kind": "step",
         "sequenceIndex": 3,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-14T19:40:01.061Z"
+        "createdAt": "2026-04-15T17:26:20.802Z"
       },
       {
-        "id": "92fff144-8109-4738-b98d-841f2925c545",
-        "sourceCaseId": "b6c48273-ab6f-41f8-84e7-33be521496bb",
+        "id": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+        "sourceCaseId": "67a3e77c-62a4-463d-b7db-1abf2d6c8bbd",
         "label": "Abschluss sichern",
         "originalStepLabel": "Abschluss sichern",
         "canonicalStepFamily": "Status dokumentieren und Fall nachhalten",
         "stepWasPreserved": true,
         "evidenceSnippet": "5 | Abschluss sichern | Qualitätssicherung; Wissensmanagement | DMS; Wissensdatenbank | Abschluss dokumentiert",
-        "candidateId": "98a36e7b-9d3f-47ba-bece-fb071a50af88",
+        "candidateId": "e3d59808-8a7c-49c5-b15c-6649cbb8161d",
         "evidenceAnchor": "5 | Abschluss sichern | Qualitätssicherung; Wissensmanagement | DMS; Wissensdatenbank | Abschluss dokumentiert",
         "contextWindow": "Abschluss sichern | Abschluss dokumentiert | 5 | Abschluss sichern | Qualitätssicherung; Wissensmanagement | DMS; Wissensdatenbank | Abschluss dokumentiert",
         "originChannel": "table-row",
@@ -3188,7 +3184,7 @@
         "kind": "step",
         "sequenceIndex": 4,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-14T19:40:01.061Z"
+        "createdAt": "2026-04-15T17:26:20.803Z"
       }
     ],
     "reviewState": {
@@ -3196,7 +3192,7 @@
       "repairJournal": []
     },
     "reportHistory": [],
-    "updatedAt": "2026-04-14T19:40:01.077Z",
+    "updatedAt": "2026-04-15T17:26:20.815Z",
     "qualitySummary": {
       "totalCases": 1,
       "totalObservations": 5,
@@ -3210,7 +3206,7 @@
       "stepObservationsWithEvidence": 5,
       "stepObservationsWithRole": 5,
       "stepObservationsWithSystem": 5,
-      "updatedAt": "2026-04-14T19:40:01.070Z"
+      "updatedAt": "2026-04-15T17:26:20.809Z"
     },
     "lastDerivationSummary": {
       "sourceLabel": "PG02_explicit_roles_systems_multivalue.docx",
@@ -3238,8 +3234,7 @@
         "Service",
         "Teamleitung",
         "Fachbereich",
-        "Wissensmanagement",
-        "Qualitätsmanagement"
+        "Wissensmanagement"
       ],
       "systems": [
         "CRM",
@@ -3270,9 +3265,7 @@
         "Mail",
         "Wissensdatenbank"
       ],
-      "inferredRoles": [
-        "Qualitätsmanagement"
-      ],
+      "inferredRoles": [],
       "inferredSystems": [],
       "supportOnlyRoles": [],
       "supportOnlySystems": [],
@@ -3384,7 +3377,7 @@
       ],
       "extractionCandidates": [
         {
-          "candidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+          "candidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
           "candidateType": "step",
           "rawLabel": "Fall erfassen",
           "normalizedLabel": "Fall erfassen",
@@ -3407,12 +3400,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
+          "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "41336328-42a2-4c3a-a61f-51dc7cfe5eef",
+          "candidateId": "ad10ab49-c466-4049-947c-fa880b033390",
           "candidateType": "role",
           "rawLabel": "Innendienst",
           "normalizedLabel": "Innendienst",
@@ -3423,13 +3416,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-          "relatedCandidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+          "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+          "relatedCandidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "e2e24b2a-a4bb-4ba4-9ea7-1800d34abac5",
+          "candidateId": "ed88f124-ffe3-4e6f-9fd5-4d63efee91ed",
           "candidateType": "role",
           "rawLabel": "Vertrieb",
           "normalizedLabel": "Vertrieb",
@@ -3440,13 +3433,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-          "relatedCandidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+          "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+          "relatedCandidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "9a655698-49fe-4509-a1bc-5a3bb5e36cad",
+          "candidateId": "e4039c3c-14d1-43f3-9687-8f6fb5250d5f",
           "candidateType": "system",
           "rawLabel": "CRM",
           "normalizedLabel": "CRM",
@@ -3457,13 +3450,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-          "relatedCandidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+          "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+          "relatedCandidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "36c0f9fe-01fb-4bd5-801f-e8fd72cb1ee7",
+          "candidateId": "61de4026-a115-4390-bffc-ffd8bfdcbfb8",
           "candidateType": "system",
           "rawLabel": "DMS",
           "normalizedLabel": "DMS",
@@ -3474,13 +3467,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f",
-          "relatedCandidateId": "0bdb1177-3aab-4b60-91ed-403dbdda8f5f:step",
+          "sourceRef": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e",
+          "relatedCandidateId": "e6da8f7e-ca5b-416b-bb7c-bc7f1f25d52e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+          "candidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
           "candidateType": "step",
           "rawLabel": "Technische Sicht einholen",
           "normalizedLabel": "Technische Sicht einholen",
@@ -3506,12 +3499,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
+          "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "0ca0d285-3f61-4a31-9df4-2df8c14ab320",
+          "candidateId": "746f4c81-fabb-499c-8302-66a55d089ccc",
           "candidateType": "role",
           "rawLabel": "Qualitätsmanagement",
           "normalizedLabel": "Qualitätsmanagement",
@@ -3522,13 +3515,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-          "relatedCandidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+          "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+          "relatedCandidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "cbbb525d-e8e6-43f5-b15f-4e298c8ab894",
+          "candidateId": "0da769fa-e314-48df-9e46-bfba884592a5",
           "candidateType": "role",
           "rawLabel": "Service",
           "normalizedLabel": "Service",
@@ -3539,13 +3532,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-          "relatedCandidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+          "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+          "relatedCandidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "ac72f378-c2c8-4097-bd4e-8fdf38c8bad2",
+          "candidateId": "54a123b3-adb1-4a1b-a0cf-b1f37cae78ed",
           "candidateType": "system",
           "rawLabel": "QMS",
           "normalizedLabel": "QMS",
@@ -3556,13 +3549,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-          "relatedCandidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+          "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+          "relatedCandidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "9ca43d99-4f76-4cb2-8c95-539907d3b7a7",
+          "candidateId": "02bff930-705f-406d-99a2-fe34bbc89443",
           "candidateType": "system",
           "rawLabel": "Ticketsystem",
           "normalizedLabel": "Ticketsystem",
@@ -3573,13 +3566,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857",
-          "relatedCandidateId": "21f7fd3b-dfc5-424b-a4c9-7af4ab425857:step",
+          "sourceRef": "3af58ec1-b447-4dd5-81b0-a4726599289e",
+          "relatedCandidateId": "3af58ec1-b447-4dd5-81b0-a4726599289e:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+          "candidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
           "candidateType": "step",
           "rawLabel": "Freigabe abstimmen",
           "normalizedLabel": "Freigabe abstimmen",
@@ -3604,12 +3597,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
+          "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "f34a0e22-6f75-4ad7-bafe-9a1242a5776d",
+          "candidateId": "c77bf0d6-b9e5-41ba-a350-be5de3ab590e",
           "candidateType": "role",
           "rawLabel": "Teamleitung",
           "normalizedLabel": "Teamleitung",
@@ -3620,13 +3613,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-          "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+          "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+          "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "0126f7d8-1ecd-4d03-b38a-18d95441585a",
+          "candidateId": "e3a308a6-8ae5-41ce-837a-4cb95366403f",
           "candidateType": "role",
           "rawLabel": "Fachbereich",
           "normalizedLabel": "Fachbereich",
@@ -3637,13 +3630,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-          "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+          "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+          "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "30df6e5d-8f7f-4769-bc5a-b479a10a3adb",
+          "candidateId": "a4ae95fc-716f-4791-b2b7-fb068986a04e",
           "candidateType": "system",
           "rawLabel": "ERP",
           "normalizedLabel": "ERP",
@@ -3654,13 +3647,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-          "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+          "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+          "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "a430d5b3-576d-423e-9d08-2a7b16d83ad7",
+          "candidateId": "e53dacf5-6fd7-45a6-9730-7feed3485854",
           "candidateType": "system",
           "rawLabel": "BI",
           "normalizedLabel": "BI",
@@ -3671,13 +3664,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-          "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+          "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+          "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "caecd251-2afe-4ebf-8e96-666fee87f08e",
+          "candidateId": "4cbb60e3-d614-4e05-b154-836d5ed619a1",
           "candidateType": "system",
           "rawLabel": "Mail",
           "normalizedLabel": "Mail",
@@ -3688,13 +3681,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "1b3f1067-79eb-4930-b84d-73adcfe50f9c",
-          "relatedCandidateId": "1b3f1067-79eb-4930-b84d-73adcfe50f9c:step",
+          "sourceRef": "e70f3b48-dfff-42a8-90a2-338e6fdecc70",
+          "relatedCandidateId": "e70f3b48-dfff-42a8-90a2-338e6fdecc70:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+          "candidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
           "candidateType": "step",
           "rawLabel": "Kundenentscheidung kommunizieren",
           "normalizedLabel": "Kundenentscheidung kommunizieren",
@@ -3717,12 +3710,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
+          "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "dd443cc9-b968-4b6b-a30f-c66234ccfac3",
+          "candidateId": "214973d5-6e3a-4a99-ad69-fca062f19234",
           "candidateType": "role",
           "rawLabel": "Innendienst",
           "normalizedLabel": "Innendienst",
@@ -3733,13 +3726,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-          "relatedCandidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+          "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+          "relatedCandidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "e3a4645d-abee-4f55-9ee6-180eb413a078",
+          "candidateId": "ff8904bb-c738-4c34-bb64-1a06fbd3a420",
           "candidateType": "role",
           "rawLabel": "Vertrieb",
           "normalizedLabel": "Vertrieb",
@@ -3750,13 +3743,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-          "relatedCandidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+          "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+          "relatedCandidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "f85b3357-e7b5-4c03-bfe9-74fad150ad4e",
+          "candidateId": "cb867910-8ddc-46e6-863e-5b1ea99e5655",
           "candidateType": "system",
           "rawLabel": "CRM",
           "normalizedLabel": "CRM",
@@ -3767,13 +3760,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-          "relatedCandidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+          "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+          "relatedCandidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "2dd821e9-9e8f-4c8f-a564-c7945a18cbc9",
+          "candidateId": "ae48da6a-6d60-4173-9253-4bfcc8799bac",
           "candidateType": "system",
           "rawLabel": "Mail",
           "normalizedLabel": "Mail",
@@ -3784,13 +3777,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d817e9fe-fed8-45a4-87c9-67c4e500beba",
-          "relatedCandidateId": "d817e9fe-fed8-45a4-87c9-67c4e500beba:step",
+          "sourceRef": "4f5c2886-e22d-4fca-b055-2acbaadf079b",
+          "relatedCandidateId": "4f5c2886-e22d-4fca-b055-2acbaadf079b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+          "candidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
           "candidateType": "step",
           "rawLabel": "Abschluss sichern",
           "normalizedLabel": "Abschluss sichern",
@@ -3817,12 +3810,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
+          "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "bcece18c-b812-455b-9cf7-16c52e3cb5a3",
+          "candidateId": "cfc0f419-a745-4295-a97c-19021302ca0e",
           "candidateType": "role",
           "rawLabel": "Qualitätsmanagement",
           "normalizedLabel": "Qualitätsmanagement",
@@ -3833,13 +3826,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
-          "relatedCandidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+          "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+          "relatedCandidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "0fefcabb-4053-4569-9017-62adb649aa18",
+          "candidateId": "c0c42dc1-66c7-4454-816e-a24a548b685f",
           "candidateType": "role",
           "rawLabel": "Wissensmanagement",
           "normalizedLabel": "Wissensmanagement",
@@ -3850,13 +3843,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
-          "relatedCandidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+          "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+          "relatedCandidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "8afb3dc3-57c3-4748-bb9f-a20954781093",
+          "candidateId": "7b02c998-0637-4501-9800-c246b8379643",
           "candidateType": "system",
           "rawLabel": "DMS",
           "normalizedLabel": "DMS",
@@ -3867,13 +3860,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
-          "relatedCandidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+          "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+          "relatedCandidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "0e2acc51-f6f5-4a39-bba3-a8e52bd30781",
+          "candidateId": "1a4da24c-e668-4178-8478-49e5b592cc6d",
           "candidateType": "system",
           "rawLabel": "Wissensdatenbank",
           "normalizedLabel": "Wissensdatenbank",
@@ -3884,13 +3877,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92fff144-8109-4738-b98d-841f2925c545",
-          "relatedCandidateId": "92fff144-8109-4738-b98d-841f2925c545:step",
+          "sourceRef": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b",
+          "relatedCandidateId": "ae50bbe6-000e-440f-8e1d-bb50e89eea8b:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "ee80b71c-86b8-4255-be3f-e9cfc03f04ba",
+          "candidateId": "88721ea0-76e5-496f-9724-ef9f0769725a",
           "candidateType": "signal",
           "rawLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
           "normalizedLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
@@ -3906,7 +3899,7 @@
           "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
         },
         {
-          "candidateId": "a8d516a5-a6c5-4128-ad18-e58e1ed68e80",
+          "candidateId": "90b6ba16-fcf6-48f8-beee-7820988fee4d",
           "candidateType": "signal",
           "rawLabel": "Kommunikation muss Unsicherheit professionell abfedern",
           "normalizedLabel": "Kommunikation muss Unsicherheit professionell abfedern",
@@ -3922,7 +3915,7 @@
           "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
         },
         {
-          "candidateId": "9ad58a79-1e24-4589-8474-6774a24c1a4c",
+          "candidateId": "71260360-7fa2-4196-8952-3f768c8273b1",
           "candidateType": "signal",
           "rawLabel": "Freigaben verlangsamen die Umsetzung",
           "normalizedLabel": "Freigaben verlangsamen die Umsetzung",
@@ -3938,7 +3931,7 @@
           "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
         },
         {
-          "candidateId": "3712c350-1c1e-4964-b311-c99a47347dda",
+          "candidateId": "b01cd639-c32c-4c6c-b9c9-e98eab89cc76",
           "candidateType": "signal",
           "rawLabel": "Implizite Koordination bindet viele Beteiligte",
           "normalizedLabel": "Implizite Koordination bindet viele Beteiligte",
@@ -3956,7 +3949,7 @@
       ],
       "engineVersion": "pm-local-engine-v4.3",
       "provenance": "local",
-      "updatedAt": "2026-04-14T19:40:01.070Z",
+      "updatedAt": "2026-04-15T17:26:20.809Z",
       "candidateStats": {
         "total": 30,
         "mergedCoreSteps": 5,
@@ -3981,7 +3974,7 @@
         "audience": "management",
         "label": "Management-Kurzbrief",
         "summary": "Knapper Überblick für Entscheidungsträger mit Kernaussage, Risiken und nächsten Schritten.",
-        "text": "Management-Kurzbrief | Engine Invariant PG02_explicit_roles_systems_multivalue\n\nStand: 14.4.2026, 21:40:01\nEinordnung: Prozessentwurf\n\nKernaussage\nFür den Prozess „Engine Invariant PG02_explicit_roles_systems_multivalue“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern. Im Soll-Abgleich zeigt sich aktuell keine dominierende Abweichung. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\nWichtigste Befunde\n- Hauptlinie erkannt: Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern.\n- Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.\n- 5 Schritte sind bereits mit Belegstellen abgesichert.\n\nEmpfohlene nächste Schritte\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n\nEinordnung der Belastbarkeit\nAktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten."
+        "text": "Management-Kurzbrief | Engine Invariant PG02_explicit_roles_systems_multivalue\n\nStand: 15.4.2026, 19:26:20\nEinordnung: Prozessentwurf\n\nKernaussage\nFür den Prozess „Engine Invariant PG02_explicit_roles_systems_multivalue“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern. Im Soll-Abgleich zeigt sich aktuell keine dominierende Abweichung. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\nWichtigste Befunde\n- Hauptlinie erkannt: Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern.\n- Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.\n- 5 Schritte sind bereits mit Belegstellen abgesichert.\n\nEmpfohlene nächste Schritte\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n\nEinordnung der Belastbarkeit\nAktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten."
       },
       {
         "audience": "process_owner",
@@ -4016,7 +4009,7 @@
       "analysisMode": "process-draft",
       "sampleNotice": "Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.",
       "notes": "",
-      "updatedAt": "2026-04-14T19:40:01.079Z"
+      "updatedAt": "2026-04-15T17:26:20.818Z"
     },
     "conformanceSummary": {
       "checkedSteps": 5,
@@ -4025,7 +4018,7 @@
       "analysisMode": "process-draft",
       "sampleNotice": "Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.",
       "notes": "",
-      "updatedAt": "2026-04-14T19:40:01.076Z"
+      "updatedAt": "2026-04-15T17:26:20.815Z"
     },
     "enhancementSummary": {
       "issueCount": 7,
@@ -4069,7 +4062,7 @@
       "analysisMode": "process-draft",
       "sampleNotice": "Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.",
       "notes": "",
-      "updatedAt": "2026-04-14T19:40:01.077Z"
+      "updatedAt": "2026-04-15T17:26:20.815Z"
     },
     "reportSnapshot": {
       "title": "Mining-Überblick · Engine Invariant PG02_explicit_roles_systems_multivalue",
@@ -4092,7 +4085,7 @@
         "Mit dieser verifizierten Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.",
         "Ohne verifizierte Zeitbasis bleiben Aussagen zu Durchlauf- oder Wartezeiten bewusst zurückhaltend."
       ],
-      "markdown": "# Mining-Überblick · Engine Invariant PG02_explicit_roles_systems_multivalue\n\n**Stand:** 14.4.2026, 21:40:01\n**Einordnung:** Prozessentwurf\n**Datenreife:** Belastbarer Prozessentwurf\n\n## Management-Zusammenfassung\n\nFür den Prozess „Engine Invariant PG02_explicit_roles_systems_multivalue“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern. Im Soll-Abgleich zeigt sich aktuell keine dominierende Abweichung. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\n## Die Geschichte des aktuell erkennbaren Prozesses\n\nDie aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern.\n\nDer Soll-Abgleich zeigt aktuell keine dominante Abweichung. Das spricht dafür, dass die erkannte Hauptlinie grob zum vorhandenen Happy Path passt.\n\nAls wichtigster Reibungspunkt zeigt sich derzeit freigaben verlangsamen die umsetzung. Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Rolle | Verantwortung | Systeme | | Innendienst | Erfassung und Kommunikation | CRM, Mail | | Vertrieb | Kundensicht und Entscheidungsvorbereitung | CRM, DMS | | Qualitätssicherung | technische Bewertung | QMS, DMS | | | Schritt | Verantwortung | Systeme | Ergebnis | | 1 | Fall erfassen | Innendienst; Vertrieb | CRM;\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.\n\n## Wichtigste Befunde\n\n- Hauptlinie erkannt: Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern.\n- Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.\n- 5 Schritte sind bereits mit Belegstellen abgesichert.\n\n## Nächste sinnvolle Schritte\n\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n- Wenn möglich verifizierbare Datums- oder Uhrzeitangaben ergänzen, bevor zeitbasierte Hotspots interpretiert werden.\n\n## Wichtige Einordnung der Belastbarkeit\n\n- Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.\n- Die Ergebnisse zeigen derzeit vor allem einen Prozessentwurf und keine belastbaren Unternehmensquoten.\n- Mit dieser verifizierten Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.\n- Ohne verifizierte Zeitbasis bleiben Aussagen zu Durchlauf- oder Wartezeiten bewusst zurückhaltend.",
+      "markdown": "# Mining-Überblick · Engine Invariant PG02_explicit_roles_systems_multivalue\n\n**Stand:** 15.4.2026, 19:26:20\n**Einordnung:** Prozessentwurf\n**Datenreife:** Belastbarer Prozessentwurf\n\n## Management-Zusammenfassung\n\nFür den Prozess „Engine Invariant PG02_explicit_roles_systems_multivalue“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern. Im Soll-Abgleich zeigt sich aktuell keine dominierende Abweichung. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\n## Die Geschichte des aktuell erkennbaren Prozesses\n\nDie aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern.\n\nDer Soll-Abgleich zeigt aktuell keine dominante Abweichung. Das spricht dafür, dass die erkannte Hauptlinie grob zum vorhandenen Happy Path passt.\n\nAls wichtigster Reibungspunkt zeigt sich derzeit freigaben verlangsamen die umsetzung. Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Rolle | Verantwortung | Systeme | | Innendienst | Erfassung und Kommunikation | CRM, Mail | | Vertrieb | Kundensicht und Entscheidungsvorbereitung | CRM, DMS | | Qualitätssicherung | technische Bewertung | QMS, DMS | | | Schritt | Verantwortung | Systeme | Ergebnis | | 1 | Fall erfassen | Innendienst; Vertrieb | CRM;\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.\n\n## Wichtigste Befunde\n\n- Hauptlinie erkannt: Fall erfassen, Technische Sicht einholen, Freigabe abstimmen, Kundenentscheidung kommunizieren und Abschluss sichern.\n- Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.\n- 5 Schritte sind bereits mit Belegstellen abgesichert.\n\n## Nächste sinnvolle Schritte\n\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n- Wenn möglich verifizierbare Datums- oder Uhrzeitangaben ergänzen, bevor zeitbasierte Hotspots interpretiert werden.\n\n## Wichtige Einordnung der Belastbarkeit\n\n- Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.\n- Die Ergebnisse zeigen derzeit vor allem einen Prozessentwurf und keine belastbaren Unternehmensquoten.\n- Mit dieser verifizierten Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.\n- Ohne verifizierte Zeitbasis bleiben Aussagen zu Durchlauf- oder Wartezeiten bewusst zurückhaltend.",
       "analysisMode": "process-draft",
       "basis": {
         "caseCount": 1,
@@ -4104,7 +4097,7 @@
         "readinessHeadline": "Ein erster Prozessentwurf ist vorhanden.",
         "maturityLabel": "Belastbarer Prozessentwurf"
       },
-      "generatedAt": "2026-04-14T19:40:01.077Z"
+      "generatedAt": "2026-04-15T17:26:20.816Z"
     }
   }
 }

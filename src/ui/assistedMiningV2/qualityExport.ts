@@ -34,6 +34,58 @@ function atomizeStructuredValues(values: Array<string | undefined>): string[] {
   return atomizeStructuredEntityValues(values);
 }
 
+function sanitizeStructuredEntityCollectionsForExport(params: {
+  finalRoles?: Array<string | undefined | null>;
+  finalSystems?: Array<string | undefined | null>;
+  explicitRoles?: Array<string | undefined | null>;
+  explicitSystems?: Array<string | undefined | null>;
+  inferredRoles?: Array<string | undefined | null>;
+  inferredSystems?: Array<string | undefined | null>;
+  supportOnlyRoles?: Array<string | undefined | null>;
+  supportOnlySystems?: Array<string | undefined | null>;
+  suppressedRoles?: Array<string | undefined | null>;
+  suppressedSystems?: Array<string | undefined | null>;
+}): {
+  finalRoles: string[];
+  finalSystems: string[];
+  explicitRoles: string[];
+  explicitSystems: string[];
+  inferredRoles: string[];
+  inferredSystems: string[];
+  supportOnlyRoles: string[];
+  supportOnlySystems: string[];
+  suppressedRoles: string[];
+  suppressedSystems: string[];
+} {
+  const roleCollections = sanitizeStructuredValueCollections({
+    final: params.finalRoles,
+    explicit: params.explicitRoles,
+    inferred: params.inferredRoles,
+    supportOnly: params.supportOnlyRoles,
+    suppressed: params.suppressedRoles,
+  });
+  const systemCollections = sanitizeStructuredValueCollections({
+    final: params.finalSystems,
+    explicit: params.explicitSystems,
+    inferred: params.inferredSystems,
+    supportOnly: params.supportOnlySystems,
+    suppressed: params.suppressedSystems,
+  });
+
+  return {
+    finalRoles: roleCollections.finalValues,
+    finalSystems: systemCollections.finalValues,
+    explicitRoles: roleCollections.explicitValues,
+    explicitSystems: systemCollections.explicitValues,
+    inferredRoles: roleCollections.inferredValues,
+    inferredSystems: systemCollections.inferredValues,
+    supportOnlyRoles: roleCollections.supportOnlyValues,
+    supportOnlySystems: systemCollections.supportOnlyValues,
+    suppressedRoles: roleCollections.suppressedValues,
+    suppressedSystems: systemCollections.suppressedValues,
+  };
+}
+
 function sanitizeObservationEntitiesForExport(observation: ProcessMiningObservation): ProcessMiningObservation {
   if (observation.kind !== 'step') return observation;
   const roleCollections = sanitizeStructuredValueCollections({
@@ -80,18 +132,30 @@ function sanitizeObservationEntitiesForExport(observation: ProcessMiningObservat
 
 function sanitizeDerivationSummaryForExport(summary?: DerivationSummary): DerivationSummary | undefined {
   if (!summary) return summary;
+  const entityCollections = sanitizeStructuredEntityCollectionsForExport({
+    finalRoles: summary.roles ?? [],
+    finalSystems: summary.systems ?? [],
+    explicitRoles: summary.explicitRoles ?? [],
+    explicitSystems: summary.explicitSystems ?? [],
+    inferredRoles: summary.inferredRoles ?? [],
+    inferredSystems: summary.inferredSystems ?? [],
+    supportOnlyRoles: summary.supportOnlyRoles ?? [],
+    supportOnlySystems: summary.supportOnlySystems ?? [],
+    suppressedRoles: summary.suppressedRoles ?? [],
+    suppressedSystems: summary.suppressedSystems ?? [],
+  });
   return {
     ...summary,
-    roles: atomizeStructuredValues(summary.roles ?? []),
-    systems: atomizeStructuredValues(summary.systems ?? []),
-    explicitRoles: atomizeStructuredValues(summary.explicitRoles ?? []),
-    explicitSystems: atomizeStructuredValues(summary.explicitSystems ?? []),
-    inferredRoles: atomizeStructuredValues(summary.inferredRoles ?? []),
-    inferredSystems: atomizeStructuredValues(summary.inferredSystems ?? []),
-    supportOnlyRoles: atomizeStructuredValues(summary.supportOnlyRoles ?? []),
-    supportOnlySystems: atomizeStructuredValues(summary.supportOnlySystems ?? []),
-    suppressedRoles: atomizeStructuredValues(summary.suppressedRoles ?? []),
-    suppressedSystems: atomizeStructuredValues(summary.suppressedSystems ?? []),
+    roles: entityCollections.finalRoles,
+    systems: entityCollections.finalSystems,
+    explicitRoles: entityCollections.explicitRoles,
+    explicitSystems: entityCollections.explicitSystems,
+    inferredRoles: entityCollections.inferredRoles,
+    inferredSystems: entityCollections.inferredSystems,
+    supportOnlyRoles: entityCollections.supportOnlyRoles,
+    supportOnlySystems: entityCollections.supportOnlySystems,
+    suppressedRoles: entityCollections.suppressedRoles,
+    suppressedSystems: entityCollections.suppressedSystems,
   };
 }
 
@@ -657,22 +721,48 @@ export function buildQualityExportFile(params: {
       suppressedInferredRoles: atomizeStructuredValues(step.suppressedInferredRoles ?? []),
       suppressedInferredSystems: atomizeStructuredValues(step.suppressedInferredSystems ?? []),
     }));
-  const explicitStructuredRoles = atomizeStructuredValues([
-    ...preservedSteps.flatMap(step => step.explicitRoles ?? []),
-    ...(lastSummary?.explicitRoles ?? []),
-  ]);
-  const explicitStructuredSystems = atomizeStructuredValues([
-    ...preservedSteps.flatMap(step => step.explicitSystems ?? []),
-    ...(lastSummary?.explicitSystems ?? []),
-  ]);
-  const inferredStructuredRoles = atomizeStructuredValues(preservedSteps.flatMap(step => step.inferredRoles ?? []));
-  const inferredStructuredSystems = atomizeStructuredValues(preservedSteps.flatMap(step => step.inferredSystems ?? []));
-  const supportOnlyStructuredRoles = atomizeStructuredValues(preservedSteps.flatMap(step => step.supportOnlyRoles ?? []));
-  const supportOnlyStructuredSystems = atomizeStructuredValues(preservedSteps.flatMap(step => step.supportOnlySystems ?? []));
-  const suppressedStructuredRoles = atomizeStructuredValues(preservedSteps.flatMap(step => step.suppressedInferredRoles ?? []));
-  const suppressedStructuredSystems = atomizeStructuredValues(preservedSteps.flatMap(step => step.suppressedInferredSystems ?? []));
-  const finalStructuredRoles = atomizeStructuredValues(preservedSteps.flatMap(step => step.roles ?? step.explicitRoles ?? (step.primaryRole ? [step.primaryRole] : [])));
-  const finalStructuredSystems = atomizeStructuredValues(preservedSteps.flatMap(step => step.systems ?? step.explicitSystems ?? (step.primarySystem ? [step.primarySystem] : [])));
+  const structuredPreserveCollections = sanitizeStructuredEntityCollectionsForExport({
+    finalRoles: [
+      ...preservedSteps.flatMap(step => step.roles ?? step.explicitRoles ?? (step.primaryRole ? [step.primaryRole] : [])),
+      ...(lastSummary?.roles ?? []),
+    ],
+    finalSystems: [
+      ...preservedSteps.flatMap(step => step.systems ?? step.explicitSystems ?? (step.primarySystem ? [step.primarySystem] : [])),
+      ...(lastSummary?.systems ?? []),
+    ],
+    explicitRoles: [
+      ...preservedSteps.flatMap(step => step.explicitRoles ?? []),
+      ...(lastSummary?.explicitRoles ?? []),
+    ],
+    explicitSystems: [
+      ...preservedSteps.flatMap(step => step.explicitSystems ?? []),
+      ...(lastSummary?.explicitSystems ?? []),
+    ],
+    inferredRoles: [
+      ...preservedSteps.flatMap(step => step.inferredRoles ?? []),
+      ...(lastSummary?.inferredRoles ?? []),
+    ],
+    inferredSystems: [
+      ...preservedSteps.flatMap(step => step.inferredSystems ?? []),
+      ...(lastSummary?.inferredSystems ?? []),
+    ],
+    supportOnlyRoles: [
+      ...preservedSteps.flatMap(step => step.supportOnlyRoles ?? []),
+      ...(lastSummary?.supportOnlyRoles ?? []),
+    ],
+    supportOnlySystems: [
+      ...preservedSteps.flatMap(step => step.supportOnlySystems ?? []),
+      ...(lastSummary?.supportOnlySystems ?? []),
+    ],
+    suppressedRoles: [
+      ...preservedSteps.flatMap(step => step.suppressedInferredRoles ?? []),
+      ...(lastSummary?.suppressedRoles ?? []),
+    ],
+    suppressedSystems: [
+      ...preservedSteps.flatMap(step => step.suppressedInferredSystems ?? []),
+      ...(lastSummary?.suppressedSystems ?? []),
+    ],
+  });
 
   return {
     schemaVersion: 'pm-analysis-quality-export-v2',
@@ -842,16 +932,16 @@ export function buildQualityExportFile(params: {
               explicitRoleTableDetected: lastSummary.explicitRoleTableDetected,
               explicitSystemCount: lastSummary.explicitSystemCount,
               structuredRecallLoss: lastSummary.structuredRecallLoss,
-              finalRoles: finalStructuredRoles,
-              finalSystems: finalStructuredSystems,
-              explicitRoles: explicitStructuredRoles,
-              explicitSystems: explicitStructuredSystems,
-              inferredRoles: inferredStructuredRoles,
-              inferredSystems: inferredStructuredSystems,
-              supportOnlyRoles: supportOnlyStructuredRoles,
-              supportOnlySystems: supportOnlyStructuredSystems,
-              suppressedRoles: suppressedStructuredRoles,
-              suppressedSystems: suppressedStructuredSystems,
+              finalRoles: structuredPreserveCollections.finalRoles,
+              finalSystems: structuredPreserveCollections.finalSystems,
+              explicitRoles: structuredPreserveCollections.explicitRoles,
+              explicitSystems: structuredPreserveCollections.explicitSystems,
+              inferredRoles: structuredPreserveCollections.inferredRoles,
+              inferredSystems: structuredPreserveCollections.inferredSystems,
+              supportOnlyRoles: structuredPreserveCollections.supportOnlyRoles,
+              supportOnlySystems: structuredPreserveCollections.supportOnlySystems,
+              suppressedRoles: structuredPreserveCollections.suppressedRoles,
+              suppressedSystems: structuredPreserveCollections.suppressedSystems,
               preservedSteps,
             },
           }

@@ -81,10 +81,12 @@ Nur gezielt außerhalb des Standardpfads verwenden:
 
 ```bash
 npm run engine-invariants:check
+npm run engine-invariants:specialization-guard
 ```
 
 - Die generalisierte Structured-Invarianten-Suite liegt außerhalb der Runtime unter `qa/engine-invariants`.
 - Der Runner erzeugt Exporte, prüft strukturabgeleitete Invarianten und lässt zusätzlich Mutationsvarianten derselben Quellen gegen dieselben Regeln laufen.
+- Der Spezialisierungs-Guard scannt ausschließlich `src/` auf unzulässige QA-, Fixture- und Referenzbezüge und bleibt damit ebenfalls außerhalb der Runtime-Logik.
 
 ```bash
 npm run bundle:summary

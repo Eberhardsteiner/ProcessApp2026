@@ -36,6 +36,13 @@ function sameMembers(actual, expected) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
+function overlappingMembers(left, right) {
+  const leftSet = new Set(atomizeStructuredValues(left).map(normalizeKey));
+  return atomizeStructuredValues(right)
+    .map(normalizeKey)
+    .filter(value => leftSet.has(value));
+}
+
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -153,6 +160,12 @@ function verifyAtomicLists(errors, exportJson) {
     ['reviewOverview.systemsFull', exportJson?.qualityControl?.reviewOverview?.systemsFull],
     ['reviewOverview.explicitRoles', exportJson?.qualityControl?.reviewOverview?.explicitRoles],
     ['reviewOverview.explicitSystems', exportJson?.qualityControl?.reviewOverview?.explicitSystems],
+    ['reviewOverview.inferredRoles', exportJson?.qualityControl?.reviewOverview?.inferredRoles],
+    ['reviewOverview.inferredSystems', exportJson?.qualityControl?.reviewOverview?.inferredSystems],
+    ['reviewOverview.supportOnlyRoles', exportJson?.qualityControl?.reviewOverview?.supportOnlyRoles],
+    ['reviewOverview.supportOnlySystems', exportJson?.qualityControl?.reviewOverview?.supportOnlySystems],
+    ['reviewOverview.suppressedRoles', exportJson?.qualityControl?.reviewOverview?.suppressedRoles],
+    ['reviewOverview.suppressedSystems', exportJson?.qualityControl?.reviewOverview?.suppressedSystems],
     ['roleQuality.uniqueValues', roleDimension?.observed?.uniqueValues],
     ['systemQuality.uniqueValues', systemDimension?.observed?.uniqueValues],
   ];
@@ -172,6 +185,94 @@ function verifyAtomicLists(errors, exportJson) {
   });
 
   arraysToCheck.forEach(([label, values]) => assertAtomicArray(errors, label, values));
+}
+
+function verifyDisjointCollections(errors, scope, collections) {
+  const pairs = [
+    ['explicit', collections.explicit, 'inferred', collections.inferred],
+    ['explicit', collections.explicit, 'supportOnly', collections.supportOnly],
+    ['explicit', collections.explicit, 'suppressed', collections.suppressed],
+    ['inferred', collections.inferred, 'suppressed', collections.suppressed],
+    ['supportOnly', collections.supportOnly, 'suppressed', collections.suppressed],
+  ];
+
+  if (collections.final) {
+    pairs.push(['final', collections.final, 'supportOnly', collections.supportOnly]);
+    pairs.push(['final', collections.final, 'suppressed', collections.suppressed]);
+  }
+
+  pairs.forEach(([leftLabel, leftValues, rightLabel, rightValues]) => {
+    const overlap = overlappingMembers(leftValues, rightValues);
+    assert(
+      errors,
+      overlap.length === 0,
+      `${scope}: ${leftLabel} und ${rightLabel} überlappen unzulässig (${JSON.stringify(overlap)}).`,
+    );
+  });
+}
+
+function verifyStructuredValueSeparation(errors, exportJson) {
+  const lastSummary = exportJson?.analysisResults?.lastDerivationSummary;
+  const structuredPreserve = exportJson?.analysisResults?.extractionEvidence?.structuredPreserve;
+  const reviewOverview = exportJson?.qualityControl?.reviewOverview;
+
+  verifyDisjointCollections(errors, 'lastDerivationSummary.roles', {
+    final: lastSummary?.roles,
+    explicit: lastSummary?.explicitRoles,
+    inferred: lastSummary?.inferredRoles,
+    supportOnly: lastSummary?.supportOnlyRoles,
+    suppressed: lastSummary?.suppressedRoles,
+  });
+  verifyDisjointCollections(errors, 'lastDerivationSummary.systems', {
+    final: lastSummary?.systems,
+    explicit: lastSummary?.explicitSystems,
+    inferred: lastSummary?.inferredSystems,
+    supportOnly: lastSummary?.supportOnlySystems,
+    suppressed: lastSummary?.suppressedSystems,
+  });
+  verifyDisjointCollections(errors, 'structuredPreserve.roles', {
+    final: structuredPreserve?.finalRoles,
+    explicit: structuredPreserve?.explicitRoles,
+    inferred: structuredPreserve?.inferredRoles,
+    supportOnly: structuredPreserve?.supportOnlyRoles,
+    suppressed: structuredPreserve?.suppressedRoles,
+  });
+  verifyDisjointCollections(errors, 'structuredPreserve.systems', {
+    final: structuredPreserve?.finalSystems,
+    explicit: structuredPreserve?.explicitSystems,
+    inferred: structuredPreserve?.inferredSystems,
+    supportOnly: structuredPreserve?.supportOnlySystems,
+    suppressed: structuredPreserve?.suppressedSystems,
+  });
+  verifyDisjointCollections(errors, 'reviewOverview.roles', {
+    explicit: reviewOverview?.explicitRoles,
+    inferred: reviewOverview?.inferredRoles,
+    supportOnly: reviewOverview?.supportOnlyRoles,
+    suppressed: reviewOverview?.suppressedRoles,
+  });
+  verifyDisjointCollections(errors, 'reviewOverview.systems', {
+    explicit: reviewOverview?.explicitSystems,
+    inferred: reviewOverview?.inferredSystems,
+    supportOnly: reviewOverview?.supportOnlySystems,
+    suppressed: reviewOverview?.suppressedSystems,
+  });
+
+  getStepObservations(exportJson).forEach((step, index) => {
+    verifyDisjointCollections(errors, `sourceMaterial.observations[${index}].roles`, {
+      final: step?.roles,
+      explicit: step?.explicitRoles,
+      inferred: step?.inferredRoles,
+      supportOnly: step?.supportOnlyRoles,
+      suppressed: step?.suppressedInferredRoles,
+    });
+    verifyDisjointCollections(errors, `sourceMaterial.observations[${index}].systems`, {
+      final: step?.systems,
+      explicit: step?.explicitSystems,
+      inferred: step?.inferredSystems,
+      supportOnly: step?.supportOnlySystems,
+      suppressed: step?.suppressedInferredSystems,
+    });
+  });
 }
 
 function verifyMultivalue(errors, exportJson, sourceModel, kind) {
@@ -206,8 +307,12 @@ function verifyMultivalue(errors, exportJson, sourceModel, kind) {
 function verifyClassificationConsistency(errors, exportJson) {
   const routingText = flattenText(exportJson?.context?.sourceRouting).toLowerCase();
   const profileText = flattenText(exportJson?.analysisResults?.lastDerivationSummary?.sourceProfile).toLowerCase();
+  const documentTypeDimension = findDimension(exportJson, 'documentTypeRecognition');
   assert(errors, !/semi-structured-procedure|weak-material|mixed-document/.test(routingText), 'Structured-Quelle wird im Routing-/Diagnosetext uneindeutig oder fachfremd beschrieben.');
   assert(errors, !/semi-structured-procedure|weak-material|mixed-document/.test(profileText), 'Structured-Quelle wird im SourceProfile uneindeutig oder fachfremd beschrieben.');
+  assert(errors, documentTypeDimension?.observed?.routingDocumentClassConsistent === true, 'Routing und Dokumentklasse sind in der Qualitätsbewertung nicht konsistent markiert.');
+  assert(errors, documentTypeDimension?.observed?.scoringModeConsistent === true, 'Bewertungsmodus ist in der Qualitätsbewertung nicht konsistent markiert.');
+  assert(errors, documentTypeDimension?.observed?.structuredSourceConflict !== true, 'Qualitätsbewertung meldet fälschlich einen Structured-Source-Conflict.');
 }
 
 function verifyDomainConsistency(errors, exportJson, sourceModel) {
@@ -215,6 +320,14 @@ function verifyDomainConsistency(errors, exportJson, sourceModel) {
   const domainDimension = findDimension(exportJson, 'domainConsistency');
   assert(errors, domainDimension?.status !== 'critical', 'domainConsistency wird trotz konfliktfreier Quelle kritisch bewertet.');
   assert(errors, asArray(domainDimension?.blockerReasons).length === 0, 'domainConsistency erzeugt Blocker ohne reale Konfliktbasis.');
+  assert(errors, (domainDimension?.observed?.conflictCount ?? 0) === 0, 'domainConsistency meldet Konfliktanzahl trotz konfliktfreier Quelle.');
+  if (domainDimension?.observed?.neutralNoConflict) {
+    assert(
+      errors,
+      domainDimension?.status === 'strong' || domainDimension?.status === 'usable',
+      'Neutrale, konfliktfreie Domänenlage wird dennoch negativ oder kritisch eingeordnet.',
+    );
+  }
 }
 
 export async function runEngineInvariantCheck(params) {
@@ -238,6 +351,7 @@ export async function runEngineInvariantCheck(params) {
   }
   if (expectation.requiresAtomicFinalLists) {
     verifyAtomicLists(errors, exportJson);
+    verifyStructuredValueSeparation(errors, exportJson);
   }
   if (expectation.requiresMultivalueRoles) {
     verifyMultivalue(errors, exportJson, sourceModel, 'role');

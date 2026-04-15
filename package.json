@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "engine-invariants:check": "node ./qa/engine-invariants/tools/run-engine-invariant-suite.mjs",
     "engine-invariants:export": "node ./qa/engine-invariants/tools/run-engine-invariant-export.mjs",
+    "engine-invariants:specialization-guard": "node ./qa/engine-invariants/tools/check-runtime-specialization.mjs",
     "benchmark:pm": "node ./scripts/runPmBenchmark.mjs",
     "phase8:reference": "node ./scripts/runPmPhase8ReferenceExport.mjs",
     "pilot:check": "node ./scripts/runPmPilotCheck.mjs",

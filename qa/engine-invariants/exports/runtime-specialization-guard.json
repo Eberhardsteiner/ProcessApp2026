@@ -1,0 +1,31 @@
+{
+  "scannedAt": "2026-04-15T17:26:09.297Z",
+  "runtimeRoot": "src",
+  "scannedFileCount": 270,
+  "fixtureTokenCount": 11,
+  "fixtureTokens": [
+    "PG01 · Structured Preserve · Merge Guard",
+    "PG01_structured_preserve_merge_guard",
+    "PG02 · Structured Preserve · Explicit Roles and Systems",
+    "PG02_explicit_roles_systems_multivalue",
+    "structured-explicit-workflow",
+    "structured-explicit-workflow-legacy-docx",
+    "structured-explicit-workflow-md",
+    "structured-multivalue-context",
+    "structured-multivalue-context-legacy-docx",
+    "structured-multivalue-context-md",
+    "Strukturierte Quelle mit Mehrfachkontext"
+  ],
+  "pathRules": [
+    {
+      "category": "qa-path",
+      "description": "Runtime darf keine QA-Pfade referenzieren."
+    },
+    {
+      "category": "qa-area",
+      "description": "Runtime darf keine externe Invarianten- oder Phase-Gate-Bereiche referenzieren."
+    }
+  ],
+  "violationCount": 0,
+  "violations": []
+}

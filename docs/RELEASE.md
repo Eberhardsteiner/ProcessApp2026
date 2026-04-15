@@ -25,6 +25,7 @@ npm run governance:check
 npm run hardening:check
 npm run security:check
 npm run engine-invariants:check
+npm run engine-invariants:specialization-guard
 ```
 
 Der Release-Check fasst jetzt lokale Kernprüfungen für:
