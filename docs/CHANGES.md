@@ -1,3 +1,11 @@
+## v0.45.2 – Structured Row-Retention und evidenzreine Signalspur
+
+- strukturierte Ablaufzeilen halten explizite Rollen- und Systemwerte jetzt generisch robuster als lokale Zeilenwahrheit, inklusive breiterer Header-Erkennung für Verantwortung-, Team-, Tool- und Anwendungs-Spalten
+- Mehrfachwerte aus Structured-Zellen werden konsistent über Separatoren wie `;`, `,`, `/`, `|`, Zeilenumbrüche sowie `und`/`sowie`/`plus` atomisiert und bis in finale Step-, Review- und Exportobjekte erhalten
+- `roleQuality` und `systemQuality` binden ihre Bewertung jetzt an row-level explicit retention statt nur an globale Coverage und exportieren fehlende explizite Zeilenwerte transparent
+- Structured-Issue- und Support-Signale entstehen im operativen Export nur noch aus lokal verankerten Evidenzankern; generische Templates ohne belastbare Structured-Problemspur werden im Structured-Pfad nicht mehr ausgegeben
+- die externe Invarianten-Suite prüft zusätzlich row-level explicit retention und evidence-pure Support-Signale, ohne neue QA-Logik in die Runtime zu ziehen
+
 ## v0.45.1 – Generalisierte Structured-Invarianten und externer Mutationslauf
 
 - strukturierte Sollprozessquellen bleiben in Export, Discovery, Review und Quality-Layern konsistent auf preserved Primärschritte rückgebunden, statt wieder auf generische Familienlabels umzufallen

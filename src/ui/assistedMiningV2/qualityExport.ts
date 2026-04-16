@@ -280,6 +280,23 @@ export interface ProcessMiningQualityExportFile {
         explicitRoleTableDetected?: boolean;
         explicitSystemCount?: number;
         structuredRecallLoss?: boolean;
+        explicitRoleRetentionShare?: number;
+        explicitSystemRetentionShare?: number;
+        missingExplicitRolesByStep?: Array<{
+          stepLabel: string;
+          expectedValues: string[];
+          missingValues: string[];
+          foundOnlyInferredValues: string[];
+          evidenceAnchor?: string;
+        }>;
+        missingExplicitSystemsByStep?: Array<{
+          stepLabel: string;
+          expectedValues: string[];
+          missingValues: string[];
+          foundOnlyInferredValues: string[];
+          evidenceAnchor?: string;
+        }>;
+        explicitEntityRetentionWarnings?: string[];
         finalRoles?: string[];
         finalSystems?: string[];
         explicitRoles?: string[];
@@ -339,7 +356,16 @@ export interface ProcessMiningQualityExportFile {
   sourceMaterial: {
     cases: ProcessMiningAssistedV2State['cases'];
     observations: ProcessMiningAssistedV2State['observations'];
-    supportSignals: Array<{ label: string; snippet: string }>;
+    supportSignals: Array<{
+      label: string;
+      snippet: string;
+      evidenceAnchor?: string;
+      contextWindow?: string;
+      originChannel?: ExtractionCandidate['originChannel'];
+      sourceFragmentType?: ExtractionCandidate['sourceFragmentType'];
+      confidence?: ExtractionCandidate['confidence'];
+      status?: ExtractionCandidate['status'];
+    }>;
     extractionCandidates: ExtractionCandidate[];
     candidateReview?: NonNullable<ProcessMiningAssistedV2State['lastDerivationSummary']>['candidateReview'];
     counts: {
@@ -415,6 +441,53 @@ function getIssueCount(state: ProcessMiningAssistedV2State): number {
     ?? state.qualitySummary?.issueObservationCount
     ?? state.observations.filter(observation => observation.kind === 'issue').length
   );
+}
+
+function buildEvidencePureSupportSignals(summary?: DerivationSummary): ProcessMiningQualityExportFile['sourceMaterial']['supportSignals'] {
+  const dedupeKey = new Set<string>();
+  const pushUnique = (
+    target: ProcessMiningQualityExportFile['sourceMaterial']['supportSignals'],
+    item: ProcessMiningQualityExportFile['sourceMaterial']['supportSignals'][number],
+  ) => {
+    const key = `${normalizeWhitespace(item.label).toLowerCase()}::${normalizeWhitespace(item.evidenceAnchor ?? item.snippet).toLowerCase()}`;
+    if (!normalizeWhitespace(item.evidenceAnchor ?? item.snippet) || !normalizeWhitespace(item.contextWindow ?? '')) return;
+    if (dedupeKey.has(key)) return;
+    dedupeKey.add(key);
+    target.push(item);
+  };
+
+  const signals: ProcessMiningQualityExportFile['sourceMaterial']['supportSignals'] = [];
+  (summary?.extractionCandidates ?? [])
+    .filter(candidate => candidate.candidateType === 'signal' && candidate.status !== 'rejected')
+    .forEach(candidate => {
+      pushUnique(signals, {
+        label: candidate.rawLabel,
+        snippet: candidate.evidenceAnchor,
+        evidenceAnchor: candidate.evidenceAnchor,
+        contextWindow: candidate.contextWindow,
+        originChannel: candidate.originChannel,
+        sourceFragmentType: candidate.sourceFragmentType,
+        confidence: candidate.confidence,
+        status: candidate.status,
+      });
+    });
+
+  if (signals.length > 0) return signals;
+
+  (summary?.issueEvidence ?? []).forEach(entry => {
+    pushUnique(signals, {
+      label: entry.label,
+      snippet: entry.snippet,
+      evidenceAnchor: entry.evidenceAnchor ?? entry.snippet,
+      contextWindow: entry.contextWindow,
+      originChannel: entry.originChannel,
+      sourceFragmentType: entry.sourceFragmentType,
+      confidence: entry.confidence,
+      status: entry.status,
+    });
+  });
+
+  return signals;
 }
 
 function humanizeSourceLabel(value?: string): string | undefined {
@@ -932,6 +1005,11 @@ export function buildQualityExportFile(params: {
               explicitRoleTableDetected: lastSummary.explicitRoleTableDetected,
               explicitSystemCount: lastSummary.explicitSystemCount,
               structuredRecallLoss: lastSummary.structuredRecallLoss,
+              explicitRoleRetentionShare: lastSummary.explicitRoleRetentionShare,
+              explicitSystemRetentionShare: lastSummary.explicitSystemRetentionShare,
+              missingExplicitRolesByStep: lastSummary.missingExplicitRolesByStep,
+              missingExplicitSystemsByStep: lastSummary.missingExplicitSystemsByStep,
+              explicitEntityRetentionWarnings: lastSummary.explicitEntityRetentionWarnings,
               finalRoles: structuredPreserveCollections.finalRoles,
               finalSystems: structuredPreserveCollections.finalSystems,
               explicitRoles: structuredPreserveCollections.explicitRoles,
@@ -968,7 +1046,7 @@ export function buildQualityExportFile(params: {
     sourceMaterial: {
       cases: exportState.cases,
       observations: exportState.observations,
-      supportSignals: lastSummary?.issueEvidence ?? [],
+      supportSignals: buildEvidencePureSupportSignals(lastSummary),
       extractionCandidates: lastSummary?.extractionCandidates ?? [],
       candidateReview: lastSummary?.candidateReview,
       counts: {

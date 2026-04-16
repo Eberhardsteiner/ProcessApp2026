@@ -287,6 +287,12 @@ interface NarrativeDocumentProfile {
 interface IssueEvidence {
   label: string;
   snippet: string;
+  evidenceAnchor?: string;
+  contextWindow?: string;
+  originChannel?: ExtractionCandidate['originChannel'];
+  sourceFragmentType?: ExtractionCandidate['sourceFragmentType'];
+  confidence?: ExtractionCandidate['confidence'];
+  status?: ExtractionCandidate['status'];
 }
 type DomainKey = 'complaints' | 'billing' | 'onboarding' | 'returns' | 'procurement' | 'masterdata' | 'service' | 'generic';
 
@@ -654,7 +660,7 @@ function isNarrativeMetaBlock(block: CandidateBlock): boolean {
 function splitEntitySeedParts(parts: Array<string | undefined>): string[] {
   return parts
     .filter(Boolean)
-    .flatMap(part => normalizeWhitespace(part ?? '').split(/[,/;]|\s+und\s+/i))
+    .flatMap(part => normalizeWhitespace(part ?? '').split(/[\n\r,;|]+|\s*\/\s*|\s+(?:und|sowie|plus)\s+/i))
     .map(part => normalizeWhitespace(part))
     .filter(Boolean);
 }
@@ -932,20 +938,39 @@ function extractIssueSignals(text: string, context?: { primary: DomainKey; secon
   return uniqueStrings(labels.filter(label => isIssueAllowedInDomain(label, context)));
 }
 
+const LOCAL_ISSUE_CUE_RE = /\b(problem|risiko|issue|hinder|st[öo]r|warn|verz[öo]ger|warte|block|eskal|konflikt|fehl\w+|unvollst[aä]ndig|mehrfach|medienbruch|r[üu]ckfrage|unklar|nacharbeit|abweich|druck|engpass|stillstand|kritisch|schwach)\b/i;
+
+function normalizeIssueEvidenceEntry(entry: IssueEvidence): IssueEvidence {
+  const snippet = sentenceCase(normalizeWhitespace(entry.snippet)).slice(0, 220);
+  const evidenceAnchor = normalizeWhitespace(entry.evidenceAnchor ?? snippet).slice(0, 220);
+  return {
+    ...entry,
+    snippet,
+    evidenceAnchor,
+    contextWindow: normalizeWhitespace(entry.contextWindow ?? buildContextWindow([entry.label, snippet])).slice(0, 320),
+    originChannel: entry.originChannel ?? (evidenceAnchor.includes('|') ? 'table-row' : 'paragraph'),
+    sourceFragmentType: entry.sourceFragmentType ?? (evidenceAnchor.includes('|') ? 'table-row' : 'sentence'),
+    confidence: entry.confidence ?? (evidenceAnchor.includes('|') ? 'medium' : 'low'),
+    status: entry.status ?? 'support-only',
+  };
+}
+
 function dedupeIssueEvidence(entries: IssueEvidence[]): IssueEvidence[] {
   const byKey = new Map<string, IssueEvidence>();
   for (const entry of entries) {
-    const key = normalizeWhitespace(entry.label).toLowerCase();
+    const normalizedEntry = normalizeIssueEvidenceEntry(entry);
+    const key = normalizeWhitespace(normalizedEntry.label).toLowerCase();
     if (!key) continue;
     if (!byKey.has(key)) {
-      byKey.set(key, { label: entry.label, snippet: entry.snippet });
+      byKey.set(key, normalizedEntry);
       continue;
     }
     const existing = byKey.get(key)!;
-    if (entry.snippet && existing.snippet && existing.snippet !== entry.snippet) {
+    if (normalizedEntry.snippet && existing.snippet && existing.snippet !== normalizedEntry.snippet) {
       byKey.set(key, {
-        label: existing.label,
-        snippet: `${existing.snippet} ${entry.snippet}`.slice(0, 320).trim(),
+        ...existing,
+        snippet: `${existing.snippet} ${normalizedEntry.snippet}`.slice(0, 320).trim(),
+        contextWindow: normalizeWhitespace(`${existing.contextWindow ?? ''} ${normalizedEntry.contextWindow ?? ''}`).slice(0, 320),
       });
     }
   }
@@ -962,7 +987,16 @@ function extractIssueEvidence(text: string, context?: { primary: DomainKey; seco
   for (const snippet of snippets) {
     for (const [re, label] of ISSUE_PATTERNS) {
       if (re.test(snippet)) {
-        evidence.push({ label, snippet: sentenceCase(snippet).slice(0, 220) });
+        evidence.push({
+          label,
+          snippet: sentenceCase(snippet).slice(0, 220),
+          evidenceAnchor: sentenceCase(snippet).slice(0, 220),
+          contextWindow: buildContextWindow([snippet]),
+          originChannel: 'paragraph',
+          sourceFragmentType: 'sentence',
+          confidence: 'low',
+          status: 'support-only',
+        });
       }
     }
   }
@@ -981,11 +1015,50 @@ function extractIssueEvidence(text: string, context?: { primary: DomainKey; seco
     }
     for (const [re, label] of SIGNAL_ROW_HINTS) {
       if (re.test(joined)) {
-        evidence.push({ label, snippet: joined.slice(0, 220) });
+        evidence.push({
+          label,
+          snippet: joined.slice(0, 220),
+          evidenceAnchor: joined.slice(0, 220),
+          contextWindow: buildContextWindow(cells),
+          originChannel: 'table-row',
+          sourceFragmentType: 'table-row',
+          confidence: 'medium',
+          status: 'support-only',
+        });
       }
     }
   }
 
+  const deduped = dedupeIssueEvidence(evidence);
+  if (!context || context.primary === 'generic') return deduped;
+  return deduped.filter(entry => isIssueAllowedInDomain(entry.label, context));
+}
+
+function extractStructuredIssueEvidence(
+  steps: StructuredProcedureStep[],
+  context?: { primary: DomainKey; secondary?: DomainKey },
+): IssueEvidence[] {
+  const evidence: IssueEvidence[] = [];
+  for (const step of steps) {
+    const evidenceAnchor = normalizeWhitespace(
+      step.evidenceSnippet
+      ?? [step.label, step.description, step.result, step.decision].filter(Boolean).join(' | '),
+    ).slice(0, 220);
+    if (!evidenceAnchor || !LOCAL_ISSUE_CUE_RE.test(evidenceAnchor)) continue;
+    for (const [re, label] of ISSUE_PATTERNS) {
+      if (!re.test(evidenceAnchor)) continue;
+      evidence.push({
+        label,
+        snippet: evidenceAnchor,
+        evidenceAnchor,
+        contextWindow: buildContextWindow([step.label, step.description, step.result, step.decision, evidenceAnchor]),
+        originChannel: evidenceAnchor.includes('|') ? 'table-row' : 'bullet-list',
+        sourceFragmentType: evidenceAnchor.includes('|') ? 'table-row' : 'list-item',
+        confidence: evidenceAnchor.length >= 48 ? 'medium' : 'low',
+        status: 'support-only',
+      });
+    }
+  }
   const deduped = dedupeIssueEvidence(evidence);
   if (!context || context.primary === 'generic') return deduped;
   return deduped.filter(entry => isIssueAllowedInDomain(entry.label, context));
@@ -1027,6 +1100,89 @@ function includesNormalizedValue(values: Array<string | undefined>, candidate: s
 
 function excludeNormalizedValues(values: Array<string | undefined>, excluded: Array<string | undefined>): string[] {
   return uniqueStrings(values).filter(value => !includesNormalizedValue(excluded, value));
+}
+
+type ExplicitEntityRetentionGap = {
+  stepLabel: string;
+  expectedValues: string[];
+  missingValues: string[];
+  foundOnlyInferredValues: string[];
+  evidenceAnchor?: string;
+};
+
+function assessExplicitEntityRetention(params: {
+  kind: 'role' | 'system';
+  sourceCandidates: ExtractionCandidate[];
+  observations: ProcessMiningObservation[];
+}): {
+  relevantStepCount: number;
+  retainedStepCount: number;
+  retentionShare?: number;
+  missingByStep: ExplicitEntityRetentionGap[];
+  warnings: string[];
+} {
+  const sourceStepCandidates = params.sourceCandidates.filter(candidate => (
+    candidate.candidateType === 'step' && candidate.stepWasPreserved
+  ));
+  const observationByCandidateId = new Map(
+    params.observations
+      .filter(observation => observation.kind === 'step' && Boolean(observation.candidateId))
+      .map(observation => [observation.candidateId!, observation]),
+  );
+  const missingByStep: ExplicitEntityRetentionGap[] = [];
+  let relevantStepCount = 0;
+  let retainedStepCount = 0;
+
+  for (const candidate of sourceStepCandidates) {
+    const expectedValues = atomizeStructuredValues(
+      params.kind === 'role' ? candidate.explicitRoles ?? [] : candidate.explicitSystems ?? [],
+    );
+    if (expectedValues.length === 0) continue;
+    relevantStepCount += 1;
+    const observation = observationByCandidateId.get(candidate.candidateId);
+    const explicitValues = atomizeStructuredValues(
+      params.kind === 'role' ? observation?.explicitRoles ?? [] : observation?.explicitSystems ?? [],
+    );
+    const inferredValues = atomizeStructuredValues(
+      params.kind === 'role' ? observation?.inferredRoles ?? [] : observation?.inferredSystems ?? [],
+    );
+    const missingValues = expectedValues.filter(value => !includesStructuredValue(explicitValues, value));
+    if (missingValues.length === 0) {
+      retainedStepCount += 1;
+      continue;
+    }
+    missingByStep.push({
+      stepLabel: candidate.originalStepLabel ?? candidate.rawLabel,
+      expectedValues,
+      missingValues,
+      foundOnlyInferredValues: missingValues.filter(value => includesStructuredValue(inferredValues, value)),
+      evidenceAnchor: candidate.evidenceAnchor,
+    });
+  }
+
+  const retentionShare = relevantStepCount > 0
+    ? Number((retainedStepCount / relevantStepCount).toFixed(2))
+    : undefined;
+  const warnings = missingByStep.length > 0
+    ? [
+        params.kind === 'role'
+          ? `Explizite Structured-Rollen fehlen in ${missingByStep.length} von ${relevantStepCount} Schritten noch in explicitRoles.`
+          : `Explizite Structured-Systeme fehlen in ${missingByStep.length} von ${relevantStepCount} Schritten noch in explicitSystems.`,
+        ...missingByStep
+          .filter(item => item.foundOnlyInferredValues.length > 0)
+          .map(item => (
+            `${item.stepLabel}: ${item.foundOnlyInferredValues.join(', ')} wurden nur inferiert statt explizit geführt.`
+          )),
+      ]
+    : [];
+
+  return {
+    relevantStepCount,
+    retainedStepCount,
+    retentionShare,
+    missingByStep,
+    warnings,
+  };
 }
 
 function preserveStructuredDomainLabels(params: {
@@ -1957,7 +2113,7 @@ function buildStructuredDerivation(params: {
     routingContext,
   });
   const structuredArtifacts = buildStructuredStepArtifacts(caseItem.id, steps, routingContext);
-  const issueEvidence = extractIssueEvidence(rawText, domainContext);
+  const issueEvidence = extractStructuredIssueEvidence(steps, domainContext);
   const issueSignals = uniqueStrings(issueEvidence.map(entry => entry.label));
   const summary: DerivationSummary = {
     sourceLabel: sourceName,
@@ -2300,16 +2456,19 @@ function buildExtractionCandidates(
   }
 
   issueEvidence.forEach((entry, index) => {
+    const evidenceAnchor = normalizeWhitespace(entry.evidenceAnchor ?? entry.snippet).slice(0, 320);
+    const contextWindow = normalizeWhitespace(entry.contextWindow ?? buildContextWindow([entry.label, entry.snippet])).slice(0, 320);
     candidates.push(createSupportCandidate({
       candidateType: 'signal',
       rawLabel: entry.label,
-      evidenceAnchor: entry.snippet,
-      contextWindow: buildContextWindow([entry.label, entry.snippet]),
-      confidence: 'medium',
-      originChannel: 'paragraph',
-      sourceFragmentType: 'paragraph',
+      evidenceAnchor,
+      contextWindow,
+      confidence: entry.confidence ?? 'medium',
+      originChannel: entry.originChannel ?? 'paragraph',
+      sourceFragmentType: entry.sourceFragmentType ?? 'paragraph',
       routingContext,
       sourceRef: `issue-evidence:${index + 1}`,
+      status: entry.status ?? 'support-only',
     }));
   });
 
@@ -2829,6 +2988,20 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
     };
   });
   const enrichedObservationById = new Map(enrichedStepObservations.map(observation => [observation.id, observation]));
+  const explicitRoleRetention = assessExplicitEntityRetention({
+    kind: 'role',
+    sourceCandidates: result.extractionCandidates ?? [],
+    observations: enrichedStepObservations,
+  });
+  const explicitSystemRetention = assessExplicitEntityRetention({
+    kind: 'system',
+    sourceCandidates: result.extractionCandidates ?? [],
+    observations: enrichedStepObservations,
+  });
+  const explicitEntityRetentionWarnings = uniqueStrings([
+    ...explicitRoleRetention.warnings,
+    ...explicitSystemRetention.warnings,
+  ]);
   const candidateReview = buildExtractionCandidateReview(finalizedCandidateList);
   const currentTimestamp = new Date().toISOString();
 
@@ -2899,6 +3072,11 @@ function finalizeDerivationResult(result: DerivationResult): DerivationResult {
       explicitRoleTableDetected: result.summary.explicitRoleTableDetected,
       explicitSystemCount: result.summary.explicitSystemCount,
       structuredRecallLoss,
+      explicitRoleRetentionShare: explicitRoleRetention.retentionShare,
+      explicitSystemRetentionShare: explicitSystemRetention.retentionShare,
+      missingExplicitRolesByStep: explicitRoleRetention.missingByStep,
+      missingExplicitSystemsByStep: explicitSystemRetention.missingByStep,
+      explicitEntityRetentionWarnings,
       documentSummary: finalDocumentSummary,
       routingContext: result.routingContext,
       extractionCandidates: finalizedCandidateList,

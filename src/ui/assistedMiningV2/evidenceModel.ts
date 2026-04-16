@@ -62,7 +62,7 @@ function hasActivityCharacter(candidate: ExtractionCandidate): boolean {
 
 function splitEntitySeeds(values: string[]): string[] {
   return values
-    .flatMap(value => normalizeWhitespace(value).split(/[,/;]|\s+und\s+/i))
+    .flatMap(value => normalizeWhitespace(value).split(/[\n\r,;|]+|\s*\/\s*|\s+(?:und|sowie|plus)\s+/i))
     .map(value => normalizeWhitespace(value))
     .filter(Boolean);
 }

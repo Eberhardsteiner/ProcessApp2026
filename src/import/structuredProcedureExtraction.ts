@@ -275,7 +275,7 @@ function splitStructuredValues(value: string | undefined): string[] {
   if (!cleaned) return [];
   return uniqueCaseInsensitive(
     cleaned
-      .split(/[,;/]+|\s+und\s+/i)
+      .split(/[\n\r,;|]+|\s*\/\s*|\s+(?:und|sowie|plus)\s+/i)
       .map(part => part.trim())
       .filter(Boolean),
   );
@@ -292,7 +292,7 @@ function preserveSystemLabels(value: string | undefined): string[] {
 function canonicalRoleLabel(value: string | undefined): string | undefined {
   const cleaned = cleanCell(value);
   if (!cleaned) return undefined;
-  const parts = cleaned.split(/[,;/]+|\s+und\s+/i).map(part => part.trim()).filter(Boolean);
+  const parts = cleaned.split(/[\n\r,;|]+|\s*\/\s*|\s+(?:und|sowie|plus)\s+/i).map(part => part.trim()).filter(Boolean);
   for (const part of parts) {
     for (const entry of ROLE_CANONICALS) {
       if (entry.patterns.some(pattern => pattern.test(part))) return entry.label;
@@ -437,9 +437,9 @@ function isHeaderCell(cell: string): boolean {
   return [
     'nr', 'nr', 'nr', 'nummer', 'code', 'id',
     'schritt', 'prozessschritt', 'aktivität', 'aktivitaet', 'tätigkeit', 'taetigkeit',
-    'verantwortung', 'verantwortlich', 'zuständig', 'zustaendig', 'rolle',
+    'verantwortung', 'verantwortlich', 'zuständigkeit', 'zustaendigkeit', 'zuständig', 'zustaendig', 'rolle', 'bearbeiter', 'team',
     'ergebnis', 'output', 'nachweis',
-    'system', 'systeme',
+    'system', 'systeme', 'tool', 'tools', 'anwendung', 'applikation', 'applikationen',
     'entscheidung', 'freigabe', 'entscheid',
     'beschreibung', 'inhalt',
     'frist', 'termin', 'zeitpunkt',
@@ -451,11 +451,20 @@ function classifyHeaderKey(cell: string): HeaderKey | undefined {
   const header = normalizeHeaderCell(cell);
   if (['nr', 'nummer', 'code', 'id'].includes(header)) return 'code';
   if (header.includes('prozessschritt') || header === 'schritt' || header.includes('aktiv') || header.includes('tätig') || header.includes('taetig')) return 'label';
-  if (header.includes('verantwort') || header.includes('zuständig') || header.includes('zustaendig') || header === 'rolle') return 'responsible';
+  if (
+    header.includes('verantwort')
+    || header.includes('zuständig')
+    || header.includes('zustaendig')
+    || header.includes('zuständigkeit')
+    || header.includes('zustaendigkeit')
+    || header.includes('bearbeiter')
+    || header.includes('team')
+    || header === 'rolle'
+  ) return 'responsible';
   if (header.includes('beschreibung') || header.includes('inhalt')) return 'description';
   if (header.includes('frist') || header.includes('termin') || header.includes('zeitpunkt') || header.includes('lead time')) return 'due';
   if (header === 'ergebnis' || header === 'output' || header === 'nachweis') return 'result';
-  if (header === 'system' || header === 'systeme') return 'system';
+  if (header === 'system' || header === 'systeme' || header.includes('tool') || header.includes('anwendung') || header.includes('applik')) return 'system';
   if (header.includes('entscheidung') || header.includes('freigabe') || header === 'entscheid') return 'decision';
   if (header === 'rolle' || header === 'funktion' || header === 'gremium' || header === 'name') return 'name';
   if (header === 'instanz' || header === 'authority') return 'authority';
@@ -618,7 +627,7 @@ function extractRoleRowsFromTableRows(rows: string[][]): StructuredProcedureRole
 
   const nameIdx = header.findIndex(cell => cell.includes('rolle') || cell.includes('funktion') || cell.includes('gremium') || cell === 'name');
   const respIdx = header.findIndex(cell => cell.includes('aufgabe') || cell.includes('verantwort') || cell.includes('zuständig') || cell.includes('zustaendig'));
-  const systemsIdx = header.findIndex(cell => cell === 'system' || cell === 'systeme');
+  const systemsIdx = header.findIndex(cell => cell === 'system' || cell === 'systeme' || cell.includes('tool') || cell.includes('anwendung') || cell.includes('applik'));
   const ownerIdx = header.findIndex(cell => cell.includes('owner') || cell.includes('inhaber') || cell.includes('leiter') || cell === 'instanz');
 
   return rows

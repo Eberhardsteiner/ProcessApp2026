@@ -1,4 +1,4 @@
-const SPLIT_RE = /[,;|]|\s+\/\s+|\s+und\s+|\s+sowie\s+|\s+plus\s+/i;
+const SPLIT_RE = /[\n\r,;|]+|\s*\/\s*|\s+(?:und|sowie|plus)\s+/i;
 const PIPE_SEPARATOR_RE = /^\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?$/;
 
 const DOMAIN_GROUPS = [
@@ -83,8 +83,8 @@ function classifyHeaderKey(value) {
   const header = normalizeHeaderCell(value);
   if (['nr', 'nummer', 'id', 'code'].includes(header)) return 'index';
   if (header.includes('schritt') || header.includes('aktiv') || header.includes('vorgang')) return 'label';
-  if (header.includes('verantwort') || header.includes('zuständig') || header.includes('zustaendig') || header === 'rolle') return 'responsible';
-  if (header === 'system' || header === 'systeme') return 'system';
+  if (header.includes('verantwort') || header.includes('zuständig') || header.includes('zustaendig') || header.includes('zuständigkeit') || header.includes('zustaendigkeit') || header.includes('bearbeiter') || header.includes('team') || header === 'rolle') return 'responsible';
+  if (header === 'system' || header === 'systeme' || header.includes('tool') || header.includes('anwendung') || header.includes('applik')) return 'system';
   if (header === 'ergebnis' || header === 'output') return 'result';
   if (header === 'aufgabe' || header === 'beschreibung') return 'description';
   if (header === 'rolle' || header === 'funktion' || header === 'name') return 'role-name';

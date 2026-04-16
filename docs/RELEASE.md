@@ -2,8 +2,8 @@
 
 ## Aktueller Produktstand
 
-- Sichtbare App-Version: `v0.45.1`
-- Freigabestatus: generalisierte Structured-Invarianten extern abgesichert; strukturierte Fixtures und Mutationen laufen außerhalb der Runtime gegen dieselbe Build-Version
+- Sichtbare App-Version: `v0.45.2`
+- Freigabestatus: strukturierte Quellen halten jetzt row-level explizite Rollen-/Systemevidenz robuster bis in Export und Qualitätslogik; Support-Signale bleiben an lokale Evidenzanker gebunden und werden weiter extern mit Mutationen geprüft
 
 ## Wofür dieser Stand gedacht ist
 

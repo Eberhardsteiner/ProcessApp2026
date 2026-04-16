@@ -446,6 +446,33 @@ function atomicEntityValuesForStep(step: ProcessMiningObservation, kind: 'role' 
   );
 }
 
+function explicitRetentionStats(
+  summary: DerivationSummary | undefined,
+  kind: 'role' | 'system',
+): {
+  share?: number;
+  missingByStep: Array<{
+    stepLabel: string;
+    expectedValues: string[];
+    missingValues: string[];
+    foundOnlyInferredValues: string[];
+    evidenceAnchor?: string;
+  }>;
+  warningCount: number;
+  foundOnlyInferredCount: number;
+} {
+  const share = kind === 'role' ? summary?.explicitRoleRetentionShare : summary?.explicitSystemRetentionShare;
+  const missingByStep = kind === 'role'
+    ? summary?.missingExplicitRolesByStep ?? []
+    : summary?.missingExplicitSystemsByStep ?? [];
+  return {
+    share,
+    missingByStep,
+    warningCount: missingByStep.length,
+    foundOnlyInferredCount: missingByStep.reduce((sum, item) => sum + (item.foundOnlyInferredValues?.length ?? 0), 0),
+  };
+}
+
 function candidateMap(candidates: ExtractionCandidate[]): Map<string, ExtractionCandidate> {
   return new Map(candidates.map(candidate => [candidate.candidateId, candidate]));
 }
@@ -859,6 +886,7 @@ function assessRoleOrSystemQuality(
     : quality?.stepObservationsWithSystem ?? ctx.steps.filter(step => atomicEntityValuesForStep(step, 'system').length > 0).length;
   const localAssignments = kind === 'role' ? ctx.localRoleAssignments : ctx.localSystemAssignments;
   const mapping = findBestMapping(ctx.summary, kind === 'role' ? ['role', 'resource'] : ['system']);
+  const retention = explicitRetentionStats(ctx.summary, kind);
   const uniqueValues = atomizeStructuredValues(
     kind === 'role'
       ? [
@@ -880,19 +908,40 @@ function assessRoleOrSystemQuality(
     ctx.candidates.filter(candidate => candidate.candidateType === kind && candidate.status === 'support-only').length,
     Math.max(ctx.summary?.tablePipeline?.rowEvidenceStats.weakSignalsCreated ?? ctx.steps.length, 1),
   );
+  const uniqueValueShare = Math.min(1, uniqueValues.length / Math.max(Math.ceil(ctx.steps.length / 3), 1));
 
   let score = 0;
   if (ctx.scoringMode === 'weak-raw-table') {
     score = 42 + supportOnlyHints * 18 + clamp01(1 - ctx.steps.length / 4) * 18 + (mapping?.confidence ?? 0) * 12 + (coverage === 0 ? 8 : 0);
   } else if (ctx.steps.length > 0) {
-    score = 12 + coverage * 34 + localShare * 24 + Math.min(1, uniqueValues.length / Math.max(Math.ceil(ctx.steps.length / 3), 1)) * 10 + (mapping?.confidence ?? 0) * 16;
+    score = 12 + coverage * 26 + localShare * 18 + uniqueValueShare * 8 + (mapping?.confidence ?? 0) * 12;
+    if (typeof retention.share === 'number') {
+      score += retention.share * 24;
+      score -= Math.min(18, retention.warningCount * 6);
+      score -= Math.min(14, retention.foundOnlyInferredCount * 4);
+    } else {
+      score += 14;
+    }
+  }
+
+  if (typeof retention.share === 'number' && retention.share < 1) {
+    const retentionCap = retention.share >= 0.9
+      ? 82
+      : retention.share >= 0.75
+      ? 74
+      : retention.share >= 0.5
+      ? 62
+      : 48;
+    score = Math.min(score, retentionCap);
   }
 
   return createDimension(
     ctx.profile,
     kind === 'role' ? 'roleQuality' : 'systemQuality',
     score,
-    score >= 85
+    typeof retention.share === 'number' && retention.share < 1
+      ? `${kind === 'role' ? 'Rollen' : 'Systeme'} bleiben nur teilweise row-level erhalten; explizite Structured-Werte fehlen noch in finalen explicit-Feldern.`
+      : score >= 85
       ? `${kind === 'role' ? 'Rollen' : 'Systeme'} sind lokal belastbar verankert.`
       : score >= 68
       ? `${kind === 'role' ? 'Rollen' : 'Systeme'} sind brauchbar, aber noch nicht vollständig abgesichert.`
@@ -903,6 +952,12 @@ function assessRoleOrSystemQuality(
       `${backedSteps} von ${ctx.steps.length} Schritten mit ${kind === 'role' ? 'Rollen' : 'System'}bezug.`,
       localAssignments > 0 ? `${localAssignments} lokal verankerte ${kind === 'role' ? 'Rollen' : 'System'}zuordnungen.` : undefined,
       mapping ? `${kind === 'role' ? 'Spaltenmapping' : 'Systemmapping'} ${mapping.confidence.toFixed(2)}.` : undefined,
+      typeof retention.share === 'number'
+        ? `Explizite Structured-${kind === 'role' ? 'Rollen' : 'System'}evidence bleibt zu ${Math.round(retention.share * 100)} % in explicit${kind === 'role' ? 'Roles' : 'Systems'} erhalten.`
+        : undefined,
+      retention.warningCount > 0
+        ? `${retention.warningCount} Schritte verlieren explizite ${kind === 'role' ? 'Rollen' : 'System'}werte oder führen sie nur inferiert.`
+        : undefined,
     ],
     {
       backedSteps,
@@ -910,6 +965,10 @@ function assessRoleOrSystemQuality(
       coverage: Number(coverage.toFixed(2)),
       supportOnlyHints: Number(supportOnlyHints.toFixed(2)),
       uniqueValues,
+      explicitRetentionShare: retention.share,
+      missingExplicitByStep: retention.missingByStep,
+      explicitRetentionWarningCount: retention.warningCount,
+      foundOnlyInferredValueCount: retention.foundOnlyInferredCount,
       mappingConfidence: mapping?.confidence,
     },
     [

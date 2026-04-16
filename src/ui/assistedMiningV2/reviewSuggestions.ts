@@ -117,22 +117,14 @@ function explodeStructuredValues(values: Array<string | undefined>): string[] {
 
 function getObservationRolesFull(observation: ProcessMiningObservation): string[] {
   return explodeStructuredValues([
-    ...(observation.explicitRoles ?? []),
     ...(observation.roles ?? []),
-    ...(observation.inferredRoles ?? []),
-    ...(observation.supportOnlyRoles ?? []),
-    ...(observation.suppressedInferredRoles ?? []),
     getPrimaryRole(observation),
   ]);
 }
 
 function getObservationSystemsFull(observation: ProcessMiningObservation): string[] {
   return explodeStructuredValues([
-    ...(observation.explicitSystems ?? []),
     ...(observation.systems ?? []),
-    ...(observation.inferredSystems ?? []),
-    ...(observation.supportOnlySystems ?? []),
-    ...(observation.suppressedInferredSystems ?? []),
     getPrimarySystem(observation),
   ]);
 }

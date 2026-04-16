@@ -884,7 +884,16 @@ export interface DerivationSummary {
   suppressedRoles?: string[];
   suppressedSystems?: string[];
   issueSignals?: string[];
-  issueEvidence?: Array<{ label: string; snippet: string }>;
+  issueEvidence?: Array<{
+    label: string;
+    snippet: string;
+    evidenceAnchor?: string;
+    contextWindow?: string;
+    originChannel?: ExtractionCandidate['originChannel'];
+    sourceFragmentType?: ExtractionCandidate['sourceFragmentType'];
+    confidence?: ExtractionCandidate['confidence'];
+    status?: ExtractionCandidate['status'];
+  }>;
   structuredPreserveApplied?: boolean;
   explicitStructuredStepCount?: number;
   preservedStructuredStepCount?: number;
@@ -894,6 +903,23 @@ export interface DerivationSummary {
   explicitRoleTableDetected?: boolean;
   explicitSystemCount?: number;
   structuredRecallLoss?: boolean;
+  explicitRoleRetentionShare?: number;
+  explicitSystemRetentionShare?: number;
+  missingExplicitRolesByStep?: Array<{
+    stepLabel: string;
+    expectedValues: string[];
+    missingValues: string[];
+    foundOnlyInferredValues: string[];
+    evidenceAnchor?: string;
+  }>;
+  missingExplicitSystemsByStep?: Array<{
+    stepLabel: string;
+    expectedValues: string[];
+    missingValues: string[];
+    foundOnlyInferredValues: string[];
+    evidenceAnchor?: string;
+  }>;
+  explicitEntityRetentionWarnings?: string[];
   documentSummary?: string;
   sourceProfile?: DerivationSourceProfile;
   routingContext?: SourceRoutingContext;

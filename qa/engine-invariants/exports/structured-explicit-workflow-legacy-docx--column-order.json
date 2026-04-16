@@ -1,7 +1,7 @@
 {
   "schemaVersion": "pm-analysis-quality-export-v2",
-  "exportedAt": "2026-04-15T17:26:20.686Z",
-  "appVersion": "v0.45.1 (0.45.1)",
+  "exportedAt": "2026-04-16T16:24:05.090Z",
+  "appVersion": "v0.45.2 (0.45.2)",
   "purpose": "Dieser Export beschreibt ausschließlich den aktuellen operativen Analysezustand des ausgewerteten Materials.",
   "note": "Keine QA-, Benchmark-, Sample- oder Referenzlogik ist Bestandteil dieses Exportpfads. Das JSON dient als externes Bewertungsartefakt für genau diesen Analysezustand.",
   "assessmentGuide": {
@@ -42,7 +42,7 @@
       "versionId": "engine-invariant-version-pg01_structured_preserve_merge_guard--column-order",
       "versionLabel": "Invariant structured-explicit-workflow",
       "status": "draft",
-      "updatedAt": "2026-04-15T17:26:20.672Z"
+      "updatedAt": "2026-04-16T16:24:05.075Z"
     },
     "currentStep": "augmentation",
     "operatingMode": "standard",
@@ -276,12 +276,13 @@
       {
         "key": "roleQuality",
         "label": "Rollenqualität",
-        "score": 80,
-        "status": "usable",
-        "summary": "Rollen sind brauchbar, aber noch nicht vollständig abgesichert.",
+        "score": 88,
+        "status": "strong",
+        "summary": "Rollen sind lokal belastbar verankert.",
         "rationale": [
           "6 von 6 Schritten mit Rollenbezug.",
-          "6 lokal verankerte Rollenzuordnungen."
+          "6 lokal verankerte Rollenzuordnungen.",
+          "Explizite Structured-Rollenevidence bleibt zu 100 % in explicitRoles erhalten."
         ],
         "interpretation": "Bewertet lokal verankerte Rollen statt globale Rollentreffer.",
         "applicableEvidenceTypes": [
@@ -306,7 +307,11 @@
             "Fachbereich",
             "Teamleitung",
             "Kundenservice"
-          ]
+          ],
+          "explicitRetentionShare": 1,
+          "missingExplicitByStep": [],
+          "explicitRetentionWarningCount": 0,
+          "foundOnlyInferredValueCount": 0
         }
       },
       {
@@ -317,7 +322,8 @@
         "summary": "Systeme sind lokal belastbar verankert.",
         "rationale": [
           "6 von 6 Schritten mit Systembezug.",
-          "12 lokal verankerte Systemzuordnungen."
+          "12 lokal verankerte Systemzuordnungen.",
+          "Explizite Structured-Systemevidence bleibt zu 100 % in explicitSystems erhalten."
         ],
         "interpretation": "Bewertet lokal verankerte Systembezüge statt bloßer Systemnennungen.",
         "applicableEvidenceTypes": [
@@ -344,7 +350,11 @@
             "BI",
             "CRM",
             "Mail"
-          ]
+          ],
+          "explicitRetentionShare": 1,
+          "missingExplicitByStep": [],
+          "explicitRetentionWarningCount": 0,
+          "foundOnlyInferredValueCount": 0
         }
       },
       {
@@ -384,7 +394,7 @@
       {
         "key": "evidenceCoverage",
         "label": "Evidenzabdeckung",
-        "score": 99,
+        "score": 91,
         "status": "strong",
         "summary": "Die Evidenz passt sehr gut zum aktiven Analysemodus.",
         "rationale": [
@@ -456,6 +466,7 @@
     "strengths": [
       "Dokumenttyp-Erkennung: Die operative Quellenklassifikation passt sehr gut zum aktiven Analysemodus.",
       "Strukturtreue: Die Struktur passt sehr gut zum aktiven Bewertungsmodus.",
+      "Rollenqualität: Rollen sind lokal belastbar verankert.",
       "Systemqualität: Systeme sind lokal belastbar verankert.",
       "Domänenkonsistenz: Die Domänenlage bleibt bewusst neutral und konsistent; es gibt keine belastbaren Konfliktsignale.",
       "Evidenzabdeckung: Die Evidenz passt sehr gut zum aktiven Analysemodus."
@@ -637,7 +648,7 @@
           "key": "hotspots",
           "label": "Reibungssignale erkennen",
           "enabled": true,
-          "note": "Lokale Signalerkennung kann Friktionen bereits ohne KI sichtbar machen."
+          "note": "Mit mehr Material werden Reibungssignale stabiler und konkreter."
         },
         {
           "key": "timing",
@@ -738,7 +749,6 @@
       ],
       "strengths": [
         "Die Schrittbezeichnungen wirken bereits konsistent.",
-        "5 Reibungssignale wurden lokal erkannt.",
         "Die meisten Schritte besitzen gute Belegstellen.",
         "Ein Happy Path ist bereits als Soll-Basis vorhanden."
       ]
@@ -816,7 +826,7 @@
       "totalCases": 1,
       "totalObservations": 6,
       "stepObservationCount": 6,
-      "issueObservationCount": 5,
+      "issueObservationCount": 0,
       "casesWithOrdering": 1,
       "observationsWithRealTime": 0,
       "observationsWithSyntheticTime": 0,
@@ -825,7 +835,7 @@
       "stepObservationsWithEvidence": 6,
       "stepObservationsWithRole": 6,
       "stepObservationsWithSystem": 6,
-      "updatedAt": "2026-04-15T17:26:20.672Z"
+      "updatedAt": "2026-04-16T16:24:05.075Z"
     },
     "lastDerivationSummary": {
       "sourceLabel": "PG01_structured_preserve_merge_guard--column-order.md",
@@ -881,13 +891,7 @@
       "supportOnlySystems": [],
       "suppressedRoles": [],
       "suppressedSystems": [],
-      "issueSignals": [
-        "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-        "Kommunikation muss Unsicherheit professionell abfedern",
-        "Freigaben verlangsamen die Umsetzung",
-        "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-        "Implizite Koordination bindet viele Beteiligte"
-      ],
+      "issueSignals": [],
       "structuredPreserveApplied": true,
       "explicitStructuredStepCount": 6,
       "preservedStructuredStepCount": 6,
@@ -969,31 +973,10 @@
           "eventlogScore=0.11"
         ]
       },
-      "issueEvidence": [
-        {
-          "label": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "snippet": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR"
-        },
-        {
-          "label": "Kommunikation muss Unsicherheit professionell abfedern",
-          "snippet": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR"
-        },
-        {
-          "label": "Freigaben verlangsamen die Umsetzung",
-          "snippet": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa"
-        },
-        {
-          "label": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "snippet": "Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben."
-        },
-        {
-          "label": "Implizite Koordination bindet viele Beteiligte",
-          "snippet": "CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen"
-        }
-      ],
+      "issueEvidence": [],
       "extractionCandidates": [
         {
-          "candidateId": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6:step",
+          "candidateId": "39a4d69f-ce46-4bb1-98d3-86904379e0b2:step",
           "candidateType": "step",
           "rawLabel": "Vorgang anlegen",
           "normalizedLabel": "Vorgang anlegen",
@@ -1015,12 +998,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
+          "sourceRef": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "4513a162-530a-4240-aec7-6dd0d75be07e",
+          "candidateId": "57361942-9acb-4fbd-b83a-0309d3f30828",
           "candidateType": "role",
           "rawLabel": "Sachbearbeitung",
           "normalizedLabel": "Sachbearbeitung",
@@ -1031,13 +1014,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
-          "relatedCandidateId": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6:step",
+          "sourceRef": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
+          "relatedCandidateId": "39a4d69f-ce46-4bb1-98d3-86904379e0b2:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "d9706bc2-c7b9-47cc-ac36-a82ad0ec42dc",
+          "candidateId": "5d751515-0778-4ad7-8605-f9b3541687ee",
           "candidateType": "system",
           "rawLabel": "ERP",
           "normalizedLabel": "ERP",
@@ -1048,13 +1031,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
-          "relatedCandidateId": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6:step",
+          "sourceRef": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
+          "relatedCandidateId": "39a4d69f-ce46-4bb1-98d3-86904379e0b2:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "32b3772d-e2b2-4aef-ada2-34ea1a6fe517",
+          "candidateId": "910e3b3f-90db-43f2-95b6-6d9dce26de37",
           "candidateType": "system",
           "rawLabel": "DMS",
           "normalizedLabel": "DMS",
@@ -1065,13 +1048,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
-          "relatedCandidateId": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6:step",
+          "sourceRef": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
+          "relatedCandidateId": "39a4d69f-ce46-4bb1-98d3-86904379e0b2:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "85716aca-e90f-498f-95be-3b1624400d49:step",
+          "candidateId": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6:step",
           "candidateType": "step",
           "rawLabel": "Unterlagen prüfen",
           "normalizedLabel": "Unterlagen prüfen",
@@ -1094,12 +1077,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "85716aca-e90f-498f-95be-3b1624400d49",
+          "sourceRef": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "94f924ee-94f1-4d56-8f64-41a260a63b4a",
+          "candidateId": "9f01073f-6ac9-4a46-bad1-0cb53b27939c",
           "candidateType": "role",
           "rawLabel": "Sachbearbeitung",
           "normalizedLabel": "Sachbearbeitung",
@@ -1110,13 +1093,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "85716aca-e90f-498f-95be-3b1624400d49",
-          "relatedCandidateId": "85716aca-e90f-498f-95be-3b1624400d49:step",
+          "sourceRef": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
+          "relatedCandidateId": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "cadbfcf9-7d2a-4cf4-8465-c73e3e5bfde4",
+          "candidateId": "892b2bbe-d23d-4a1c-bf21-d54b479a3ab9",
           "candidateType": "system",
           "rawLabel": "ERP",
           "normalizedLabel": "ERP",
@@ -1127,13 +1110,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "85716aca-e90f-498f-95be-3b1624400d49",
-          "relatedCandidateId": "85716aca-e90f-498f-95be-3b1624400d49:step",
+          "sourceRef": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
+          "relatedCandidateId": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "a4ab0e9d-2185-4038-8292-dfa2266bdd30",
+          "candidateId": "df581fb2-8d57-4136-a31e-a568a573a429",
           "candidateType": "system",
           "rawLabel": "DMS",
           "normalizedLabel": "DMS",
@@ -1144,13 +1127,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "85716aca-e90f-498f-95be-3b1624400d49",
-          "relatedCandidateId": "85716aca-e90f-498f-95be-3b1624400d49:step",
+          "sourceRef": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
+          "relatedCandidateId": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc:step",
+          "candidateId": "a4c36d96-cd4d-4c5f-937f-54069c66f691:step",
           "candidateType": "step",
           "rawLabel": "Fehlende Unterlagen nachfordern",
           "normalizedLabel": "Fehlende Unterlagen nachfordern",
@@ -1174,12 +1157,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
+          "sourceRef": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "91a94580-d919-4a4f-8b55-e5f529fc29bf",
+          "candidateId": "7f7ce296-8840-4fec-8fe0-12cc223f74f7",
           "candidateType": "role",
           "rawLabel": "Sachbearbeitung",
           "normalizedLabel": "Sachbearbeitung",
@@ -1190,13 +1173,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
-          "relatedCandidateId": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc:step",
+          "sourceRef": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
+          "relatedCandidateId": "a4c36d96-cd4d-4c5f-937f-54069c66f691:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "fca0734f-ef88-4b2a-986d-20ea3915e198",
+          "candidateId": "7f8cbd50-a42b-4efe-9e09-9c1fd5f38a6f",
           "candidateType": "system",
           "rawLabel": "ERP",
           "normalizedLabel": "ERP",
@@ -1207,13 +1190,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
-          "relatedCandidateId": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc:step",
+          "sourceRef": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
+          "relatedCandidateId": "a4c36d96-cd4d-4c5f-937f-54069c66f691:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "bb2905e0-3eab-4665-b2e2-16ea83c66583",
+          "candidateId": "def5aa9c-d3b7-4a95-932a-35ba51375989",
           "candidateType": "system",
           "rawLabel": "DMS",
           "normalizedLabel": "DMS",
@@ -1224,13 +1207,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
-          "relatedCandidateId": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc:step",
+          "sourceRef": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
+          "relatedCandidateId": "a4c36d96-cd4d-4c5f-937f-54069c66f691:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "956c7951-4395-4a63-afc7-28f669d9d670:step",
+          "candidateId": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501:step",
           "candidateType": "step",
           "rawLabel": "Abweichung klassifizieren",
           "normalizedLabel": "Abweichung klassifizieren",
@@ -1253,12 +1236,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "956c7951-4395-4a63-afc7-28f669d9d670",
+          "sourceRef": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "85b8b7a2-55b0-49d1-9850-c1636f18ffbe",
+          "candidateId": "6ad07f4a-06ee-4dc5-9951-ca5003937529",
           "candidateType": "role",
           "rawLabel": "Fachbereich",
           "normalizedLabel": "Fachbereich",
@@ -1269,13 +1252,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "956c7951-4395-4a63-afc7-28f669d9d670",
-          "relatedCandidateId": "956c7951-4395-4a63-afc7-28f669d9d670:step",
+          "sourceRef": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
+          "relatedCandidateId": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "90ad7646-f3e8-4686-8cb2-b262c9eb27cc",
+          "candidateId": "7ff0b98e-b09c-4eb2-be73-7a3488104f4b",
           "candidateType": "system",
           "rawLabel": "DMS",
           "normalizedLabel": "DMS",
@@ -1286,13 +1269,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "956c7951-4395-4a63-afc7-28f669d9d670",
-          "relatedCandidateId": "956c7951-4395-4a63-afc7-28f669d9d670:step",
+          "sourceRef": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
+          "relatedCandidateId": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "fca7e92e-f41a-43ab-b0dd-2d068e4f49ea",
+          "candidateId": "510bf088-aad2-4529-8f12-c36bdfc6eec7",
           "candidateType": "system",
           "rawLabel": "Fachtool",
           "normalizedLabel": "Fachtool",
@@ -1303,13 +1286,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "956c7951-4395-4a63-afc7-28f669d9d670",
-          "relatedCandidateId": "956c7951-4395-4a63-afc7-28f669d9d670:step",
+          "sourceRef": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
+          "relatedCandidateId": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "e53ff62c-9479-4332-8c04-80cd965e483a:step",
+          "candidateId": "a59bc3da-3dbf-44f7-825a-9d91149cb83f:step",
           "candidateType": "step",
           "rawLabel": "Freigabe entscheiden",
           "normalizedLabel": "Freigabe entscheiden",
@@ -1332,12 +1315,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "e53ff62c-9479-4332-8c04-80cd965e483a",
+          "sourceRef": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "80481e95-1770-4707-8cf3-0b8a795528ef",
+          "candidateId": "d8ffff48-335d-4cc3-b464-8dee9b3642a7",
           "candidateType": "role",
           "rawLabel": "Teamleitung",
           "normalizedLabel": "Teamleitung",
@@ -1348,13 +1331,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "e53ff62c-9479-4332-8c04-80cd965e483a",
-          "relatedCandidateId": "e53ff62c-9479-4332-8c04-80cd965e483a:step",
+          "sourceRef": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
+          "relatedCandidateId": "a59bc3da-3dbf-44f7-825a-9d91149cb83f:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "e194e850-ace0-4b9c-aa67-6fd735042c57",
+          "candidateId": "a1286d9e-190d-44c2-84ce-b7d51b1ae215",
           "candidateType": "system",
           "rawLabel": "ERP",
           "normalizedLabel": "ERP",
@@ -1365,13 +1348,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "e53ff62c-9479-4332-8c04-80cd965e483a",
-          "relatedCandidateId": "e53ff62c-9479-4332-8c04-80cd965e483a:step",
+          "sourceRef": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
+          "relatedCandidateId": "a59bc3da-3dbf-44f7-825a-9d91149cb83f:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "659d0c06-ee0c-495d-96d7-363abb9215c4",
+          "candidateId": "49182cd0-09e8-4046-abed-11f76a0ae8d8",
           "candidateType": "system",
           "rawLabel": "BI",
           "normalizedLabel": "BI",
@@ -1382,13 +1365,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "e53ff62c-9479-4332-8c04-80cd965e483a",
-          "relatedCandidateId": "e53ff62c-9479-4332-8c04-80cd965e483a:step",
+          "sourceRef": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
+          "relatedCandidateId": "a59bc3da-3dbf-44f7-825a-9d91149cb83f:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "d9ec052c-6028-40cc-acfe-db605be72146:step",
+          "candidateId": "fb7f0f96-7b8e-4667-bcc2-de78445ea667:step",
           "candidateType": "step",
           "rawLabel": "Abschluss dokumentieren",
           "normalizedLabel": "Abschluss dokumentieren",
@@ -1411,12 +1394,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d9ec052c-6028-40cc-acfe-db605be72146",
+          "sourceRef": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "48f34104-6c93-40fc-9784-9c1271cac904",
+          "candidateId": "3c4634df-7d32-40b8-a1be-b36e6bacf5c7",
           "candidateType": "role",
           "rawLabel": "Kundenservice",
           "normalizedLabel": "Kundenservice",
@@ -1427,13 +1410,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d9ec052c-6028-40cc-acfe-db605be72146",
-          "relatedCandidateId": "d9ec052c-6028-40cc-acfe-db605be72146:step",
+          "sourceRef": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
+          "relatedCandidateId": "fb7f0f96-7b8e-4667-bcc2-de78445ea667:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "7a22d53b-f3d5-4337-96af-54aa8929a7d3",
+          "candidateId": "6dde3ffd-6ff3-472f-966c-8164fcfb262a",
           "candidateType": "system",
           "rawLabel": "CRM",
           "normalizedLabel": "CRM",
@@ -1444,13 +1427,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d9ec052c-6028-40cc-acfe-db605be72146",
-          "relatedCandidateId": "d9ec052c-6028-40cc-acfe-db605be72146:step",
+          "sourceRef": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
+          "relatedCandidateId": "fb7f0f96-7b8e-4667-bcc2-de78445ea667:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "48e5c2b9-56a1-426a-bcee-4ddcf4dd95cd",
+          "candidateId": "3a94a3b3-7879-4bf3-9cca-a9c929097dd5",
           "candidateType": "system",
           "rawLabel": "Mail",
           "normalizedLabel": "Mail",
@@ -1461,195 +1444,40 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d9ec052c-6028-40cc-acfe-db605be72146",
-          "relatedCandidateId": "d9ec052c-6028-40cc-acfe-db605be72146:step",
+          "sourceRef": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
+          "relatedCandidateId": "fb7f0f96-7b8e-4667-bcc2-de78445ea667:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "d40cf483-2c9f-4c0a-b4fe-f3da562d1802",
-          "candidateType": "signal",
-          "rawLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "normalizedLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "contextWindow": "Informationen müssen aus mehreren Systemen zusammengeführt werden | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:1",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "57f256a8-e05d-4d24-bd46-c5554e8f1b75",
-          "candidateType": "signal",
-          "rawLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-          "normalizedLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "contextWindow": "Kommunikation muss Unsicherheit professionell abfedern | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:2",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "d3e73ffa-ea69-4a63-85b8-ea25859a3de9",
-          "candidateType": "signal",
-          "rawLabel": "Freigaben verlangsamen die Umsetzung",
-          "normalizedLabel": "Freigaben verlangsamen die Umsetzung",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa",
-          "contextWindow": "Freigaben verlangsamen die Umsetzung | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vor",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:3",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "7c1e5253-4b96-49d5-9f13-8fd67524f61f",
-          "candidateType": "signal",
-          "rawLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "normalizedLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "evidenceAnchor": "Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-          "contextWindow": "Wartezeiten und Koordinationsaufwand belasten den Ablauf | Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:4",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "ecf601c5-d12f-4715-8d23-897fdc7f0f52",
-          "candidateType": "signal",
-          "rawLabel": "Implizite Koordination bindet viele Beteiligte",
-          "normalizedLabel": "Implizite Koordination bindet viele Beteiligte",
-          "evidenceAnchor": "CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-          "contextWindow": "Implizite Koordination bindet viele Beteiligte | CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:5",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "1d7ccb8f-ea47-4ad8-b2e2-7bac4316f66e",
+          "candidateId": "a7ea6712-d9c4-4639-baba-f51722a743ea",
           "candidateType": "signal",
           "rawLabel": "Onboarding erfordert enge Abstimmung zwischen HR, IT und Fachbereich",
           "normalizedLabel": "Onboarding erfordert enge Abstimmung zwischen HR, IT und Fachbereich",
-          "evidenceAnchor": "Insbesondere dürfen semantisch ähnliche, aber unterschiedliche Standardschritte nicht zusammengelegt werden. | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidu",
-          "contextWindow": "Onboarding erfordert enge Abstimmung zwischen HR, IT und Fachbereich | Insbesondere dürfen semantisch ähnliche, aber unterschiedliche Standardschritte nicht zusammengelegt werden. | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich",
+          "evidenceAnchor": "Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
+          "contextWindow": "Fehlende Unterlagen nachfordern | Nachforderung versandt | Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
           "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
+          "originChannel": "table-row",
+          "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
           "sourceRef": "issue-evidence:1",
           "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "2730b238-1a93-4896-a157-4294b1cd0c85",
-          "candidateType": "signal",
-          "rawLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "normalizedLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "contextWindow": "Informationen müssen aus mehreren Systemen zusammengeführt werden | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:2",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "798fc96b-8ec1-4e32-90f6-745d70fb8d69",
-          "candidateType": "signal",
-          "rawLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-          "normalizedLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "contextWindow": "Kommunikation muss Unsicherheit professionell abfedern | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:3",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "ec48a2ac-47bd-4151-a1cd-5897c2ea1d7f",
-          "candidateType": "signal",
-          "rawLabel": "Freigaben verlangsamen die Umsetzung",
-          "normalizedLabel": "Freigaben verlangsamen die Umsetzung",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa",
-          "contextWindow": "Freigaben verlangsamen die Umsetzung | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vor",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:4",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "c4d57bbc-5ead-4fa9-b213-7f68c3baa2b9",
-          "candidateType": "signal",
-          "rawLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "normalizedLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "evidenceAnchor": "Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-          "contextWindow": "Wartezeiten und Koordinationsaufwand belasten den Ablauf | Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:5",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "7bfba162-abba-4308-af5a-9698b329e0f7",
-          "candidateType": "signal",
-          "rawLabel": "Implizite Koordination bindet viele Beteiligte",
-          "normalizedLabel": "Implizite Koordination bindet viele Beteiligte",
-          "evidenceAnchor": "CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-          "contextWindow": "Implizite Koordination bindet viele Beteiligte | CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:6",
-          "status": "support-only",
-          "supportClass": "issue-signal",
+          "supportClass": "friction-signal",
           "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
         }
       ],
       "engineVersion": "pm-local-engine-v4.3",
       "provenance": "local",
-      "updatedAt": "2026-04-15T17:26:20.671Z",
+      "updatedAt": "2026-04-16T16:24:05.074Z",
+      "explicitRoleRetentionShare": 1,
+      "explicitSystemRetentionShare": 1,
+      "missingExplicitRolesByStep": [],
+      "missingExplicitSystemsByStep": [],
+      "explicitEntityRetentionWarnings": [],
       "candidateStats": {
-        "total": 35,
+        "total": 25,
         "mergedCoreSteps": 6,
-        "supportOnly": 11,
+        "supportOnly": 1,
         "rejected": 0
       },
       "repairNotes": [
@@ -1658,10 +1486,10 @@
         "Structured-Preserve aktiv: Explizite strukturierte Rollen- und Systemevidenz bleibt trotz Domain-Gate erhalten."
       ],
       "candidateReview": {
-        "totalCandidates": 35,
+        "totalCandidates": 25,
         "mergedCoreSteps": 6,
         "rejectedCoreSteps": 0,
-        "supportOnlyCandidates": 11,
+        "supportOnlyCandidates": 1,
         "localRoleAssignments": 6,
         "localSystemAssignments": 12,
         "weakFragmentCount": 0
@@ -1686,88 +1514,18 @@
     },
     "extractionEvidence": {
       "candidateStats": {
-        "total": 35,
+        "total": 25,
         "mergedCoreSteps": 6,
-        "supportOnly": 11,
+        "supportOnly": 1,
         "rejected": 0
       },
       "rejectedOrSupportCandidates": [
         {
           "candidateType": "signal",
-          "normalizedLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "status": "support-only",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses.",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR"
-        },
-        {
-          "candidateType": "signal",
-          "normalizedLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-          "status": "support-only",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses.",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR"
-        },
-        {
-          "candidateType": "signal",
-          "normalizedLabel": "Freigaben verlangsamen die Umsetzung",
-          "status": "support-only",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses.",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa"
-        },
-        {
-          "candidateType": "signal",
-          "normalizedLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "status": "support-only",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses.",
-          "evidenceAnchor": "Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben."
-        },
-        {
-          "candidateType": "signal",
-          "normalizedLabel": "Implizite Koordination bindet viele Beteiligte",
-          "status": "support-only",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses.",
-          "evidenceAnchor": "CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen"
-        },
-        {
-          "candidateType": "signal",
           "normalizedLabel": "Onboarding erfordert enge Abstimmung zwischen HR, IT und Fachbereich",
           "status": "support-only",
           "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses.",
-          "evidenceAnchor": "Insbesondere dürfen semantisch ähnliche, aber unterschiedliche Standardschritte nicht zusammengelegt werden. | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidu"
-        },
-        {
-          "candidateType": "signal",
-          "normalizedLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "status": "support-only",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses.",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR"
-        },
-        {
-          "candidateType": "signal",
-          "normalizedLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-          "status": "support-only",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses.",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR"
-        },
-        {
-          "candidateType": "signal",
-          "normalizedLabel": "Freigaben verlangsamen die Umsetzung",
-          "status": "support-only",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses.",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa"
-        },
-        {
-          "candidateType": "signal",
-          "normalizedLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "status": "support-only",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses.",
-          "evidenceAnchor": "Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben."
-        },
-        {
-          "candidateType": "signal",
-          "normalizedLabel": "Implizite Koordination bindet viele Beteiligte",
-          "status": "support-only",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses.",
-          "evidenceAnchor": "CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen"
+          "evidenceAnchor": "Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt"
         }
       ],
       "structuredPreserve": {
@@ -1780,6 +1538,11 @@
         "explicitRoleTableDetected": true,
         "explicitSystemCount": 6,
         "structuredRecallLoss": false,
+        "explicitRoleRetentionShare": 1,
+        "explicitSystemRetentionShare": 1,
+        "missingExplicitRolesByStep": [],
+        "missingExplicitSystemsByStep": [],
+        "explicitEntityRetentionWarnings": [],
         "finalRoles": [
           "Sachbearbeitung",
           "Fachbereich",
@@ -2001,7 +1764,7 @@
       "analysisMode": "process-draft",
       "sampleNotice": "Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.",
       "notes": "",
-      "updatedAt": "2026-04-15T17:26:20.686Z"
+      "updatedAt": "2026-04-16T16:24:05.090Z"
     },
     "conformanceSummary": {
       "checkedSteps": 6,
@@ -2013,35 +1776,15 @@
       "analysisMode": "process-draft",
       "sampleNotice": "Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.",
       "notes": "",
-      "updatedAt": "2026-04-15T17:26:20.682Z"
+      "updatedAt": "2026-04-16T16:24:05.086Z"
     },
     "enhancementSummary": {
-      "issueCount": 9,
+      "issueCount": 4,
       "issues": [
-        {
-          "title": "Freigaben verlangsamen die Umsetzung",
-          "description": "Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa",
-          "kind": "other"
-        },
         {
           "title": "Hier wird zurückgesprungen: „Unterlagen prüfen“",
           "description": "Im ausgewerteten Ablauf wird dieser Schritt mehrfach durchlaufen. Das deutet auf Rückfragen, Korrekturen oder Nacharbeit hin.",
           "kind": "rework"
-        },
-        {
-          "title": "Implizite Koordination bindet viele Beteiligte",
-          "description": "Im ausgewerteten Material zeigt sich dieses Reibungssignal: Implizite Koordination bindet viele Beteiligte. Beleg: CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-          "kind": "other"
-        },
-        {
-          "title": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "description": "Im ausgewerteten Material zeigt sich dieses Reibungssignal: Informationen müssen aus mehreren Systemen zusammengeführt werden. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "kind": "missing"
-        },
-        {
-          "title": "Kommunikation muss Unsicherheit professionell abfedern",
-          "description": "Im ausgewerteten Material zeigt sich dieses Reibungssignal: Kommunikation muss Unsicherheit professionell abfedern. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "kind": "other"
         },
         {
           "title": "Viele Übergaben zwischen Fachbereich → Teamleitung",
@@ -2057,26 +1800,21 @@
           "title": "Viele Übergaben zwischen Teamleitung → Kundenservice",
           "description": "Im ausgewerteten Ablauf gibt es an dieser Stelle eine Rollenübergabe. Das ist kein Fehler, aber ein möglicher Prüfpunkt für Medienbrüche oder Abstimmungsaufwand.",
           "kind": "handoff"
-        },
-        {
-          "title": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "description": "Im ausgewerteten Material zeigt sich dieses Reibungssignal: Wartezeiten und Koordinationsaufwand belasten den Ablauf. Beleg: Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-          "kind": "other"
         }
       ],
       "analysisMode": "process-draft",
       "sampleNotice": "Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.",
       "notes": "",
-      "updatedAt": "2026-04-15T17:26:20.683Z"
+      "updatedAt": "2026-04-16T16:24:05.087Z"
     },
     "reportSnapshot": {
       "title": "Mining-Überblick · Engine Invariant PG01_structured_preserve_merge_guard--column-order",
-      "executiveSummary": "Für den Prozess „Engine Invariant PG01_structured_preserve_merge_guard--column-order“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden. Der wichtigste Soll-Hinweis lautet: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.",
-      "processStory": "Die aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren, Freigabe entscheiden und Abschluss dokumentieren.\n\nIm Soll-Abgleich fällt aktuell besonders auf: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Weitere Auffälligkeiten betreffen Im ausgewerteten Fall wird „Kontext und Unterlagen zusammenführen\" wiederholt..\n\nAls wichtigster Reibungspunkt zeigt sich derzeit freigaben verlangsamen die umsetzung. Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.",
+      "executiveSummary": "Für den Prozess „Engine Invariant PG01_structured_preserve_merge_guard--column-order“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden. Der wichtigste Soll-Hinweis lautet: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Der deutlichste Reibungspunkt ist derzeit „Hier wird zurückgesprungen: „Unterlagen prüfen““. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.",
+      "processStory": "Die aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren, Freigabe entscheiden und Abschluss dokumentieren.\n\nIm Soll-Abgleich fällt aktuell besonders auf: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Weitere Auffälligkeiten betreffen Im ausgewerteten Fall wird „Kontext und Unterlagen zusammenführen\" wiederholt..\n\nAls wichtigster Reibungspunkt zeigt sich derzeit hier wird zurückgesprungen: „unterlagen prüfen“. Im ausgewerteten Ablauf wird dieser Schritt mehrfach durchlaufen. Das deutet auf Rückfragen, Korrekturen oder Nacharbeit hin.\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.",
       "keyFindings": [
         "Hauptlinie erkannt: Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden.",
         "Wichtigster Soll-Hinweis: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\"..",
-        "Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.",
+        "Wichtigster Reibungspunkt: Hier wird zurückgesprungen: „Unterlagen prüfen“.",
         "6 Schritte sind bereits mit Belegstellen abgesichert."
       ],
       "nextActions": [
@@ -2091,7 +1829,7 @@
         "Mit dieser verifizierten Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.",
         "Ohne verifizierte Zeitbasis bleiben Aussagen zu Durchlauf- oder Wartezeiten bewusst zurückhaltend."
       ],
-      "markdown": "# Mining-Überblick · Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\n**Stand:** 15.4.2026, 19:26:20\n**Einordnung:** Prozessentwurf\n**Datenreife:** Belastbarer Prozessentwurf\n\n## Management-Zusammenfassung\n\nFür den Prozess „Engine Invariant PG01_structured_preserve_merge_guard--column-order“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden. Der wichtigste Soll-Hinweis lautet: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\n## Die Geschichte des aktuell erkennbaren Prozesses\n\nDie aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren, Freigabe entscheiden und Abschluss dokumentieren.\n\nIm Soll-Abgleich fällt aktuell besonders auf: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Weitere Auffälligkeiten betreffen Im ausgewerteten Fall wird „Kontext und Unterlagen zusammenführen\" wiederholt..\n\nAls wichtigster Reibungspunkt zeigt sich derzeit freigaben verlangsamen die umsetzung. Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.\n\n## Wichtigste Befunde\n\n- Hauptlinie erkannt: Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden.\n- Wichtigster Soll-Hinweis: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\"..\n- Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.\n- 6 Schritte sind bereits mit Belegstellen abgesichert.\n\n## Nächste sinnvolle Schritte\n\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n- Wenn möglich verifizierbare Datums- oder Uhrzeitangaben ergänzen, bevor zeitbasierte Hotspots interpretiert werden.\n\n## Wichtige Einordnung der Belastbarkeit\n\n- Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.\n- Die Ergebnisse zeigen derzeit vor allem einen Prozessentwurf und keine belastbaren Unternehmensquoten.\n- Mit dieser verifizierten Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.\n- Ohne verifizierte Zeitbasis bleiben Aussagen zu Durchlauf- oder Wartezeiten bewusst zurückhaltend.",
+      "markdown": "# Mining-Überblick · Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\n**Stand:** 16.4.2026, 18:24:05\n**Einordnung:** Prozessentwurf\n**Datenreife:** Belastbarer Prozessentwurf\n\n## Management-Zusammenfassung\n\nFür den Prozess „Engine Invariant PG01_structured_preserve_merge_guard--column-order“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden. Der wichtigste Soll-Hinweis lautet: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Der deutlichste Reibungspunkt ist derzeit „Hier wird zurückgesprungen: „Unterlagen prüfen““. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\n## Die Geschichte des aktuell erkennbaren Prozesses\n\nDie aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren, Freigabe entscheiden und Abschluss dokumentieren.\n\nIm Soll-Abgleich fällt aktuell besonders auf: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Weitere Auffälligkeiten betreffen Im ausgewerteten Fall wird „Kontext und Unterlagen zusammenführen\" wiederholt..\n\nAls wichtigster Reibungspunkt zeigt sich derzeit hier wird zurückgesprungen: „unterlagen prüfen“. Im ausgewerteten Ablauf wird dieser Schritt mehrfach durchlaufen. Das deutet auf Rückfragen, Korrekturen oder Nacharbeit hin.\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.\n\n## Wichtigste Befunde\n\n- Hauptlinie erkannt: Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden.\n- Wichtigster Soll-Hinweis: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\"..\n- Wichtigster Reibungspunkt: Hier wird zurückgesprungen: „Unterlagen prüfen“.\n- 6 Schritte sind bereits mit Belegstellen abgesichert.\n\n## Nächste sinnvolle Schritte\n\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n- Wenn möglich verifizierbare Datums- oder Uhrzeitangaben ergänzen, bevor zeitbasierte Hotspots interpretiert werden.\n\n## Wichtige Einordnung der Belastbarkeit\n\n- Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.\n- Die Ergebnisse zeigen derzeit vor allem einen Prozessentwurf und keine belastbaren Unternehmensquoten.\n- Mit dieser verifizierten Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.\n- Ohne verifizierte Zeitbasis bleiben Aussagen zu Durchlauf- oder Wartezeiten bewusst zurückhaltend.",
       "analysisMode": "process-draft",
       "basis": {
         "caseCount": 1,
@@ -2099,18 +1837,18 @@
         "evidenceStepCount": 6,
         "variantCount": 1,
         "deviationCount": 2,
-        "hotspotCount": 9,
+        "hotspotCount": 4,
         "readinessHeadline": "Ein erster Prozessentwurf ist vorhanden.",
         "maturityLabel": "Belastbarer Prozessentwurf"
       },
-      "generatedAt": "2026-04-15T17:26:20.684Z"
+      "generatedAt": "2026-04-16T16:24:05.087Z"
     },
     "handoverDrafts": [
       {
         "audience": "management",
         "label": "Management-Kurzbrief",
         "summary": "Knapper Überblick für Entscheidungsträger mit Kernaussage, Risiken und nächsten Schritten.",
-        "text": "Management-Kurzbrief | Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\nStand: 15.4.2026, 19:26:20\nEinordnung: Prozessentwurf\n\nKernaussage\nFür den Prozess „Engine Invariant PG01_structured_preserve_merge_guard--column-order“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden. Der wichtigste Soll-Hinweis lautet: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\nWichtigste Befunde\n- Hauptlinie erkannt: Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden.\n- Wichtigster Soll-Hinweis: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\"..\n- Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.\n- 6 Schritte sind bereits mit Belegstellen abgesichert.\n\nEmpfohlene nächste Schritte\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n\nEinordnung der Belastbarkeit\nAktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten."
+        "text": "Management-Kurzbrief | Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\nStand: 16.4.2026, 18:24:05\nEinordnung: Prozessentwurf\n\nKernaussage\nFür den Prozess „Engine Invariant PG01_structured_preserve_merge_guard--column-order“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden. Der wichtigste Soll-Hinweis lautet: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Der deutlichste Reibungspunkt ist derzeit „Hier wird zurückgesprungen: „Unterlagen prüfen““. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\nWichtigste Befunde\n- Hauptlinie erkannt: Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden.\n- Wichtigster Soll-Hinweis: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\"..\n- Wichtigster Reibungspunkt: Hier wird zurückgesprungen: „Unterlagen prüfen“.\n- 6 Schritte sind bereits mit Belegstellen abgesichert.\n\nEmpfohlene nächste Schritte\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n\nEinordnung der Belastbarkeit\nAktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten."
       },
       {
         "audience": "process_owner",
@@ -2122,13 +1860,13 @@
         "audience": "operations",
         "label": "Arbeitsübergabe für das Team",
         "summary": "Konkrete Arbeits- und Prüfhinweise für die nächste operative Schleife.",
-        "text": "Arbeitsübergabe für das operative Team | Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\nBitte als Nächstes prüfen\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n- Wenn möglich verifizierbare Datums- oder Uhrzeitangaben ergänzen, bevor zeitbasierte Hotspots interpretiert werden.\n\nWichtige Reibungspunkte\n- Freigaben verlangsamen die Umsetzung: Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa\n- Hier wird zurückgesprungen: „Unterlagen prüfen“: Im ausgewerteten Ablauf wird dieser Schritt mehrfach durchlaufen. Das deutet auf Rückfragen, Korrekturen oder Nacharbeit hin.\n- Implizite Koordination bindet viele Beteiligte: Im ausgewerteten Material zeigt sich dieses Reibungssignal: Implizite Koordination bindet viele Beteiligte. Beleg: CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen\n- Informationen müssen aus mehreren Systemen zusammengeführt werden: Im ausgewerteten Material zeigt sich dieses Reibungssignal: Informationen müssen aus mehreren Systemen zusammengeführt werden. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR\n\nDatenlage\n1 Quelle wurde ausgewertet. Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten."
+        "text": "Arbeitsübergabe für das operative Team | Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\nBitte als Nächstes prüfen\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n- Wenn möglich verifizierbare Datums- oder Uhrzeitangaben ergänzen, bevor zeitbasierte Hotspots interpretiert werden.\n\nWichtige Reibungspunkte\n- Hier wird zurückgesprungen: „Unterlagen prüfen“: Im ausgewerteten Ablauf wird dieser Schritt mehrfach durchlaufen. Das deutet auf Rückfragen, Korrekturen oder Nacharbeit hin.\n- Viele Übergaben zwischen Fachbereich → Teamleitung: Im ausgewerteten Ablauf gibt es an dieser Stelle eine Rollenübergabe. Das ist kein Fehler, aber ein möglicher Prüfpunkt für Medienbrüche oder Abstimmungsaufwand.\n- Viele Übergaben zwischen Sachbearbeitung → Fachbereich: Im ausgewerteten Ablauf gibt es an dieser Stelle eine Rollenübergabe. Das ist kein Fehler, aber ein möglicher Prüfpunkt für Medienbrüche oder Abstimmungsaufwand.\n- Viele Übergaben zwischen Teamleitung → Kundenservice: Im ausgewerteten Ablauf gibt es an dieser Stelle eine Rollenübergabe. Das ist kein Fehler, aber ein möglicher Prüfpunkt für Medienbrüche oder Abstimmungsaufwand.\n\nDatenlage\n1 Quelle wurde ausgewertet. Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten."
       },
       {
         "audience": "workshop",
         "label": "Workshop-Fahrplan",
         "summary": "Erzählt den Stand verständlich weiter und liefert gute Leitfragen für den nächsten Termin.",
-        "text": "Workshop-Fahrplan | Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\nSo lässt sich die Lage im Termin kurz erzählen\nDie aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren, Freigabe entscheiden und Abschluss dokumentieren.\n\nIm Soll-Abgleich fällt aktuell besonders auf: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Weitere Auffälligkeiten betreffen Im ausgewerteten Fall wird „Kontext und Unterlagen zusammenführen\" wiederholt..\n\nAls wichtigster Reibungspunkt zeigt sich derzeit freigaben verlangsamen die umsetzung. Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.\n\nDrei Fragen für den nächsten Workshop\n- Welche der erkannten Hauptschritte sind fachlich korrekt und welche müssen umbenannt oder getrennt werden?\n- Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".\n- Zweiten Fall ergänzen"
+        "text": "Workshop-Fahrplan | Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\nSo lässt sich die Lage im Termin kurz erzählen\nDie aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren, Freigabe entscheiden und Abschluss dokumentieren.\n\nIm Soll-Abgleich fällt aktuell besonders auf: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Weitere Auffälligkeiten betreffen Im ausgewerteten Fall wird „Kontext und Unterlagen zusammenführen\" wiederholt..\n\nAls wichtigster Reibungspunkt zeigt sich derzeit hier wird zurückgesprungen: „unterlagen prüfen“. Im ausgewerteten Ablauf wird dieser Schritt mehrfach durchlaufen. Das deutet auf Rückfragen, Korrekturen oder Nacharbeit hin.\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.\n\nDrei Fragen für den nächsten Workshop\n- Welche der erkannten Hauptschritte sind fachlich korrekt und welche müssen umbenannt oder getrennt werden?\n- Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".\n- Zweiten Fall ergänzen"
       }
     ],
     "qualityAssessment": {
@@ -2158,7 +1896,7 @@
         {
           "key": "roleQuality",
           "label": "Rollenqualität",
-          "score": 80,
+          "score": 88,
           "level": "high",
           "reason": "6 von 6 Schritten mit Rollenbezug."
         },
@@ -2179,7 +1917,7 @@
         {
           "key": "evidenceCoverage",
           "label": "Evidenzabdeckung",
-          "score": 99,
+          "score": 91,
           "level": "high",
           "reason": "6 von 6 Schritten mit Evidenzanker."
         },
@@ -2240,7 +1978,7 @@
   "sourceMaterial": {
     "cases": [
       {
-        "id": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "name": "PG01 · Structured Preserve · Merge Guard",
         "narrative": "PG01 · Structured Preserve · Merge Guard\n\nZweck des Prüfdokuments: Dieses Dokument prüft, ob hochwertige strukturierte Sollprozessdokumente quellentreu erhalten bleiben. Insbesondere dürfen semantisch ähnliche, aber unterschiedliche Standardschritte nicht zusammengelegt werden.\n\n1. Zielbild\n\nEin klar nummerierter Standardablauf soll unverändert als Prozessentwurf erhalten bleiben.\n\n2. Rollen und Systeme\n\n| Systeme | Rolle | Aufgabe |\n| --- | --- | --- |\n| ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung |\n| DMS, Fachtool | Fachbereich | inhaltliche Bewertung |\n| ERP, BI | Teamleitung | Freigabeentscheidung |\n| CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation |\n\n3. Standardablauf\n\n| Schritt | Nr. | Verantwortung | Ergebnis |\n| --- | --- | --- | --- |\n| Vorgang anlegen | 1 | Sachbearbeitung | Fallnummer vorhanden |\n| Unterlagen prüfen | 2 | Sachbearbeitung | Vollständigkeitsstatus bekannt |\n| Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt |\n| Abweichung klassifizieren | 4 | Fachbereich | Abweichungsart dokumentiert |\n| Freigabe entscheiden | 5 | Teamleitung | Entscheidung dokumentiert |\n| Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen |\n\n4. Abnahme für diesen Micro-Test\n\nErwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben. Die Schritte „Unterlagen prüfen“ und „Fehlende Unterlagen nachfordern“ dürfen nicht zusammengelegt werden. Die Schritte „Abweichung klassifizieren“ und „Freigabe entscheiden“ dürfen nicht semantisch verschmolzen werden.",
         "rawText": "PG01 · Structured Preserve · Merge Guard\n\nZweck des Prüfdokuments: Dieses Dokument prüft, ob hochwertige strukturierte Sollprozessdokumente quellentreu erhalten bleiben. Insbesondere dürfen semantisch ähnliche, aber unterschiedliche Standardschritte nicht zusammengelegt werden.\n\n1. Zielbild\n\nEin klar nummerierter Standardablauf soll unverändert als Prozessentwurf erhalten bleiben.\n\n2. Rollen und Systeme\n\n| Systeme | Rolle | Aufgabe |\n| --- | --- | --- |\n| ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung |\n| DMS, Fachtool | Fachbereich | inhaltliche Bewertung |\n| ERP, BI | Teamleitung | Freigabeentscheidung |\n| CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation |\n\n3. Standardablauf\n\n| Schritt | Nr. | Verantwortung | Ergebnis |\n| --- | --- | --- | --- |\n| Vorgang anlegen | 1 | Sachbearbeitung | Fallnummer vorhanden |\n| Unterlagen prüfen | 2 | Sachbearbeitung | Vollständigkeitsstatus bekannt |\n| Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt |\n| Abweichung klassifizieren | 4 | Fachbereich | Abweichungsart dokumentiert |\n| Freigabe entscheiden | 5 | Teamleitung | Entscheidung dokumentiert |\n| Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen |\n\n4. Abnahme für diesen Micro-Test\n\nErwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben. Die Schritte „Unterlagen prüfen“ und „Fehlende Unterlagen nachfordern“ dürfen nicht zusammengelegt werden. Die Schritte „Abweichung klassifizieren“ und „Freigabe entscheiden“ dürfen nicht semantisch verschmolzen werden.",
@@ -2264,19 +2002,19 @@
           "Entscheidungen und Rollen ergänzen",
           "Zusatzmaterial nur unterstützend nutzen"
         ],
-        "createdAt": "2026-04-15T17:26:20.661Z",
-        "updatedAt": "2026-04-15T17:26:20.671Z"
+        "createdAt": "2026-04-16T16:24:05.065Z",
+        "updatedAt": "2026-04-16T16:24:05.074Z"
       }
     ],
     "observations": [
       {
-        "id": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
-        "sourceCaseId": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
+        "sourceCaseId": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "label": "Vorgang anlegen",
         "originalStepLabel": "Vorgang anlegen",
         "stepWasPreserved": true,
         "evidenceSnippet": "Vorgang anlegen | 1 | Sachbearbeitung | Fallnummer vorhanden",
-        "candidateId": "17943ccd-ca4f-4a2c-b944-978ffe25218b",
+        "candidateId": "77e31a97-bd2b-4406-bc38-823ad9b896d0",
         "evidenceAnchor": "Vorgang anlegen | 1 | Sachbearbeitung | Fallnummer vorhanden",
         "contextWindow": "Vorgang anlegen | Fallnummer vorhanden | Vorgang anlegen | 1 | Sachbearbeitung | Fallnummer vorhanden",
         "originChannel": "table-row",
@@ -2303,17 +2041,17 @@
         "kind": "step",
         "sequenceIndex": 0,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-15T17:26:20.662Z"
+        "createdAt": "2026-04-16T16:24:05.065Z"
       },
       {
-        "id": "85716aca-e90f-498f-95be-3b1624400d49",
-        "sourceCaseId": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
+        "sourceCaseId": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "label": "Unterlagen prüfen",
         "originalStepLabel": "Unterlagen prüfen",
         "canonicalStepFamily": "Kontext und Unterlagen zusammenführen",
         "stepWasPreserved": true,
         "evidenceSnippet": "Unterlagen prüfen | 2 | Sachbearbeitung | Vollständigkeitsstatus bekannt",
-        "candidateId": "f9930bb2-ebf5-43c0-a497-74d636619da6",
+        "candidateId": "0bcd2d0f-6c84-4dd4-9329-f7054dbc8efb",
         "evidenceAnchor": "Unterlagen prüfen | 2 | Sachbearbeitung | Vollständigkeitsstatus bekannt",
         "contextWindow": "Unterlagen prüfen | Vollständigkeitsstatus bekannt | Unterlagen prüfen | 2 | Sachbearbeitung | Vollständigkeitsstatus bekannt",
         "originChannel": "table-row",
@@ -2340,18 +2078,18 @@
         "kind": "step",
         "sequenceIndex": 1,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-15T17:26:20.662Z"
+        "createdAt": "2026-04-16T16:24:05.065Z"
       },
       {
-        "id": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
-        "sourceCaseId": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
+        "sourceCaseId": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "label": "Fehlende Unterlagen nachfordern",
         "originalStepLabel": "Fehlende Unterlagen nachfordern",
         "canonicalStepFamily": "Kontext und Unterlagen zusammenführen",
         "stepWasPreserved": true,
         "mergeSkippedBecauseStructured": true,
         "evidenceSnippet": "Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
-        "candidateId": "39d492f7-f3ec-408c-a17e-144f31d3cd4e",
+        "candidateId": "e0f00735-02db-404a-90e1-c41f27c76154",
         "evidenceAnchor": "Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
         "contextWindow": "Fehlende Unterlagen nachfordern | Nachforderung versandt | Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
         "originChannel": "table-row",
@@ -2378,17 +2116,17 @@
         "kind": "step",
         "sequenceIndex": 2,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-15T17:26:20.662Z"
+        "createdAt": "2026-04-16T16:24:05.065Z"
       },
       {
-        "id": "956c7951-4395-4a63-afc7-28f669d9d670",
-        "sourceCaseId": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
+        "sourceCaseId": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "label": "Abweichung klassifizieren",
         "originalStepLabel": "Abweichung klassifizieren",
         "canonicalStepFamily": "Priorität festlegen und fehlende Angaben anfordern",
         "stepWasPreserved": true,
         "evidenceSnippet": "Abweichung klassifizieren | 4 | Fachbereich | Abweichungsart dokumentiert",
-        "candidateId": "fd27be82-fce4-4a7a-9710-92d79cf891c2",
+        "candidateId": "6892c946-ab46-4ada-8f1d-2e3336bdf3d7",
         "evidenceAnchor": "Abweichung klassifizieren | 4 | Fachbereich | Abweichungsart dokumentiert",
         "contextWindow": "Abweichung klassifizieren | Abweichungsart dokumentiert | Abweichung klassifizieren | 4 | Fachbereich | Abweichungsart dokumentiert",
         "originChannel": "table-row",
@@ -2415,17 +2153,17 @@
         "kind": "step",
         "sequenceIndex": 3,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-15T17:26:20.663Z"
+        "createdAt": "2026-04-16T16:24:05.066Z"
       },
       {
-        "id": "e53ff62c-9479-4332-8c04-80cd965e483a",
-        "sourceCaseId": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
+        "sourceCaseId": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "label": "Freigabe entscheiden",
         "originalStepLabel": "Freigabe entscheiden",
         "canonicalStepFamily": "Einkaufs- und Budgetfreigabe einholen",
         "stepWasPreserved": true,
         "evidenceSnippet": "Freigabe entscheiden | 5 | Teamleitung | Entscheidung dokumentiert",
-        "candidateId": "827f4ca8-e606-487f-92cd-b68a96f7b0bf",
+        "candidateId": "6a37a288-4adc-4266-980a-c52ad819a4ce",
         "evidenceAnchor": "Freigabe entscheiden | 5 | Teamleitung | Entscheidung dokumentiert",
         "contextWindow": "Freigabe entscheiden | Entscheidung dokumentiert | Freigabe entscheiden | 5 | Teamleitung | Entscheidung dokumentiert",
         "originChannel": "table-row",
@@ -2452,17 +2190,17 @@
         "kind": "step",
         "sequenceIndex": 4,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-15T17:26:20.663Z"
+        "createdAt": "2026-04-16T16:24:05.066Z"
       },
       {
-        "id": "d9ec052c-6028-40cc-acfe-db605be72146",
-        "sourceCaseId": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
+        "sourceCaseId": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "label": "Abschluss dokumentieren",
         "originalStepLabel": "Abschluss dokumentieren",
         "canonicalStepFamily": "Start bestätigen und Nacharbeiten dokumentieren",
         "stepWasPreserved": true,
         "evidenceSnippet": "Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-        "candidateId": "dd13ca54-6973-425f-b6fd-42962d619463",
+        "candidateId": "864b5fba-d550-4818-9baf-4e6ce2a6190f",
         "evidenceAnchor": "Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
         "contextWindow": "Abschluss dokumentieren | Fall abgeschlossen | Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
         "originChannel": "table-row",
@@ -2489,34 +2227,24 @@
         "kind": "step",
         "sequenceIndex": 5,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-15T17:26:20.663Z"
+        "createdAt": "2026-04-16T16:24:05.067Z"
       }
     ],
     "supportSignals": [
       {
-        "label": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-        "snippet": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR"
-      },
-      {
-        "label": "Kommunikation muss Unsicherheit professionell abfedern",
-        "snippet": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR"
-      },
-      {
-        "label": "Freigaben verlangsamen die Umsetzung",
-        "snippet": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa"
-      },
-      {
-        "label": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-        "snippet": "Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben."
-      },
-      {
-        "label": "Implizite Koordination bindet viele Beteiligte",
-        "snippet": "CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen"
+        "label": "Onboarding erfordert enge Abstimmung zwischen HR, IT und Fachbereich",
+        "snippet": "Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
+        "evidenceAnchor": "Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
+        "contextWindow": "Fehlende Unterlagen nachfordern | Nachforderung versandt | Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
+        "originChannel": "table-row",
+        "sourceFragmentType": "table-row",
+        "confidence": "medium",
+        "status": "support-only"
       }
     ],
     "extractionCandidates": [
       {
-        "candidateId": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6:step",
+        "candidateId": "39a4d69f-ce46-4bb1-98d3-86904379e0b2:step",
         "candidateType": "step",
         "rawLabel": "Vorgang anlegen",
         "normalizedLabel": "Vorgang anlegen",
@@ -2538,12 +2266,12 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
+        "sourceRef": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
         "status": "merged",
         "supportClass": "core-step"
       },
       {
-        "candidateId": "4513a162-530a-4240-aec7-6dd0d75be07e",
+        "candidateId": "57361942-9acb-4fbd-b83a-0309d3f30828",
         "candidateType": "role",
         "rawLabel": "Sachbearbeitung",
         "normalizedLabel": "Sachbearbeitung",
@@ -2554,13 +2282,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
-        "relatedCandidateId": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6:step",
+        "sourceRef": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
+        "relatedCandidateId": "39a4d69f-ce46-4bb1-98d3-86904379e0b2:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "d9706bc2-c7b9-47cc-ac36-a82ad0ec42dc",
+        "candidateId": "5d751515-0778-4ad7-8605-f9b3541687ee",
         "candidateType": "system",
         "rawLabel": "ERP",
         "normalizedLabel": "ERP",
@@ -2571,13 +2299,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
-        "relatedCandidateId": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6:step",
+        "sourceRef": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
+        "relatedCandidateId": "39a4d69f-ce46-4bb1-98d3-86904379e0b2:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "32b3772d-e2b2-4aef-ada2-34ea1a6fe517",
+        "candidateId": "910e3b3f-90db-43f2-95b6-6d9dce26de37",
         "candidateType": "system",
         "rawLabel": "DMS",
         "normalizedLabel": "DMS",
@@ -2588,13 +2316,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
-        "relatedCandidateId": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6:step",
+        "sourceRef": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
+        "relatedCandidateId": "39a4d69f-ce46-4bb1-98d3-86904379e0b2:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "85716aca-e90f-498f-95be-3b1624400d49:step",
+        "candidateId": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6:step",
         "candidateType": "step",
         "rawLabel": "Unterlagen prüfen",
         "normalizedLabel": "Unterlagen prüfen",
@@ -2617,12 +2345,12 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "85716aca-e90f-498f-95be-3b1624400d49",
+        "sourceRef": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
         "status": "merged",
         "supportClass": "core-step"
       },
       {
-        "candidateId": "94f924ee-94f1-4d56-8f64-41a260a63b4a",
+        "candidateId": "9f01073f-6ac9-4a46-bad1-0cb53b27939c",
         "candidateType": "role",
         "rawLabel": "Sachbearbeitung",
         "normalizedLabel": "Sachbearbeitung",
@@ -2633,13 +2361,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "85716aca-e90f-498f-95be-3b1624400d49",
-        "relatedCandidateId": "85716aca-e90f-498f-95be-3b1624400d49:step",
+        "sourceRef": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
+        "relatedCandidateId": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "cadbfcf9-7d2a-4cf4-8465-c73e3e5bfde4",
+        "candidateId": "892b2bbe-d23d-4a1c-bf21-d54b479a3ab9",
         "candidateType": "system",
         "rawLabel": "ERP",
         "normalizedLabel": "ERP",
@@ -2650,13 +2378,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "85716aca-e90f-498f-95be-3b1624400d49",
-        "relatedCandidateId": "85716aca-e90f-498f-95be-3b1624400d49:step",
+        "sourceRef": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
+        "relatedCandidateId": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "a4ab0e9d-2185-4038-8292-dfa2266bdd30",
+        "candidateId": "df581fb2-8d57-4136-a31e-a568a573a429",
         "candidateType": "system",
         "rawLabel": "DMS",
         "normalizedLabel": "DMS",
@@ -2667,13 +2395,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "85716aca-e90f-498f-95be-3b1624400d49",
-        "relatedCandidateId": "85716aca-e90f-498f-95be-3b1624400d49:step",
+        "sourceRef": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
+        "relatedCandidateId": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc:step",
+        "candidateId": "a4c36d96-cd4d-4c5f-937f-54069c66f691:step",
         "candidateType": "step",
         "rawLabel": "Fehlende Unterlagen nachfordern",
         "normalizedLabel": "Fehlende Unterlagen nachfordern",
@@ -2697,12 +2425,12 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
+        "sourceRef": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
         "status": "merged",
         "supportClass": "core-step"
       },
       {
-        "candidateId": "91a94580-d919-4a4f-8b55-e5f529fc29bf",
+        "candidateId": "7f7ce296-8840-4fec-8fe0-12cc223f74f7",
         "candidateType": "role",
         "rawLabel": "Sachbearbeitung",
         "normalizedLabel": "Sachbearbeitung",
@@ -2713,13 +2441,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
-        "relatedCandidateId": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc:step",
+        "sourceRef": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
+        "relatedCandidateId": "a4c36d96-cd4d-4c5f-937f-54069c66f691:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "fca0734f-ef88-4b2a-986d-20ea3915e198",
+        "candidateId": "7f8cbd50-a42b-4efe-9e09-9c1fd5f38a6f",
         "candidateType": "system",
         "rawLabel": "ERP",
         "normalizedLabel": "ERP",
@@ -2730,13 +2458,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
-        "relatedCandidateId": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc:step",
+        "sourceRef": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
+        "relatedCandidateId": "a4c36d96-cd4d-4c5f-937f-54069c66f691:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "bb2905e0-3eab-4665-b2e2-16ea83c66583",
+        "candidateId": "def5aa9c-d3b7-4a95-932a-35ba51375989",
         "candidateType": "system",
         "rawLabel": "DMS",
         "normalizedLabel": "DMS",
@@ -2747,13 +2475,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
-        "relatedCandidateId": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc:step",
+        "sourceRef": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
+        "relatedCandidateId": "a4c36d96-cd4d-4c5f-937f-54069c66f691:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "956c7951-4395-4a63-afc7-28f669d9d670:step",
+        "candidateId": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501:step",
         "candidateType": "step",
         "rawLabel": "Abweichung klassifizieren",
         "normalizedLabel": "Abweichung klassifizieren",
@@ -2776,12 +2504,12 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "956c7951-4395-4a63-afc7-28f669d9d670",
+        "sourceRef": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
         "status": "merged",
         "supportClass": "core-step"
       },
       {
-        "candidateId": "85b8b7a2-55b0-49d1-9850-c1636f18ffbe",
+        "candidateId": "6ad07f4a-06ee-4dc5-9951-ca5003937529",
         "candidateType": "role",
         "rawLabel": "Fachbereich",
         "normalizedLabel": "Fachbereich",
@@ -2792,13 +2520,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "956c7951-4395-4a63-afc7-28f669d9d670",
-        "relatedCandidateId": "956c7951-4395-4a63-afc7-28f669d9d670:step",
+        "sourceRef": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
+        "relatedCandidateId": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "90ad7646-f3e8-4686-8cb2-b262c9eb27cc",
+        "candidateId": "7ff0b98e-b09c-4eb2-be73-7a3488104f4b",
         "candidateType": "system",
         "rawLabel": "DMS",
         "normalizedLabel": "DMS",
@@ -2809,13 +2537,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "956c7951-4395-4a63-afc7-28f669d9d670",
-        "relatedCandidateId": "956c7951-4395-4a63-afc7-28f669d9d670:step",
+        "sourceRef": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
+        "relatedCandidateId": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "fca7e92e-f41a-43ab-b0dd-2d068e4f49ea",
+        "candidateId": "510bf088-aad2-4529-8f12-c36bdfc6eec7",
         "candidateType": "system",
         "rawLabel": "Fachtool",
         "normalizedLabel": "Fachtool",
@@ -2826,13 +2554,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "956c7951-4395-4a63-afc7-28f669d9d670",
-        "relatedCandidateId": "956c7951-4395-4a63-afc7-28f669d9d670:step",
+        "sourceRef": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
+        "relatedCandidateId": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "e53ff62c-9479-4332-8c04-80cd965e483a:step",
+        "candidateId": "a59bc3da-3dbf-44f7-825a-9d91149cb83f:step",
         "candidateType": "step",
         "rawLabel": "Freigabe entscheiden",
         "normalizedLabel": "Freigabe entscheiden",
@@ -2855,12 +2583,12 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "e53ff62c-9479-4332-8c04-80cd965e483a",
+        "sourceRef": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
         "status": "merged",
         "supportClass": "core-step"
       },
       {
-        "candidateId": "80481e95-1770-4707-8cf3-0b8a795528ef",
+        "candidateId": "d8ffff48-335d-4cc3-b464-8dee9b3642a7",
         "candidateType": "role",
         "rawLabel": "Teamleitung",
         "normalizedLabel": "Teamleitung",
@@ -2871,13 +2599,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "e53ff62c-9479-4332-8c04-80cd965e483a",
-        "relatedCandidateId": "e53ff62c-9479-4332-8c04-80cd965e483a:step",
+        "sourceRef": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
+        "relatedCandidateId": "a59bc3da-3dbf-44f7-825a-9d91149cb83f:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "e194e850-ace0-4b9c-aa67-6fd735042c57",
+        "candidateId": "a1286d9e-190d-44c2-84ce-b7d51b1ae215",
         "candidateType": "system",
         "rawLabel": "ERP",
         "normalizedLabel": "ERP",
@@ -2888,13 +2616,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "e53ff62c-9479-4332-8c04-80cd965e483a",
-        "relatedCandidateId": "e53ff62c-9479-4332-8c04-80cd965e483a:step",
+        "sourceRef": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
+        "relatedCandidateId": "a59bc3da-3dbf-44f7-825a-9d91149cb83f:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "659d0c06-ee0c-495d-96d7-363abb9215c4",
+        "candidateId": "49182cd0-09e8-4046-abed-11f76a0ae8d8",
         "candidateType": "system",
         "rawLabel": "BI",
         "normalizedLabel": "BI",
@@ -2905,13 +2633,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "e53ff62c-9479-4332-8c04-80cd965e483a",
-        "relatedCandidateId": "e53ff62c-9479-4332-8c04-80cd965e483a:step",
+        "sourceRef": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
+        "relatedCandidateId": "a59bc3da-3dbf-44f7-825a-9d91149cb83f:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "d9ec052c-6028-40cc-acfe-db605be72146:step",
+        "candidateId": "fb7f0f96-7b8e-4667-bcc2-de78445ea667:step",
         "candidateType": "step",
         "rawLabel": "Abschluss dokumentieren",
         "normalizedLabel": "Abschluss dokumentieren",
@@ -2934,12 +2662,12 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "d9ec052c-6028-40cc-acfe-db605be72146",
+        "sourceRef": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
         "status": "merged",
         "supportClass": "core-step"
       },
       {
-        "candidateId": "48f34104-6c93-40fc-9784-9c1271cac904",
+        "candidateId": "3c4634df-7d32-40b8-a1be-b36e6bacf5c7",
         "candidateType": "role",
         "rawLabel": "Kundenservice",
         "normalizedLabel": "Kundenservice",
@@ -2950,13 +2678,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "d9ec052c-6028-40cc-acfe-db605be72146",
-        "relatedCandidateId": "d9ec052c-6028-40cc-acfe-db605be72146:step",
+        "sourceRef": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
+        "relatedCandidateId": "fb7f0f96-7b8e-4667-bcc2-de78445ea667:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "7a22d53b-f3d5-4337-96af-54aa8929a7d3",
+        "candidateId": "6dde3ffd-6ff3-472f-966c-8164fcfb262a",
         "candidateType": "system",
         "rawLabel": "CRM",
         "normalizedLabel": "CRM",
@@ -2967,13 +2695,13 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "d9ec052c-6028-40cc-acfe-db605be72146",
-        "relatedCandidateId": "d9ec052c-6028-40cc-acfe-db605be72146:step",
+        "sourceRef": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
+        "relatedCandidateId": "fb7f0f96-7b8e-4667-bcc2-de78445ea667:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "48e5c2b9-56a1-426a-bcee-4ddcf4dd95cd",
+        "candidateId": "3a94a3b3-7879-4bf3-9cca-a9c929097dd5",
         "candidateType": "system",
         "rawLabel": "Mail",
         "normalizedLabel": "Mail",
@@ -2984,193 +2712,33 @@
         "originChannel": "table-row",
         "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
-        "sourceRef": "d9ec052c-6028-40cc-acfe-db605be72146",
-        "relatedCandidateId": "d9ec052c-6028-40cc-acfe-db605be72146:step",
+        "sourceRef": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
+        "relatedCandidateId": "fb7f0f96-7b8e-4667-bcc2-de78445ea667:step",
         "status": "candidate",
         "supportClass": "support-evidence"
       },
       {
-        "candidateId": "d40cf483-2c9f-4c0a-b4fe-f3da562d1802",
-        "candidateType": "signal",
-        "rawLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-        "normalizedLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-        "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-        "contextWindow": "Informationen müssen aus mehreren Systemen zusammengeführt werden | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-        "confidence": "medium",
-        "originChannel": "paragraph",
-        "sourceFragmentType": "paragraph",
-        "routingClass": "structured-procedure",
-        "sourceRef": "issue-evidence:1",
-        "status": "support-only",
-        "supportClass": "issue-signal",
-        "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-      },
-      {
-        "candidateId": "57f256a8-e05d-4d24-bd46-c5554e8f1b75",
-        "candidateType": "signal",
-        "rawLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-        "normalizedLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-        "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-        "contextWindow": "Kommunikation muss Unsicherheit professionell abfedern | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-        "confidence": "medium",
-        "originChannel": "paragraph",
-        "sourceFragmentType": "paragraph",
-        "routingClass": "structured-procedure",
-        "sourceRef": "issue-evidence:2",
-        "status": "support-only",
-        "supportClass": "issue-signal",
-        "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-      },
-      {
-        "candidateId": "d3e73ffa-ea69-4a63-85b8-ea25859a3de9",
-        "candidateType": "signal",
-        "rawLabel": "Freigaben verlangsamen die Umsetzung",
-        "normalizedLabel": "Freigaben verlangsamen die Umsetzung",
-        "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa",
-        "contextWindow": "Freigaben verlangsamen die Umsetzung | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vor",
-        "confidence": "medium",
-        "originChannel": "paragraph",
-        "sourceFragmentType": "paragraph",
-        "routingClass": "structured-procedure",
-        "sourceRef": "issue-evidence:3",
-        "status": "support-only",
-        "supportClass": "issue-signal",
-        "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-      },
-      {
-        "candidateId": "7c1e5253-4b96-49d5-9f13-8fd67524f61f",
-        "candidateType": "signal",
-        "rawLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-        "normalizedLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-        "evidenceAnchor": "Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-        "contextWindow": "Wartezeiten und Koordinationsaufwand belasten den Ablauf | Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-        "confidence": "medium",
-        "originChannel": "paragraph",
-        "sourceFragmentType": "paragraph",
-        "routingClass": "structured-procedure",
-        "sourceRef": "issue-evidence:4",
-        "status": "support-only",
-        "supportClass": "issue-signal",
-        "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-      },
-      {
-        "candidateId": "ecf601c5-d12f-4715-8d23-897fdc7f0f52",
-        "candidateType": "signal",
-        "rawLabel": "Implizite Koordination bindet viele Beteiligte",
-        "normalizedLabel": "Implizite Koordination bindet viele Beteiligte",
-        "evidenceAnchor": "CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-        "contextWindow": "Implizite Koordination bindet viele Beteiligte | CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-        "confidence": "medium",
-        "originChannel": "paragraph",
-        "sourceFragmentType": "paragraph",
-        "routingClass": "structured-procedure",
-        "sourceRef": "issue-evidence:5",
-        "status": "support-only",
-        "supportClass": "issue-signal",
-        "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-      },
-      {
-        "candidateId": "1d7ccb8f-ea47-4ad8-b2e2-7bac4316f66e",
+        "candidateId": "a7ea6712-d9c4-4639-baba-f51722a743ea",
         "candidateType": "signal",
         "rawLabel": "Onboarding erfordert enge Abstimmung zwischen HR, IT und Fachbereich",
         "normalizedLabel": "Onboarding erfordert enge Abstimmung zwischen HR, IT und Fachbereich",
-        "evidenceAnchor": "Insbesondere dürfen semantisch ähnliche, aber unterschiedliche Standardschritte nicht zusammengelegt werden. | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidu",
-        "contextWindow": "Onboarding erfordert enge Abstimmung zwischen HR, IT und Fachbereich | Insbesondere dürfen semantisch ähnliche, aber unterschiedliche Standardschritte nicht zusammengelegt werden. | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich",
+        "evidenceAnchor": "Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
+        "contextWindow": "Fehlende Unterlagen nachfordern | Nachforderung versandt | Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
         "confidence": "medium",
-        "originChannel": "paragraph",
-        "sourceFragmentType": "paragraph",
+        "originChannel": "table-row",
+        "sourceFragmentType": "table-row",
         "routingClass": "structured-procedure",
         "sourceRef": "issue-evidence:1",
         "status": "support-only",
-        "supportClass": "issue-signal",
-        "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-      },
-      {
-        "candidateId": "2730b238-1a93-4896-a157-4294b1cd0c85",
-        "candidateType": "signal",
-        "rawLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-        "normalizedLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-        "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-        "contextWindow": "Informationen müssen aus mehreren Systemen zusammengeführt werden | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-        "confidence": "medium",
-        "originChannel": "paragraph",
-        "sourceFragmentType": "paragraph",
-        "routingClass": "structured-procedure",
-        "sourceRef": "issue-evidence:2",
-        "status": "support-only",
-        "supportClass": "issue-signal",
-        "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-      },
-      {
-        "candidateId": "798fc96b-8ec1-4e32-90f6-745d70fb8d69",
-        "candidateType": "signal",
-        "rawLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-        "normalizedLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-        "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-        "contextWindow": "Kommunikation muss Unsicherheit professionell abfedern | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-        "confidence": "medium",
-        "originChannel": "paragraph",
-        "sourceFragmentType": "paragraph",
-        "routingClass": "structured-procedure",
-        "sourceRef": "issue-evidence:3",
-        "status": "support-only",
-        "supportClass": "issue-signal",
-        "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-      },
-      {
-        "candidateId": "ec48a2ac-47bd-4151-a1cd-5897c2ea1d7f",
-        "candidateType": "signal",
-        "rawLabel": "Freigaben verlangsamen die Umsetzung",
-        "normalizedLabel": "Freigaben verlangsamen die Umsetzung",
-        "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa",
-        "contextWindow": "Freigaben verlangsamen die Umsetzung | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vor",
-        "confidence": "medium",
-        "originChannel": "paragraph",
-        "sourceFragmentType": "paragraph",
-        "routingClass": "structured-procedure",
-        "sourceRef": "issue-evidence:4",
-        "status": "support-only",
-        "supportClass": "issue-signal",
-        "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-      },
-      {
-        "candidateId": "c4d57bbc-5ead-4fa9-b213-7f68c3baa2b9",
-        "candidateType": "signal",
-        "rawLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-        "normalizedLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-        "evidenceAnchor": "Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-        "contextWindow": "Wartezeiten und Koordinationsaufwand belasten den Ablauf | Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-        "confidence": "medium",
-        "originChannel": "paragraph",
-        "sourceFragmentType": "paragraph",
-        "routingClass": "structured-procedure",
-        "sourceRef": "issue-evidence:5",
-        "status": "support-only",
-        "supportClass": "issue-signal",
-        "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-      },
-      {
-        "candidateId": "7bfba162-abba-4308-af5a-9698b329e0f7",
-        "candidateType": "signal",
-        "rawLabel": "Implizite Koordination bindet viele Beteiligte",
-        "normalizedLabel": "Implizite Koordination bindet viele Beteiligte",
-        "evidenceAnchor": "CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-        "contextWindow": "Implizite Koordination bindet viele Beteiligte | CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-        "confidence": "medium",
-        "originChannel": "paragraph",
-        "sourceFragmentType": "paragraph",
-        "routingClass": "structured-procedure",
-        "sourceRef": "issue-evidence:6",
-        "status": "support-only",
-        "supportClass": "issue-signal",
+        "supportClass": "friction-signal",
         "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
       }
     ],
     "candidateReview": {
-      "totalCandidates": 35,
+      "totalCandidates": 25,
       "mergedCoreSteps": 6,
       "rejectedCoreSteps": 0,
-      "supportOnlyCandidates": 11,
+      "supportOnlyCandidates": 1,
       "localRoleAssignments": 6,
       "localSystemAssignments": 12,
       "weakFragmentCount": 0
@@ -3180,7 +2748,7 @@
       "rawCaseRecords": 1,
       "observations": 6,
       "steps": 6,
-      "issues": 5,
+      "issues": 0,
       "realTimeObservations": 0,
       "evidenceBackedSteps": 6,
       "roleBackedSteps": 6,
@@ -3194,7 +2762,7 @@
     "operatingMode": "standard",
     "cases": [
       {
-        "id": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "name": "PG01 · Structured Preserve · Merge Guard",
         "narrative": "PG01 · Structured Preserve · Merge Guard\n\nZweck des Prüfdokuments: Dieses Dokument prüft, ob hochwertige strukturierte Sollprozessdokumente quellentreu erhalten bleiben. Insbesondere dürfen semantisch ähnliche, aber unterschiedliche Standardschritte nicht zusammengelegt werden.\n\n1. Zielbild\n\nEin klar nummerierter Standardablauf soll unverändert als Prozessentwurf erhalten bleiben.\n\n2. Rollen und Systeme\n\n| Systeme | Rolle | Aufgabe |\n| --- | --- | --- |\n| ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung |\n| DMS, Fachtool | Fachbereich | inhaltliche Bewertung |\n| ERP, BI | Teamleitung | Freigabeentscheidung |\n| CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation |\n\n3. Standardablauf\n\n| Schritt | Nr. | Verantwortung | Ergebnis |\n| --- | --- | --- | --- |\n| Vorgang anlegen | 1 | Sachbearbeitung | Fallnummer vorhanden |\n| Unterlagen prüfen | 2 | Sachbearbeitung | Vollständigkeitsstatus bekannt |\n| Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt |\n| Abweichung klassifizieren | 4 | Fachbereich | Abweichungsart dokumentiert |\n| Freigabe entscheiden | 5 | Teamleitung | Entscheidung dokumentiert |\n| Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen |\n\n4. Abnahme für diesen Micro-Test\n\nErwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben. Die Schritte „Unterlagen prüfen“ und „Fehlende Unterlagen nachfordern“ dürfen nicht zusammengelegt werden. Die Schritte „Abweichung klassifizieren“ und „Freigabe entscheiden“ dürfen nicht semantisch verschmolzen werden.",
         "rawText": "PG01 · Structured Preserve · Merge Guard\n\nZweck des Prüfdokuments: Dieses Dokument prüft, ob hochwertige strukturierte Sollprozessdokumente quellentreu erhalten bleiben. Insbesondere dürfen semantisch ähnliche, aber unterschiedliche Standardschritte nicht zusammengelegt werden.\n\n1. Zielbild\n\nEin klar nummerierter Standardablauf soll unverändert als Prozessentwurf erhalten bleiben.\n\n2. Rollen und Systeme\n\n| Systeme | Rolle | Aufgabe |\n| --- | --- | --- |\n| ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung |\n| DMS, Fachtool | Fachbereich | inhaltliche Bewertung |\n| ERP, BI | Teamleitung | Freigabeentscheidung |\n| CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation |\n\n3. Standardablauf\n\n| Schritt | Nr. | Verantwortung | Ergebnis |\n| --- | --- | --- | --- |\n| Vorgang anlegen | 1 | Sachbearbeitung | Fallnummer vorhanden |\n| Unterlagen prüfen | 2 | Sachbearbeitung | Vollständigkeitsstatus bekannt |\n| Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt |\n| Abweichung klassifizieren | 4 | Fachbereich | Abweichungsart dokumentiert |\n| Freigabe entscheiden | 5 | Teamleitung | Entscheidung dokumentiert |\n| Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen |\n\n4. Abnahme für diesen Micro-Test\n\nErwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben. Die Schritte „Unterlagen prüfen“ und „Fehlende Unterlagen nachfordern“ dürfen nicht zusammengelegt werden. Die Schritte „Abweichung klassifizieren“ und „Freigabe entscheiden“ dürfen nicht semantisch verschmolzen werden.",
@@ -3218,19 +2786,19 @@
           "Entscheidungen und Rollen ergänzen",
           "Zusatzmaterial nur unterstützend nutzen"
         ],
-        "createdAt": "2026-04-15T17:26:20.661Z",
-        "updatedAt": "2026-04-15T17:26:20.671Z"
+        "createdAt": "2026-04-16T16:24:05.065Z",
+        "updatedAt": "2026-04-16T16:24:05.074Z"
       }
     ],
     "observations": [
       {
-        "id": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
-        "sourceCaseId": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
+        "sourceCaseId": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "label": "Vorgang anlegen",
         "originalStepLabel": "Vorgang anlegen",
         "stepWasPreserved": true,
         "evidenceSnippet": "Vorgang anlegen | 1 | Sachbearbeitung | Fallnummer vorhanden",
-        "candidateId": "17943ccd-ca4f-4a2c-b944-978ffe25218b",
+        "candidateId": "77e31a97-bd2b-4406-bc38-823ad9b896d0",
         "evidenceAnchor": "Vorgang anlegen | 1 | Sachbearbeitung | Fallnummer vorhanden",
         "contextWindow": "Vorgang anlegen | Fallnummer vorhanden | Vorgang anlegen | 1 | Sachbearbeitung | Fallnummer vorhanden",
         "originChannel": "table-row",
@@ -3257,17 +2825,17 @@
         "kind": "step",
         "sequenceIndex": 0,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-15T17:26:20.662Z"
+        "createdAt": "2026-04-16T16:24:05.065Z"
       },
       {
-        "id": "85716aca-e90f-498f-95be-3b1624400d49",
-        "sourceCaseId": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
+        "sourceCaseId": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "label": "Unterlagen prüfen",
         "originalStepLabel": "Unterlagen prüfen",
         "canonicalStepFamily": "Kontext und Unterlagen zusammenführen",
         "stepWasPreserved": true,
         "evidenceSnippet": "Unterlagen prüfen | 2 | Sachbearbeitung | Vollständigkeitsstatus bekannt",
-        "candidateId": "f9930bb2-ebf5-43c0-a497-74d636619da6",
+        "candidateId": "0bcd2d0f-6c84-4dd4-9329-f7054dbc8efb",
         "evidenceAnchor": "Unterlagen prüfen | 2 | Sachbearbeitung | Vollständigkeitsstatus bekannt",
         "contextWindow": "Unterlagen prüfen | Vollständigkeitsstatus bekannt | Unterlagen prüfen | 2 | Sachbearbeitung | Vollständigkeitsstatus bekannt",
         "originChannel": "table-row",
@@ -3294,18 +2862,18 @@
         "kind": "step",
         "sequenceIndex": 1,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-15T17:26:20.662Z"
+        "createdAt": "2026-04-16T16:24:05.065Z"
       },
       {
-        "id": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
-        "sourceCaseId": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
+        "sourceCaseId": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "label": "Fehlende Unterlagen nachfordern",
         "originalStepLabel": "Fehlende Unterlagen nachfordern",
         "canonicalStepFamily": "Kontext und Unterlagen zusammenführen",
         "stepWasPreserved": true,
         "mergeSkippedBecauseStructured": true,
         "evidenceSnippet": "Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
-        "candidateId": "39d492f7-f3ec-408c-a17e-144f31d3cd4e",
+        "candidateId": "e0f00735-02db-404a-90e1-c41f27c76154",
         "evidenceAnchor": "Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
         "contextWindow": "Fehlende Unterlagen nachfordern | Nachforderung versandt | Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
         "originChannel": "table-row",
@@ -3332,17 +2900,17 @@
         "kind": "step",
         "sequenceIndex": 2,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-15T17:26:20.662Z"
+        "createdAt": "2026-04-16T16:24:05.065Z"
       },
       {
-        "id": "956c7951-4395-4a63-afc7-28f669d9d670",
-        "sourceCaseId": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
+        "sourceCaseId": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "label": "Abweichung klassifizieren",
         "originalStepLabel": "Abweichung klassifizieren",
         "canonicalStepFamily": "Priorität festlegen und fehlende Angaben anfordern",
         "stepWasPreserved": true,
         "evidenceSnippet": "Abweichung klassifizieren | 4 | Fachbereich | Abweichungsart dokumentiert",
-        "candidateId": "fd27be82-fce4-4a7a-9710-92d79cf891c2",
+        "candidateId": "6892c946-ab46-4ada-8f1d-2e3336bdf3d7",
         "evidenceAnchor": "Abweichung klassifizieren | 4 | Fachbereich | Abweichungsart dokumentiert",
         "contextWindow": "Abweichung klassifizieren | Abweichungsart dokumentiert | Abweichung klassifizieren | 4 | Fachbereich | Abweichungsart dokumentiert",
         "originChannel": "table-row",
@@ -3369,17 +2937,17 @@
         "kind": "step",
         "sequenceIndex": 3,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-15T17:26:20.663Z"
+        "createdAt": "2026-04-16T16:24:05.066Z"
       },
       {
-        "id": "e53ff62c-9479-4332-8c04-80cd965e483a",
-        "sourceCaseId": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
+        "sourceCaseId": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "label": "Freigabe entscheiden",
         "originalStepLabel": "Freigabe entscheiden",
         "canonicalStepFamily": "Einkaufs- und Budgetfreigabe einholen",
         "stepWasPreserved": true,
         "evidenceSnippet": "Freigabe entscheiden | 5 | Teamleitung | Entscheidung dokumentiert",
-        "candidateId": "827f4ca8-e606-487f-92cd-b68a96f7b0bf",
+        "candidateId": "6a37a288-4adc-4266-980a-c52ad819a4ce",
         "evidenceAnchor": "Freigabe entscheiden | 5 | Teamleitung | Entscheidung dokumentiert",
         "contextWindow": "Freigabe entscheiden | Entscheidung dokumentiert | Freigabe entscheiden | 5 | Teamleitung | Entscheidung dokumentiert",
         "originChannel": "table-row",
@@ -3406,17 +2974,17 @@
         "kind": "step",
         "sequenceIndex": 4,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-15T17:26:20.663Z"
+        "createdAt": "2026-04-16T16:24:05.066Z"
       },
       {
-        "id": "d9ec052c-6028-40cc-acfe-db605be72146",
-        "sourceCaseId": "a9886f65-f0e0-4382-aabf-4be166a69ca6",
+        "id": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
+        "sourceCaseId": "49d6d1a1-150d-4b79-bf4c-91f05c75b13d",
         "label": "Abschluss dokumentieren",
         "originalStepLabel": "Abschluss dokumentieren",
         "canonicalStepFamily": "Start bestätigen und Nacharbeiten dokumentieren",
         "stepWasPreserved": true,
         "evidenceSnippet": "Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-        "candidateId": "dd13ca54-6973-425f-b6fd-42962d619463",
+        "candidateId": "864b5fba-d550-4818-9baf-4e6ce2a6190f",
         "evidenceAnchor": "Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
         "contextWindow": "Abschluss dokumentieren | Fall abgeschlossen | Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
         "originChannel": "table-row",
@@ -3443,7 +3011,7 @@
         "kind": "step",
         "sequenceIndex": 5,
         "timestampQuality": "missing",
-        "createdAt": "2026-04-15T17:26:20.663Z"
+        "createdAt": "2026-04-16T16:24:05.067Z"
       }
     ],
     "reviewState": {
@@ -3451,12 +3019,12 @@
       "repairJournal": []
     },
     "reportHistory": [],
-    "updatedAt": "2026-04-15T17:26:20.684Z",
+    "updatedAt": "2026-04-16T16:24:05.087Z",
     "qualitySummary": {
       "totalCases": 1,
       "totalObservations": 6,
       "stepObservationCount": 6,
-      "issueObservationCount": 5,
+      "issueObservationCount": 0,
       "casesWithOrdering": 1,
       "observationsWithRealTime": 0,
       "observationsWithSyntheticTime": 0,
@@ -3465,7 +3033,7 @@
       "stepObservationsWithEvidence": 6,
       "stepObservationsWithRole": 6,
       "stepObservationsWithSystem": 6,
-      "updatedAt": "2026-04-15T17:26:20.672Z"
+      "updatedAt": "2026-04-16T16:24:05.075Z"
     },
     "lastDerivationSummary": {
       "sourceLabel": "PG01_structured_preserve_merge_guard--column-order.md",
@@ -3521,13 +3089,7 @@
       "supportOnlySystems": [],
       "suppressedRoles": [],
       "suppressedSystems": [],
-      "issueSignals": [
-        "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-        "Kommunikation muss Unsicherheit professionell abfedern",
-        "Freigaben verlangsamen die Umsetzung",
-        "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-        "Implizite Koordination bindet viele Beteiligte"
-      ],
+      "issueSignals": [],
       "structuredPreserveApplied": true,
       "explicitStructuredStepCount": 6,
       "preservedStructuredStepCount": 6,
@@ -3609,31 +3171,10 @@
           "eventlogScore=0.11"
         ]
       },
-      "issueEvidence": [
-        {
-          "label": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "snippet": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR"
-        },
-        {
-          "label": "Kommunikation muss Unsicherheit professionell abfedern",
-          "snippet": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR"
-        },
-        {
-          "label": "Freigaben verlangsamen die Umsetzung",
-          "snippet": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa"
-        },
-        {
-          "label": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "snippet": "Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben."
-        },
-        {
-          "label": "Implizite Koordination bindet viele Beteiligte",
-          "snippet": "CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen"
-        }
-      ],
+      "issueEvidence": [],
       "extractionCandidates": [
         {
-          "candidateId": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6:step",
+          "candidateId": "39a4d69f-ce46-4bb1-98d3-86904379e0b2:step",
           "candidateType": "step",
           "rawLabel": "Vorgang anlegen",
           "normalizedLabel": "Vorgang anlegen",
@@ -3655,12 +3196,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
+          "sourceRef": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "4513a162-530a-4240-aec7-6dd0d75be07e",
+          "candidateId": "57361942-9acb-4fbd-b83a-0309d3f30828",
           "candidateType": "role",
           "rawLabel": "Sachbearbeitung",
           "normalizedLabel": "Sachbearbeitung",
@@ -3671,13 +3212,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
-          "relatedCandidateId": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6:step",
+          "sourceRef": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
+          "relatedCandidateId": "39a4d69f-ce46-4bb1-98d3-86904379e0b2:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "d9706bc2-c7b9-47cc-ac36-a82ad0ec42dc",
+          "candidateId": "5d751515-0778-4ad7-8605-f9b3541687ee",
           "candidateType": "system",
           "rawLabel": "ERP",
           "normalizedLabel": "ERP",
@@ -3688,13 +3229,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
-          "relatedCandidateId": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6:step",
+          "sourceRef": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
+          "relatedCandidateId": "39a4d69f-ce46-4bb1-98d3-86904379e0b2:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "32b3772d-e2b2-4aef-ada2-34ea1a6fe517",
+          "candidateId": "910e3b3f-90db-43f2-95b6-6d9dce26de37",
           "candidateType": "system",
           "rawLabel": "DMS",
           "normalizedLabel": "DMS",
@@ -3705,13 +3246,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6",
-          "relatedCandidateId": "74606ce4-341f-4fd6-b95a-7e2c649b2dc6:step",
+          "sourceRef": "39a4d69f-ce46-4bb1-98d3-86904379e0b2",
+          "relatedCandidateId": "39a4d69f-ce46-4bb1-98d3-86904379e0b2:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "85716aca-e90f-498f-95be-3b1624400d49:step",
+          "candidateId": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6:step",
           "candidateType": "step",
           "rawLabel": "Unterlagen prüfen",
           "normalizedLabel": "Unterlagen prüfen",
@@ -3734,12 +3275,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "85716aca-e90f-498f-95be-3b1624400d49",
+          "sourceRef": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "94f924ee-94f1-4d56-8f64-41a260a63b4a",
+          "candidateId": "9f01073f-6ac9-4a46-bad1-0cb53b27939c",
           "candidateType": "role",
           "rawLabel": "Sachbearbeitung",
           "normalizedLabel": "Sachbearbeitung",
@@ -3750,13 +3291,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "85716aca-e90f-498f-95be-3b1624400d49",
-          "relatedCandidateId": "85716aca-e90f-498f-95be-3b1624400d49:step",
+          "sourceRef": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
+          "relatedCandidateId": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "cadbfcf9-7d2a-4cf4-8465-c73e3e5bfde4",
+          "candidateId": "892b2bbe-d23d-4a1c-bf21-d54b479a3ab9",
           "candidateType": "system",
           "rawLabel": "ERP",
           "normalizedLabel": "ERP",
@@ -3767,13 +3308,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "85716aca-e90f-498f-95be-3b1624400d49",
-          "relatedCandidateId": "85716aca-e90f-498f-95be-3b1624400d49:step",
+          "sourceRef": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
+          "relatedCandidateId": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "a4ab0e9d-2185-4038-8292-dfa2266bdd30",
+          "candidateId": "df581fb2-8d57-4136-a31e-a568a573a429",
           "candidateType": "system",
           "rawLabel": "DMS",
           "normalizedLabel": "DMS",
@@ -3784,13 +3325,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "85716aca-e90f-498f-95be-3b1624400d49",
-          "relatedCandidateId": "85716aca-e90f-498f-95be-3b1624400d49:step",
+          "sourceRef": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6",
+          "relatedCandidateId": "3b0a8b87-59da-45b0-a8b1-b1aa0fa587f6:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc:step",
+          "candidateId": "a4c36d96-cd4d-4c5f-937f-54069c66f691:step",
           "candidateType": "step",
           "rawLabel": "Fehlende Unterlagen nachfordern",
           "normalizedLabel": "Fehlende Unterlagen nachfordern",
@@ -3814,12 +3355,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
+          "sourceRef": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "91a94580-d919-4a4f-8b55-e5f529fc29bf",
+          "candidateId": "7f7ce296-8840-4fec-8fe0-12cc223f74f7",
           "candidateType": "role",
           "rawLabel": "Sachbearbeitung",
           "normalizedLabel": "Sachbearbeitung",
@@ -3830,13 +3371,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
-          "relatedCandidateId": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc:step",
+          "sourceRef": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
+          "relatedCandidateId": "a4c36d96-cd4d-4c5f-937f-54069c66f691:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "fca0734f-ef88-4b2a-986d-20ea3915e198",
+          "candidateId": "7f8cbd50-a42b-4efe-9e09-9c1fd5f38a6f",
           "candidateType": "system",
           "rawLabel": "ERP",
           "normalizedLabel": "ERP",
@@ -3847,13 +3388,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
-          "relatedCandidateId": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc:step",
+          "sourceRef": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
+          "relatedCandidateId": "a4c36d96-cd4d-4c5f-937f-54069c66f691:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "bb2905e0-3eab-4665-b2e2-16ea83c66583",
+          "candidateId": "def5aa9c-d3b7-4a95-932a-35ba51375989",
           "candidateType": "system",
           "rawLabel": "DMS",
           "normalizedLabel": "DMS",
@@ -3864,13 +3405,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc",
-          "relatedCandidateId": "92a09c4e-d9dd-4796-a47e-bc5fefd412dc:step",
+          "sourceRef": "a4c36d96-cd4d-4c5f-937f-54069c66f691",
+          "relatedCandidateId": "a4c36d96-cd4d-4c5f-937f-54069c66f691:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "956c7951-4395-4a63-afc7-28f669d9d670:step",
+          "candidateId": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501:step",
           "candidateType": "step",
           "rawLabel": "Abweichung klassifizieren",
           "normalizedLabel": "Abweichung klassifizieren",
@@ -3893,12 +3434,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "956c7951-4395-4a63-afc7-28f669d9d670",
+          "sourceRef": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "85b8b7a2-55b0-49d1-9850-c1636f18ffbe",
+          "candidateId": "6ad07f4a-06ee-4dc5-9951-ca5003937529",
           "candidateType": "role",
           "rawLabel": "Fachbereich",
           "normalizedLabel": "Fachbereich",
@@ -3909,13 +3450,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "956c7951-4395-4a63-afc7-28f669d9d670",
-          "relatedCandidateId": "956c7951-4395-4a63-afc7-28f669d9d670:step",
+          "sourceRef": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
+          "relatedCandidateId": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "90ad7646-f3e8-4686-8cb2-b262c9eb27cc",
+          "candidateId": "7ff0b98e-b09c-4eb2-be73-7a3488104f4b",
           "candidateType": "system",
           "rawLabel": "DMS",
           "normalizedLabel": "DMS",
@@ -3926,13 +3467,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "956c7951-4395-4a63-afc7-28f669d9d670",
-          "relatedCandidateId": "956c7951-4395-4a63-afc7-28f669d9d670:step",
+          "sourceRef": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
+          "relatedCandidateId": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "fca7e92e-f41a-43ab-b0dd-2d068e4f49ea",
+          "candidateId": "510bf088-aad2-4529-8f12-c36bdfc6eec7",
           "candidateType": "system",
           "rawLabel": "Fachtool",
           "normalizedLabel": "Fachtool",
@@ -3943,13 +3484,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "956c7951-4395-4a63-afc7-28f669d9d670",
-          "relatedCandidateId": "956c7951-4395-4a63-afc7-28f669d9d670:step",
+          "sourceRef": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501",
+          "relatedCandidateId": "e0ab2923-c5de-4c28-8ff3-ad9f9c132501:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "e53ff62c-9479-4332-8c04-80cd965e483a:step",
+          "candidateId": "a59bc3da-3dbf-44f7-825a-9d91149cb83f:step",
           "candidateType": "step",
           "rawLabel": "Freigabe entscheiden",
           "normalizedLabel": "Freigabe entscheiden",
@@ -3972,12 +3513,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "e53ff62c-9479-4332-8c04-80cd965e483a",
+          "sourceRef": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "80481e95-1770-4707-8cf3-0b8a795528ef",
+          "candidateId": "d8ffff48-335d-4cc3-b464-8dee9b3642a7",
           "candidateType": "role",
           "rawLabel": "Teamleitung",
           "normalizedLabel": "Teamleitung",
@@ -3988,13 +3529,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "e53ff62c-9479-4332-8c04-80cd965e483a",
-          "relatedCandidateId": "e53ff62c-9479-4332-8c04-80cd965e483a:step",
+          "sourceRef": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
+          "relatedCandidateId": "a59bc3da-3dbf-44f7-825a-9d91149cb83f:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "e194e850-ace0-4b9c-aa67-6fd735042c57",
+          "candidateId": "a1286d9e-190d-44c2-84ce-b7d51b1ae215",
           "candidateType": "system",
           "rawLabel": "ERP",
           "normalizedLabel": "ERP",
@@ -4005,13 +3546,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "e53ff62c-9479-4332-8c04-80cd965e483a",
-          "relatedCandidateId": "e53ff62c-9479-4332-8c04-80cd965e483a:step",
+          "sourceRef": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
+          "relatedCandidateId": "a59bc3da-3dbf-44f7-825a-9d91149cb83f:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "659d0c06-ee0c-495d-96d7-363abb9215c4",
+          "candidateId": "49182cd0-09e8-4046-abed-11f76a0ae8d8",
           "candidateType": "system",
           "rawLabel": "BI",
           "normalizedLabel": "BI",
@@ -4022,13 +3563,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "e53ff62c-9479-4332-8c04-80cd965e483a",
-          "relatedCandidateId": "e53ff62c-9479-4332-8c04-80cd965e483a:step",
+          "sourceRef": "a59bc3da-3dbf-44f7-825a-9d91149cb83f",
+          "relatedCandidateId": "a59bc3da-3dbf-44f7-825a-9d91149cb83f:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "d9ec052c-6028-40cc-acfe-db605be72146:step",
+          "candidateId": "fb7f0f96-7b8e-4667-bcc2-de78445ea667:step",
           "candidateType": "step",
           "rawLabel": "Abschluss dokumentieren",
           "normalizedLabel": "Abschluss dokumentieren",
@@ -4051,12 +3592,12 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d9ec052c-6028-40cc-acfe-db605be72146",
+          "sourceRef": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
           "status": "merged",
           "supportClass": "core-step"
         },
         {
-          "candidateId": "48f34104-6c93-40fc-9784-9c1271cac904",
+          "candidateId": "3c4634df-7d32-40b8-a1be-b36e6bacf5c7",
           "candidateType": "role",
           "rawLabel": "Kundenservice",
           "normalizedLabel": "Kundenservice",
@@ -4067,13 +3608,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d9ec052c-6028-40cc-acfe-db605be72146",
-          "relatedCandidateId": "d9ec052c-6028-40cc-acfe-db605be72146:step",
+          "sourceRef": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
+          "relatedCandidateId": "fb7f0f96-7b8e-4667-bcc2-de78445ea667:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "7a22d53b-f3d5-4337-96af-54aa8929a7d3",
+          "candidateId": "6dde3ffd-6ff3-472f-966c-8164fcfb262a",
           "candidateType": "system",
           "rawLabel": "CRM",
           "normalizedLabel": "CRM",
@@ -4084,13 +3625,13 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d9ec052c-6028-40cc-acfe-db605be72146",
-          "relatedCandidateId": "d9ec052c-6028-40cc-acfe-db605be72146:step",
+          "sourceRef": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
+          "relatedCandidateId": "fb7f0f96-7b8e-4667-bcc2-de78445ea667:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "48e5c2b9-56a1-426a-bcee-4ddcf4dd95cd",
+          "candidateId": "3a94a3b3-7879-4bf3-9cca-a9c929097dd5",
           "candidateType": "system",
           "rawLabel": "Mail",
           "normalizedLabel": "Mail",
@@ -4101,195 +3642,40 @@
           "originChannel": "table-row",
           "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
-          "sourceRef": "d9ec052c-6028-40cc-acfe-db605be72146",
-          "relatedCandidateId": "d9ec052c-6028-40cc-acfe-db605be72146:step",
+          "sourceRef": "fb7f0f96-7b8e-4667-bcc2-de78445ea667",
+          "relatedCandidateId": "fb7f0f96-7b8e-4667-bcc2-de78445ea667:step",
           "status": "candidate",
           "supportClass": "support-evidence"
         },
         {
-          "candidateId": "d40cf483-2c9f-4c0a-b4fe-f3da562d1802",
-          "candidateType": "signal",
-          "rawLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "normalizedLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "contextWindow": "Informationen müssen aus mehreren Systemen zusammengeführt werden | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:1",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "57f256a8-e05d-4d24-bd46-c5554e8f1b75",
-          "candidateType": "signal",
-          "rawLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-          "normalizedLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "contextWindow": "Kommunikation muss Unsicherheit professionell abfedern | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:2",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "d3e73ffa-ea69-4a63-85b8-ea25859a3de9",
-          "candidateType": "signal",
-          "rawLabel": "Freigaben verlangsamen die Umsetzung",
-          "normalizedLabel": "Freigaben verlangsamen die Umsetzung",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa",
-          "contextWindow": "Freigaben verlangsamen die Umsetzung | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vor",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:3",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "7c1e5253-4b96-49d5-9f13-8fd67524f61f",
-          "candidateType": "signal",
-          "rawLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "normalizedLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "evidenceAnchor": "Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-          "contextWindow": "Wartezeiten und Koordinationsaufwand belasten den Ablauf | Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:4",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "ecf601c5-d12f-4715-8d23-897fdc7f0f52",
-          "candidateType": "signal",
-          "rawLabel": "Implizite Koordination bindet viele Beteiligte",
-          "normalizedLabel": "Implizite Koordination bindet viele Beteiligte",
-          "evidenceAnchor": "CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-          "contextWindow": "Implizite Koordination bindet viele Beteiligte | CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:5",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "1d7ccb8f-ea47-4ad8-b2e2-7bac4316f66e",
+          "candidateId": "a7ea6712-d9c4-4639-baba-f51722a743ea",
           "candidateType": "signal",
           "rawLabel": "Onboarding erfordert enge Abstimmung zwischen HR, IT und Fachbereich",
           "normalizedLabel": "Onboarding erfordert enge Abstimmung zwischen HR, IT und Fachbereich",
-          "evidenceAnchor": "Insbesondere dürfen semantisch ähnliche, aber unterschiedliche Standardschritte nicht zusammengelegt werden. | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidu",
-          "contextWindow": "Onboarding erfordert enge Abstimmung zwischen HR, IT und Fachbereich | Insbesondere dürfen semantisch ähnliche, aber unterschiedliche Standardschritte nicht zusammengelegt werden. | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich",
+          "evidenceAnchor": "Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
+          "contextWindow": "Fehlende Unterlagen nachfordern | Nachforderung versandt | Fehlende Unterlagen nachfordern | 3 | Sachbearbeitung | Nachforderung versandt",
           "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
+          "originChannel": "table-row",
+          "sourceFragmentType": "table-row",
           "routingClass": "structured-procedure",
           "sourceRef": "issue-evidence:1",
           "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "2730b238-1a93-4896-a157-4294b1cd0c85",
-          "candidateType": "signal",
-          "rawLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "normalizedLabel": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "contextWindow": "Informationen müssen aus mehreren Systemen zusammengeführt werden | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:2",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "798fc96b-8ec1-4e32-90f6-745d70fb8d69",
-          "candidateType": "signal",
-          "rawLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-          "normalizedLabel": "Kommunikation muss Unsicherheit professionell abfedern",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "contextWindow": "Kommunikation muss Unsicherheit professionell abfedern | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:3",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "ec48a2ac-47bd-4151-a1cd-5897c2ea1d7f",
-          "candidateType": "signal",
-          "rawLabel": "Freigaben verlangsamen die Umsetzung",
-          "normalizedLabel": "Freigaben verlangsamen die Umsetzung",
-          "evidenceAnchor": "| Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa",
-          "contextWindow": "Freigaben verlangsamen die Umsetzung | | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vor",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:4",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "c4d57bbc-5ead-4fa9-b213-7f68c3baa2b9",
-          "candidateType": "signal",
-          "rawLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "normalizedLabel": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "evidenceAnchor": "Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-          "contextWindow": "Wartezeiten und Koordinationsaufwand belasten den Ablauf | Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:5",
-          "status": "support-only",
-          "supportClass": "issue-signal",
-          "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
-        },
-        {
-          "candidateId": "7bfba162-abba-4308-af5a-9698b329e0f7",
-          "candidateType": "signal",
-          "rawLabel": "Implizite Koordination bindet viele Beteiligte",
-          "normalizedLabel": "Implizite Koordination bindet viele Beteiligte",
-          "evidenceAnchor": "CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-          "contextWindow": "Implizite Koordination bindet viele Beteiligte | CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-          "confidence": "medium",
-          "originChannel": "paragraph",
-          "sourceFragmentType": "paragraph",
-          "routingClass": "structured-procedure",
-          "sourceRef": "issue-evidence:6",
-          "status": "support-only",
-          "supportClass": "issue-signal",
+          "supportClass": "friction-signal",
           "downgradeReason": "Hinweis bleibt als Stützsignal außerhalb des Kernprozesses."
         }
       ],
       "engineVersion": "pm-local-engine-v4.3",
       "provenance": "local",
-      "updatedAt": "2026-04-15T17:26:20.671Z",
+      "updatedAt": "2026-04-16T16:24:05.074Z",
+      "explicitRoleRetentionShare": 1,
+      "explicitSystemRetentionShare": 1,
+      "missingExplicitRolesByStep": [],
+      "missingExplicitSystemsByStep": [],
+      "explicitEntityRetentionWarnings": [],
       "candidateStats": {
-        "total": 35,
+        "total": 25,
         "mergedCoreSteps": 6,
-        "supportOnly": 11,
+        "supportOnly": 1,
         "rejected": 0
       },
       "repairNotes": [
@@ -4298,10 +3684,10 @@
         "Structured-Preserve aktiv: Explizite strukturierte Rollen- und Systemevidenz bleibt trotz Domain-Gate erhalten."
       ],
       "candidateReview": {
-        "totalCandidates": 35,
+        "totalCandidates": 25,
         "mergedCoreSteps": 6,
         "rejectedCoreSteps": 0,
-        "supportOnlyCandidates": 11,
+        "supportOnlyCandidates": 1,
         "localRoleAssignments": 6,
         "localSystemAssignments": 12,
         "weakFragmentCount": 0
@@ -4312,7 +3698,7 @@
         "audience": "management",
         "label": "Management-Kurzbrief",
         "summary": "Knapper Überblick für Entscheidungsträger mit Kernaussage, Risiken und nächsten Schritten.",
-        "text": "Management-Kurzbrief | Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\nStand: 15.4.2026, 19:26:20\nEinordnung: Prozessentwurf\n\nKernaussage\nFür den Prozess „Engine Invariant PG01_structured_preserve_merge_guard--column-order“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden. Der wichtigste Soll-Hinweis lautet: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\nWichtigste Befunde\n- Hauptlinie erkannt: Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden.\n- Wichtigster Soll-Hinweis: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\"..\n- Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.\n- 6 Schritte sind bereits mit Belegstellen abgesichert.\n\nEmpfohlene nächste Schritte\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n\nEinordnung der Belastbarkeit\nAktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten."
+        "text": "Management-Kurzbrief | Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\nStand: 16.4.2026, 18:24:05\nEinordnung: Prozessentwurf\n\nKernaussage\nFür den Prozess „Engine Invariant PG01_structured_preserve_merge_guard--column-order“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden. Der wichtigste Soll-Hinweis lautet: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Der deutlichste Reibungspunkt ist derzeit „Hier wird zurückgesprungen: „Unterlagen prüfen““. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\nWichtigste Befunde\n- Hauptlinie erkannt: Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden.\n- Wichtigster Soll-Hinweis: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\"..\n- Wichtigster Reibungspunkt: Hier wird zurückgesprungen: „Unterlagen prüfen“.\n- 6 Schritte sind bereits mit Belegstellen abgesichert.\n\nEmpfohlene nächste Schritte\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n\nEinordnung der Belastbarkeit\nAktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten."
       },
       {
         "audience": "process_owner",
@@ -4324,13 +3710,13 @@
         "audience": "operations",
         "label": "Arbeitsübergabe für das Team",
         "summary": "Konkrete Arbeits- und Prüfhinweise für die nächste operative Schleife.",
-        "text": "Arbeitsübergabe für das operative Team | Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\nBitte als Nächstes prüfen\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n- Wenn möglich verifizierbare Datums- oder Uhrzeitangaben ergänzen, bevor zeitbasierte Hotspots interpretiert werden.\n\nWichtige Reibungspunkte\n- Freigaben verlangsamen die Umsetzung: Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa\n- Hier wird zurückgesprungen: „Unterlagen prüfen“: Im ausgewerteten Ablauf wird dieser Schritt mehrfach durchlaufen. Das deutet auf Rückfragen, Korrekturen oder Nacharbeit hin.\n- Implizite Koordination bindet viele Beteiligte: Im ausgewerteten Material zeigt sich dieses Reibungssignal: Implizite Koordination bindet viele Beteiligte. Beleg: CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen\n- Informationen müssen aus mehreren Systemen zusammengeführt werden: Im ausgewerteten Material zeigt sich dieses Reibungssignal: Informationen müssen aus mehreren Systemen zusammengeführt werden. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR\n\nDatenlage\n1 Quelle wurde ausgewertet. Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten."
+        "text": "Arbeitsübergabe für das operative Team | Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\nBitte als Nächstes prüfen\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n- Wenn möglich verifizierbare Datums- oder Uhrzeitangaben ergänzen, bevor zeitbasierte Hotspots interpretiert werden.\n\nWichtige Reibungspunkte\n- Hier wird zurückgesprungen: „Unterlagen prüfen“: Im ausgewerteten Ablauf wird dieser Schritt mehrfach durchlaufen. Das deutet auf Rückfragen, Korrekturen oder Nacharbeit hin.\n- Viele Übergaben zwischen Fachbereich → Teamleitung: Im ausgewerteten Ablauf gibt es an dieser Stelle eine Rollenübergabe. Das ist kein Fehler, aber ein möglicher Prüfpunkt für Medienbrüche oder Abstimmungsaufwand.\n- Viele Übergaben zwischen Sachbearbeitung → Fachbereich: Im ausgewerteten Ablauf gibt es an dieser Stelle eine Rollenübergabe. Das ist kein Fehler, aber ein möglicher Prüfpunkt für Medienbrüche oder Abstimmungsaufwand.\n- Viele Übergaben zwischen Teamleitung → Kundenservice: Im ausgewerteten Ablauf gibt es an dieser Stelle eine Rollenübergabe. Das ist kein Fehler, aber ein möglicher Prüfpunkt für Medienbrüche oder Abstimmungsaufwand.\n\nDatenlage\n1 Quelle wurde ausgewertet. Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten."
       },
       {
         "audience": "workshop",
         "label": "Workshop-Fahrplan",
         "summary": "Erzählt den Stand verständlich weiter und liefert gute Leitfragen für den nächsten Termin.",
-        "text": "Workshop-Fahrplan | Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\nSo lässt sich die Lage im Termin kurz erzählen\nDie aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren, Freigabe entscheiden und Abschluss dokumentieren.\n\nIm Soll-Abgleich fällt aktuell besonders auf: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Weitere Auffälligkeiten betreffen Im ausgewerteten Fall wird „Kontext und Unterlagen zusammenführen\" wiederholt..\n\nAls wichtigster Reibungspunkt zeigt sich derzeit freigaben verlangsamen die umsetzung. Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.\n\nDrei Fragen für den nächsten Workshop\n- Welche der erkannten Hauptschritte sind fachlich korrekt und welche müssen umbenannt oder getrennt werden?\n- Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".\n- Zweiten Fall ergänzen"
+        "text": "Workshop-Fahrplan | Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\nSo lässt sich die Lage im Termin kurz erzählen\nDie aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren, Freigabe entscheiden und Abschluss dokumentieren.\n\nIm Soll-Abgleich fällt aktuell besonders auf: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Weitere Auffälligkeiten betreffen Im ausgewerteten Fall wird „Kontext und Unterlagen zusammenführen\" wiederholt..\n\nAls wichtigster Reibungspunkt zeigt sich derzeit hier wird zurückgesprungen: „unterlagen prüfen“. Im ausgewerteten Ablauf wird dieser Schritt mehrfach durchlaufen. Das deutet auf Rückfragen, Korrekturen oder Nacharbeit hin.\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.\n\nDrei Fragen für den nächsten Workshop\n- Welche der erkannten Hauptschritte sind fachlich korrekt und welche müssen umbenannt oder getrennt werden?\n- Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".\n- Zweiten Fall ergänzen"
       }
     ],
     "discoverySummary": {
@@ -4348,7 +3734,7 @@
       "analysisMode": "process-draft",
       "sampleNotice": "Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.",
       "notes": "",
-      "updatedAt": "2026-04-15T17:26:20.686Z"
+      "updatedAt": "2026-04-16T16:24:05.090Z"
     },
     "conformanceSummary": {
       "checkedSteps": 6,
@@ -4360,35 +3746,15 @@
       "analysisMode": "process-draft",
       "sampleNotice": "Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.",
       "notes": "",
-      "updatedAt": "2026-04-15T17:26:20.682Z"
+      "updatedAt": "2026-04-16T16:24:05.086Z"
     },
     "enhancementSummary": {
-      "issueCount": 9,
+      "issueCount": 4,
       "issues": [
-        {
-          "title": "Freigaben verlangsamen die Umsetzung",
-          "description": "Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa",
-          "kind": "other"
-        },
         {
           "title": "Hier wird zurückgesprungen: „Unterlagen prüfen“",
           "description": "Im ausgewerteten Ablauf wird dieser Schritt mehrfach durchlaufen. Das deutet auf Rückfragen, Korrekturen oder Nacharbeit hin.",
           "kind": "rework"
-        },
-        {
-          "title": "Implizite Koordination bindet viele Beteiligte",
-          "description": "Im ausgewerteten Material zeigt sich dieses Reibungssignal: Implizite Koordination bindet viele Beteiligte. Beleg: CRM, Mail | Kundenservice | Rückmeldung und Abschlusskommunikation Abschluss dokumentieren | 6 | Kundenservice | Fall abgeschlossen",
-          "kind": "other"
-        },
-        {
-          "title": "Informationen müssen aus mehreren Systemen zusammengeführt werden",
-          "description": "Im ausgewerteten Material zeigt sich dieses Reibungssignal: Informationen müssen aus mehreren Systemen zusammengeführt werden. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "kind": "missing"
-        },
-        {
-          "title": "Kommunikation muss Unsicherheit professionell abfedern",
-          "description": "Im ausgewerteten Material zeigt sich dieses Reibungssignal: Kommunikation muss Unsicherheit professionell abfedern. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR",
-          "kind": "other"
         },
         {
           "title": "Viele Übergaben zwischen Fachbereich → Teamleitung",
@@ -4404,26 +3770,21 @@
           "title": "Viele Übergaben zwischen Teamleitung → Kundenservice",
           "description": "Im ausgewerteten Ablauf gibt es an dieser Stelle eine Rollenübergabe. Das ist kein Fehler, aber ein möglicher Prüfpunkt für Medienbrüche oder Abstimmungsaufwand.",
           "kind": "handoff"
-        },
-        {
-          "title": "Wartezeiten und Koordinationsaufwand belasten den Ablauf",
-          "description": "Im ausgewerteten Material zeigt sich dieses Reibungssignal: Wartezeiten und Koordinationsaufwand belasten den Ablauf. Beleg: Erwartet werden genau 6 Kernschritte in derselben Reihenfolge wie oben.",
-          "kind": "other"
         }
       ],
       "analysisMode": "process-draft",
       "sampleNotice": "Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.",
       "notes": "",
-      "updatedAt": "2026-04-15T17:26:20.683Z"
+      "updatedAt": "2026-04-16T16:24:05.087Z"
     },
     "reportSnapshot": {
       "title": "Mining-Überblick · Engine Invariant PG01_structured_preserve_merge_guard--column-order",
-      "executiveSummary": "Für den Prozess „Engine Invariant PG01_structured_preserve_merge_guard--column-order“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden. Der wichtigste Soll-Hinweis lautet: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.",
-      "processStory": "Die aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren, Freigabe entscheiden und Abschluss dokumentieren.\n\nIm Soll-Abgleich fällt aktuell besonders auf: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Weitere Auffälligkeiten betreffen Im ausgewerteten Fall wird „Kontext und Unterlagen zusammenführen\" wiederholt..\n\nAls wichtigster Reibungspunkt zeigt sich derzeit freigaben verlangsamen die umsetzung. Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.",
+      "executiveSummary": "Für den Prozess „Engine Invariant PG01_structured_preserve_merge_guard--column-order“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden. Der wichtigste Soll-Hinweis lautet: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Der deutlichste Reibungspunkt ist derzeit „Hier wird zurückgesprungen: „Unterlagen prüfen““. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.",
+      "processStory": "Die aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren, Freigabe entscheiden und Abschluss dokumentieren.\n\nIm Soll-Abgleich fällt aktuell besonders auf: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Weitere Auffälligkeiten betreffen Im ausgewerteten Fall wird „Kontext und Unterlagen zusammenführen\" wiederholt..\n\nAls wichtigster Reibungspunkt zeigt sich derzeit hier wird zurückgesprungen: „unterlagen prüfen“. Im ausgewerteten Ablauf wird dieser Schritt mehrfach durchlaufen. Das deutet auf Rückfragen, Korrekturen oder Nacharbeit hin.\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.",
       "keyFindings": [
         "Hauptlinie erkannt: Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden.",
         "Wichtigster Soll-Hinweis: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\"..",
-        "Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.",
+        "Wichtigster Reibungspunkt: Hier wird zurückgesprungen: „Unterlagen prüfen“.",
         "6 Schritte sind bereits mit Belegstellen abgesichert."
       ],
       "nextActions": [
@@ -4438,7 +3799,7 @@
         "Mit dieser verifizierten Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.",
         "Ohne verifizierte Zeitbasis bleiben Aussagen zu Durchlauf- oder Wartezeiten bewusst zurückhaltend."
       ],
-      "markdown": "# Mining-Überblick · Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\n**Stand:** 15.4.2026, 19:26:20\n**Einordnung:** Prozessentwurf\n**Datenreife:** Belastbarer Prozessentwurf\n\n## Management-Zusammenfassung\n\nFür den Prozess „Engine Invariant PG01_structured_preserve_merge_guard--column-order“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden. Der wichtigste Soll-Hinweis lautet: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Der deutlichste Reibungspunkt ist derzeit „Freigaben verlangsamen die Umsetzung“. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\n## Die Geschichte des aktuell erkennbaren Prozesses\n\nDie aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren, Freigabe entscheiden und Abschluss dokumentieren.\n\nIm Soll-Abgleich fällt aktuell besonders auf: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Weitere Auffälligkeiten betreffen Im ausgewerteten Fall wird „Kontext und Unterlagen zusammenführen\" wiederholt..\n\nAls wichtigster Reibungspunkt zeigt sich derzeit freigaben verlangsamen die umsetzung. Im ausgewerteten Material zeigt sich dieses Reibungssignal: Freigaben verlangsamen die Umsetzung. Beleg: | Systeme | Rolle | Aufgabe | | --- | --- | --- | | ERP, DMS | Sachbearbeitung | Fallanlage und Belegprüfung | | DMS, Fachtool | Fachbereich | inhaltliche Bewertung | | ERP, BI | Teamleitung | Freigabeentscheidung | | CR | Verantwortung | Ergebnis | | --- | --- | --- | --- | | Vorgang anlegen | 1 | Sachbearbeitung | Fa\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.\n\n## Wichtigste Befunde\n\n- Hauptlinie erkannt: Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden.\n- Wichtigster Soll-Hinweis: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\"..\n- Wichtigster Reibungspunkt: Freigaben verlangsamen die Umsetzung.\n- 6 Schritte sind bereits mit Belegstellen abgesichert.\n\n## Nächste sinnvolle Schritte\n\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n- Wenn möglich verifizierbare Datums- oder Uhrzeitangaben ergänzen, bevor zeitbasierte Hotspots interpretiert werden.\n\n## Wichtige Einordnung der Belastbarkeit\n\n- Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.\n- Die Ergebnisse zeigen derzeit vor allem einen Prozessentwurf und keine belastbaren Unternehmensquoten.\n- Mit dieser verifizierten Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.\n- Ohne verifizierte Zeitbasis bleiben Aussagen zu Durchlauf- oder Wartezeiten bewusst zurückhaltend.",
+      "markdown": "# Mining-Überblick · Engine Invariant PG01_structured_preserve_merge_guard--column-order\n\n**Stand:** 16.4.2026, 18:24:05\n**Einordnung:** Prozessentwurf\n**Datenreife:** Belastbarer Prozessentwurf\n\n## Management-Zusammenfassung\n\nFür den Prozess „Engine Invariant PG01_structured_preserve_merge_guard--column-order“ liegt aktuell ein erster prozessentwurf ist vorhanden. Die Materialbasis umfasst 1 Quelle und erreicht derzeit den Reifegrad „Belastbarer Prozessentwurf“. Die aktuell erkennbare Hauptlinie verläuft über Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden. Der wichtigste Soll-Hinweis lautet: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Der deutlichste Reibungspunkt ist derzeit „Hier wird zurückgesprungen: „Unterlagen prüfen““. Als nächster sinnvoller Schritt bietet sich an: Zweiten Fall ergänzen.\n\n## Die Geschichte des aktuell erkennbaren Prozesses\n\nDie aktuelle Auswertung ist als prozessentwurf zu lesen. Erkennbar ist vor allem eine Hauptlinie mit Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren, Freigabe entscheiden und Abschluss dokumentieren.\n\nIm Soll-Abgleich fällt aktuell besonders auf: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\".. Weitere Auffälligkeiten betreffen Im ausgewerteten Fall wird „Kontext und Unterlagen zusammenführen\" wiederholt..\n\nAls wichtigster Reibungspunkt zeigt sich derzeit hier wird zurückgesprungen: „unterlagen prüfen“. Im ausgewerteten Ablauf wird dieser Schritt mehrfach durchlaufen. Das deutet auf Rückfragen, Korrekturen oder Nacharbeit hin.\n\nZeitangaben fehlen derzeit weitgehend. Die Ergebnisse sind deshalb vor allem als strukturelle und inhaltliche Analyse zu lesen.\n\n## Wichtigste Befunde\n\n- Hauptlinie erkannt: Vorgang anlegen, Unterlagen prüfen, Fehlende Unterlagen nachfordern, Abweichung klassifizieren und Freigabe entscheiden.\n- Wichtigster Soll-Hinweis: Im ausgewerteten Fall fehlt „Kontext und Unterlagen zusammenführen\"..\n- Wichtigster Reibungspunkt: Hier wird zurückgesprungen: „Unterlagen prüfen“.\n- 6 Schritte sind bereits mit Belegstellen abgesichert.\n\n## Nächste sinnvolle Schritte\n\n- Zweiten Fall ergänzen\n- Zeitangaben ergänzen\n- Einen zweiten belastbaren Fall oder eine weitere Quelle ergänzen, damit Muster und Unterschiede sichtbar werden.\n- Wenn möglich verifizierbare Datums- oder Uhrzeitangaben ergänzen, bevor zeitbasierte Hotspots interpretiert werden.\n\n## Wichtige Einordnung der Belastbarkeit\n\n- Aktuell liegt vor allem ein einzelnes Verfahrensdokument vor. Die Ergebnisse zeigen daher einen Prozessentwurf, keine statistisch belastbaren Häufigkeiten.\n- Die Ergebnisse zeigen derzeit vor allem einen Prozessentwurf und keine belastbaren Unternehmensquoten.\n- Mit dieser verifizierten Fallbasis sind Mengen- und Prozentangaben vorsichtig zu lesen und eher als Richtungssignal zu verstehen.\n- Ohne verifizierte Zeitbasis bleiben Aussagen zu Durchlauf- oder Wartezeiten bewusst zurückhaltend.",
       "analysisMode": "process-draft",
       "basis": {
         "caseCount": 1,
@@ -4446,11 +3807,11 @@
         "evidenceStepCount": 6,
         "variantCount": 1,
         "deviationCount": 2,
-        "hotspotCount": 9,
+        "hotspotCount": 4,
         "readinessHeadline": "Ein erster Prozessentwurf ist vorhanden.",
         "maturityLabel": "Belastbarer Prozessentwurf"
       },
-      "generatedAt": "2026-04-15T17:26:20.684Z"
+      "generatedAt": "2026-04-16T16:24:05.087Z"
     }
   }
 }

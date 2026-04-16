@@ -1,6 +1,6 @@
 import { normalizeWhitespace, uniqueStrings } from './pmShared';
 
-const STRUCTURED_VALUE_SPLIT_RE = /[,;|]|\s+\/\s+|\s+und\s+|\s+sowie\s+|\s+plus\s+/i;
+const STRUCTURED_VALUE_SPLIT_RE = /[\n\r,;|]+|\s*\/\s*|\s+(?:und|sowie|plus)\s+/i;
 
 export interface SanitizedStructuredValueCollections {
   finalValues: string[];

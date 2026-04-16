@@ -36,6 +36,11 @@ function sameMembers(actual, expected) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
+function containsMembers(actual, expected) {
+  const actualSet = new Set(atomizeStructuredValues(actual).map(normalizeKey));
+  return atomizeStructuredValues(expected).every(value => actualSet.has(normalizeKey(value)));
+}
+
 function overlappingMembers(left, right) {
   const leftSet = new Set(atomizeStructuredValues(left).map(normalizeKey));
   return atomizeStructuredValues(right)
@@ -304,6 +309,74 @@ function verifyMultivalue(errors, exportJson, sourceModel, kind) {
     });
 }
 
+function verifyRowLevelExplicitRetention(errors, exportJson, sourceModel, kind) {
+  const steps = getStepObservations(exportJson);
+  const preservedSteps = getPreservedSteps(exportJson);
+  const summary = exportJson?.analysisResults?.lastDerivationSummary;
+  const dimension = findDimension(exportJson, kind === 'role' ? 'roleQuality' : 'systemQuality');
+  const share = kind === 'role' ? summary?.explicitRoleRetentionShare : summary?.explicitSystemRetentionShare;
+  const missingByStep = asArray(kind === 'role' ? summary?.missingExplicitRolesByStep : summary?.missingExplicitSystemsByStep);
+  let relevantSteps = 0;
+
+  sourceModel.explicitSteps.forEach(sourceStep => {
+    const expectedExplicit = kind === 'role' ? sourceStep.explicitRoles : sourceStep.explicitSystems;
+    if (expectedExplicit.length === 0) return;
+    relevantSteps += 1;
+    const observation = findStepByLabel(steps, sourceStep.label);
+    const preserved = findStepByLabel(preservedSteps, sourceStep.label);
+    assert(errors, Boolean(observation), `${sourceStep.label}: finaler Schritt für explizite ${kind === 'role' ? 'Rollen' : 'Systeme'} fehlt.`);
+    assert(errors, Boolean(preserved), `${sourceStep.label}: preserved Schritt für explizite ${kind === 'role' ? 'Rollen' : 'Systeme'} fehlt.`);
+    assert(
+      errors,
+      containsMembers(kind === 'role' ? observation?.roles : observation?.systems, expectedExplicit),
+      `${sourceStep.label}: finale ${kind === 'role' ? 'Rollen' : 'Systeme'} enthalten nicht alle expliziten Zeilenwerte.`,
+    );
+    assert(
+      errors,
+      sameMembers(kind === 'role' ? observation?.explicitRoles : observation?.explicitSystems, expectedExplicit),
+      `${sourceStep.label}: explicit${kind === 'role' ? 'Roles' : 'Systems'} weichen von der expliziten Zeilenmenge ab.`,
+    );
+    assert(
+      errors,
+      sameMembers(kind === 'role' ? preserved?.explicitRoles : preserved?.explicitSystems, expectedExplicit),
+      `${sourceStep.label}: preserved explicit${kind === 'role' ? 'Roles' : 'Systems'} weichen von der expliziten Zeilenmenge ab.`,
+    );
+    const inferred = kind === 'role' ? observation?.inferredRoles : observation?.inferredSystems;
+    const misplaced = atomizeStructuredValues(expectedExplicit).filter(value => (
+      !containsMembers(kind === 'role' ? observation?.explicitRoles : observation?.explicitSystems, [value])
+      && containsMembers(inferred, [value])
+    ));
+    assert(
+      errors,
+      misplaced.length === 0,
+      `${sourceStep.label}: explizite Zeilenwerte landen unzulässig nur in inferred${kind === 'role' ? 'Roles' : 'Systems'} (${JSON.stringify(misplaced)}).`,
+    );
+  });
+
+  if (relevantSteps > 0) {
+    assert(errors, share === 1, `${kind === 'role' ? 'explicitRoleRetentionShare' : 'explicitSystemRetentionShare'} ist nicht 1 (${share}).`);
+    assert(errors, missingByStep.length === 0, `${kind === 'role' ? 'missingExplicitRolesByStep' : 'missingExplicitSystemsByStep'} ist nicht leer.`);
+    assert(
+      errors,
+      dimension?.observed?.explicitRetentionShare === 1,
+      `${kind === 'role' ? 'roleQuality' : 'systemQuality'} meldet keine vollständige explizite Zeilen-Retention.`,
+    );
+  }
+}
+
+function verifyEvidencePureSupportSignals(errors, exportJson) {
+  const supportSignals = asArray(exportJson?.sourceMaterial?.supportSignals);
+  supportSignals.forEach((signal, index) => {
+    assert(errors, Boolean(normalizeWhitespace(signal?.label)), `supportSignals[${index}] hat kein Label.`);
+    assert(errors, Boolean(normalizeWhitespace(signal?.evidenceAnchor ?? signal?.snippet)), `supportSignals[${index}] hat keinen evidenceAnchor.`);
+    assert(errors, Boolean(normalizeWhitespace(signal?.contextWindow)), `supportSignals[${index}] hat kein contextWindow.`);
+    assert(errors, Boolean(normalizeWhitespace(signal?.originChannel)), `supportSignals[${index}] hat kein originChannel.`);
+    assert(errors, Boolean(normalizeWhitespace(signal?.sourceFragmentType)), `supportSignals[${index}] hat keinen sourceFragmentType.`);
+    assert(errors, Boolean(normalizeWhitespace(signal?.confidence)), `supportSignals[${index}] hat keine confidence.`);
+    assert(errors, Boolean(normalizeWhitespace(signal?.status)), `supportSignals[${index}] hat keinen status.`);
+  });
+}
+
 function verifyClassificationConsistency(errors, exportJson) {
   const routingText = flattenText(exportJson?.context?.sourceRouting).toLowerCase();
   const profileText = flattenText(exportJson?.analysisResults?.lastDerivationSummary?.sourceProfile).toLowerCase();
@@ -359,12 +432,15 @@ export async function runEngineInvariantCheck(params) {
   if (expectation.requiresMultivalueSystems) {
     verifyMultivalue(errors, exportJson, sourceModel, 'system');
   }
+  verifyRowLevelExplicitRetention(errors, exportJson, sourceModel, 'role');
+  verifyRowLevelExplicitRetention(errors, exportJson, sourceModel, 'system');
   if (expectation.requiresClassificationConsistency) {
     verifyClassificationConsistency(errors, exportJson);
   }
   if (expectation.requiresNonCriticalDomainConsistencyWithoutConflict) {
     verifyDomainConsistency(errors, exportJson, sourceModel);
   }
+  verifyEvidencePureSupportSignals(errors, exportJson);
 
   return {
     passed: errors.length === 0,
