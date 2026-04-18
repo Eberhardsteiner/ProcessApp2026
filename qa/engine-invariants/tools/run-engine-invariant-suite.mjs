@@ -121,6 +121,7 @@ export async function runEngineInvariantSuite() {
       const mutations = await buildMutationVariants({
         sourcePath: fixturePath,
         outputDir: fixtureMutationDir,
+        fixtureFamily: fixture.fixtureFamily,
       });
 
       for (const mutation of mutations) {

@@ -27,6 +27,13 @@
       "sourcePath": "qa/phase-gates/fixtures/PG02_explicit_roles_systems_multivalue.docx",
       "runtimeSourceType": "docx",
       "includeMutations": true
+    },
+    {
+      "id": "mixed-document-with-process-core-md",
+      "fixtureFamily": "mixed-document-with-process-core",
+      "sourcePath": "qa/engine-invariants/fixtures/mixed-document-with-process-core.md",
+      "runtimeSourceType": "docx",
+      "includeMutations": true
     }
   ]
 }

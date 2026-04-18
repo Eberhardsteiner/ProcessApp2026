@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { readStructuredSourceText } from './source-reader.mjs';
-import { deriveStructuredSourceModel } from './structured-source-model.mjs';
+import { deriveSourceModel } from './structured-source-model.mjs';
 
 const COMPOSITE_VALUE_RE = /[;,|]|\s+\/\s+|\s+und\s+|\s+sowie\s+|\s+plus\s+/i;
 const SPLIT_RE = /[,;|]|\s+\/\s+|\s+und\s+|\s+sowie\s+|\s+plus\s+/i;
@@ -141,6 +141,66 @@ function verifyPreservedSuggestions(errors, exportJson, sourceModel) {
     && ['rename', 'split', 'reclassify'].includes(String(suggestion?.type))
   ));
   assert(errors, invalidSuggestions.length === 0, `Review erzeugt noch Suggestions auf preserved Steps: ${JSON.stringify(invalidSuggestions)}.`);
+}
+
+function verifyMixedDocumentSegmentation(errors, exportJson, sourceModel) {
+  const expectedLabels = sourceModel.explicitStepLabels;
+  const finalLabels = getStepObservations(exportJson).map(step => step?.label ?? step?.originalStepLabel).filter(Boolean);
+  const derivedLabels = asArray(exportJson?.sourceMaterial?.cases?.[0]?.derivedStepLabels);
+  const discoveryLabels = asArray(exportJson?.analysisResults?.discoverySummary?.topSteps);
+  const summaryLabels = asArray(exportJson?.analysisResults?.lastDerivationSummary?.stepLabels);
+  const mixedSegments = exportJson?.analysisResults?.lastDerivationSummary?.mixedDocumentSegments;
+
+  assert(errors, exportJson?.analysisResults?.routing?.routingClass === 'mixed-document', 'Routingklasse ist nicht `mixed-document`.');
+  assert(errors, exportJson?.analysisResults?.lastDerivationSummary?.method === 'narrative-fallback', 'Mixed-Derivation nutzt nicht `narrative-fallback`.');
+  assert(
+    errors,
+    exportJson?.analysisResults?.lastDerivationSummary?.sourceProfile?.documentClass === 'mixed-document',
+    'Dokumentenklasse ist nicht `mixed-document`.',
+  );
+  assert(
+    errors,
+    arraysEqualNormalized(finalLabels, expectedLabels),
+    `Finale Kernschritte weichen vom process-core der Quelle ab. Erwartet ${JSON.stringify(expectedLabels)}, erhalten ${JSON.stringify(finalLabels)}.`,
+  );
+  assert(
+    errors,
+    arraysEqualNormalized(derivedLabels, expectedLabels),
+    `derivedStepLabels weichen vom process-core der Quelle ab. Erwartet ${JSON.stringify(expectedLabels)}, erhalten ${JSON.stringify(derivedLabels)}.`,
+  );
+  assert(
+    errors,
+    arraysEqualNormalized(discoveryLabels, expectedLabels),
+    `Discovery-TopSteps weichen vom process-core der Quelle ab. Erwartet ${JSON.stringify(expectedLabels)}, erhalten ${JSON.stringify(discoveryLabels)}.`,
+  );
+  assert(
+    errors,
+    arraysEqualNormalized(summaryLabels, expectedLabels),
+    `lastDerivationSummary.stepLabels weichen vom process-core der Quelle ab. Erwartet ${JSON.stringify(expectedLabels)}, erhalten ${JSON.stringify(summaryLabels)}.`,
+  );
+  assert(errors, Boolean(mixedSegments), 'mixedDocumentSegments fehlen im Summary.');
+  Object.entries(sourceModel.segmentCounts ?? {}).forEach(([segmentType, expectedCount]) => {
+    if (expectedCount <= 0) return;
+    assert(
+      errors,
+      (mixedSegments?.counts?.[segmentType] ?? 0) >= 1,
+      `Segmenttyp ${segmentType} wurde im Export nicht als Mischdokument-Segment ausgewiesen.`,
+    );
+  });
+}
+
+function verifyMixedClassificationConsistency(errors, exportJson) {
+  const documentTypeDimension = findDimension(exportJson, 'documentTypeRecognition');
+  assert(
+    errors,
+    documentTypeDimension?.observed?.routingDocumentClassConsistent === true,
+    'Routing und Dokumentklasse sind für das Mischdokument nicht konsistent markiert.',
+  );
+  assert(
+    errors,
+    documentTypeDimension?.observed?.scoringModeConsistent === true,
+    'Bewertungsmodus ist für das Mischdokument nicht konsistent markiert.',
+  );
 }
 
 function verifyAtomicLists(errors, exportJson) {
@@ -364,7 +424,7 @@ function verifyRowLevelExplicitRetention(errors, exportJson, sourceModel, kind) 
   }
 }
 
-function verifyEvidencePureSupportSignals(errors, exportJson) {
+function verifyEvidencePureSupportSignals(errors, exportJson, sourceModel) {
   const supportSignals = asArray(exportJson?.sourceMaterial?.supportSignals);
   supportSignals.forEach((signal, index) => {
     assert(errors, Boolean(normalizeWhitespace(signal?.label)), `supportSignals[${index}] hat kein Label.`);
@@ -375,9 +435,18 @@ function verifyEvidencePureSupportSignals(errors, exportJson) {
     assert(errors, Boolean(normalizeWhitespace(signal?.confidence)), `supportSignals[${index}] hat keine confidence.`);
     assert(errors, Boolean(normalizeWhitespace(signal?.status)), `supportSignals[${index}] hat keinen status.`);
   });
+
+  if (sourceModel?.sourceFamily === 'mixed-document-with-process-core' && (sourceModel.issueAnchorCount ?? 0) === 0) {
+    assert(errors, supportSignals.length === 0, 'Support-/Issue-Signale wurden trotz fehlender lokaler Issue-Evidenz exportiert.');
+    assert(
+      errors,
+      asArray(exportJson?.analysisResults?.lastDerivationSummary?.issueSignals).length === 0,
+      'issueSignals wurden trotz fehlender lokaler Issue-Evidenz gesetzt.',
+    );
+  }
 }
 
-function verifyClassificationConsistency(errors, exportJson) {
+function verifyStructuredClassificationConsistency(errors, exportJson) {
   const routingText = flattenText(exportJson?.context?.sourceRouting).toLowerCase();
   const profileText = flattenText(exportJson?.analysisResults?.lastDerivationSummary?.sourceProfile).toLowerCase();
   const documentTypeDimension = findDimension(exportJson, 'documentTypeRecognition');
@@ -407,14 +476,17 @@ export async function runEngineInvariantCheck(params) {
   const expectation = JSON.parse(await readFile(params.expectationPath, 'utf8'));
   const exportJson = JSON.parse(await readFile(params.exportPath, 'utf8'));
   const sourceText = await readStructuredSourceText(params.sourcePath);
-  const sourceModel = deriveStructuredSourceModel(sourceText);
+  const sourceModel = deriveSourceModel(sourceText);
   const errors = [];
 
   assert(errors, sourceModel.sourceFamily === expectation.fixtureFamily, `Quellfamilie ${sourceModel.sourceFamily} passt nicht zur Erwartung ${expectation.fixtureFamily}.`);
-  assert(errors, sourceModel.isStructuredWorkflow, 'Quelle liefert keine belastbare explizite Ablaufstruktur.');
 
   if (expectation.requiresStructuredWorkflow) {
+    assert(errors, sourceModel.isStructuredWorkflow, 'Quelle liefert keine belastbare explizite Ablaufstruktur.');
     verifyStructuredWorkflow(errors, exportJson, sourceModel);
+  }
+  if (expectation.requiresMixedDocumentSegmentation) {
+    verifyMixedDocumentSegmentation(errors, exportJson, sourceModel);
   }
   if (expectation.requiresPreservedOrder || expectation.requiresMergeProtection || expectation.requiresPrimaryPreserveLabels) {
     verifyPreservedOrder(errors, exportJson, sourceModel);
@@ -432,15 +504,21 @@ export async function runEngineInvariantCheck(params) {
   if (expectation.requiresMultivalueSystems) {
     verifyMultivalue(errors, exportJson, sourceModel, 'system');
   }
-  verifyRowLevelExplicitRetention(errors, exportJson, sourceModel, 'role');
-  verifyRowLevelExplicitRetention(errors, exportJson, sourceModel, 'system');
+  if (sourceModel.sourceFamily !== 'mixed-document-with-process-core') {
+    verifyRowLevelExplicitRetention(errors, exportJson, sourceModel, 'role');
+    verifyRowLevelExplicitRetention(errors, exportJson, sourceModel, 'system');
+  }
   if (expectation.requiresClassificationConsistency) {
-    verifyClassificationConsistency(errors, exportJson);
+    if (sourceModel.sourceFamily === 'mixed-document-with-process-core') {
+      verifyMixedClassificationConsistency(errors, exportJson);
+    } else {
+      verifyStructuredClassificationConsistency(errors, exportJson);
+    }
   }
   if (expectation.requiresNonCriticalDomainConsistencyWithoutConflict) {
     verifyDomainConsistency(errors, exportJson, sourceModel);
   }
-  verifyEvidencePureSupportSignals(errors, exportJson);
+  verifyEvidencePureSupportSignals(errors, exportJson, sourceModel);
 
   return {
     passed: errors.length === 0,

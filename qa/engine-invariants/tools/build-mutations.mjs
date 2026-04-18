@@ -139,6 +139,36 @@ function appendGovernanceSection(text) {
   return `${text.trim()}\n\n## Governance und Risiko\nZusätzliche Governance-, Risiko- und Review-Hinweise dürfen die expliziten Ablaufzeilen nicht überschreiben.`.trim();
 }
 
+function rewriteMixedHeadings(text) {
+  return text
+    .replace(/^## Prozesskern$/m, '## Operative Passage')
+    .replace(/^## Zitat$/m, '## Gesprächsausschnitt')
+    .replace(/^## Offene Frage$/m, '## Klärpunkt')
+    .replace(/^## Review-Notiz$/m, '## Prüfhinweis')
+    .replace(/^## Governance-Hinweis$/m, '## Verantwortungsrahmen')
+    .replace(/^## Signaltabelle$/m, '## Beobachtungstabelle')
+    .replace(/^## Abnahmehinweis$/m, '## Freigaberahmen')
+    .replace(/^## Kontext$/m, '## Hintergrund');
+}
+
+function neutralizeMixedLanguage(text) {
+  return text
+    .replace(/Kernablauf/g, 'Ablaufkern')
+    .replace(/Prozessowner/g, 'verantwortliche Stelle')
+    .replace(/Kernschritt(e)?/g, 'Ablaufschritt$1')
+    .replace(/Nebensegmente/g, 'Nebenschichten');
+}
+
+function appendMixedSupportBlocks(text) {
+  return `${text.trim()}
+
+## Zusätzlicher Reviewblock
+Bitte die ergänzende Notiz nur als Kontext lesen und nicht als Ablaufschritt übernehmen.
+
+## Zusätzliche Governance
+Die Freigabespur bleibt separat dokumentiert und erzeugt keinen weiteren Kernschritt.`.trim();
+}
+
 function baseNameFor(sourcePath) {
   return path.basename(sourcePath, path.extname(sourcePath));
 }
@@ -148,28 +178,51 @@ export async function buildMutationVariants(params) {
   const outputDir = params.outputDir;
   await mkdir(outputDir, { recursive: true });
 
-  const variants = [
-    {
-      id: 'headings-neutral',
-      description: 'Andere Überschriften und neutralisierte Rahmensprache',
-      text: appendGovernanceSection(neutralizeNarrativeLanguage(rewriteHeadings(sourceText))),
-    },
-    {
-      id: 'step-synonyms',
-      description: 'Mutierte Schrittlabels mit Synonymen und zusätzlicher Governance-Sektion',
-      text: appendGovernanceSection(mutateStepLabels(sourceText)),
-    },
-    {
-      id: 'column-order',
-      description: 'Vertauschte Tabellen-Spaltenreihenfolge',
-      text: reorderStructuredTables(sourceText),
-    },
-    {
-      id: 'separator-shift',
-      description: 'Andere Mehrwert-Trenner und neutralisierte Sprache',
-      text: neutralizeNarrativeLanguage(shiftSeparators(sourceText)),
-    },
-  ];
+  const variants = params.fixtureFamily === 'mixed-document-with-process-core'
+    ? [
+        {
+          id: 'headings-neutral',
+          description: 'Andere Abschnittstitel und neutralisierte Sprache im Mischdokument',
+          text: neutralizeMixedLanguage(rewriteMixedHeadings(sourceText)),
+        },
+        {
+          id: 'review-governance-extra',
+          description: 'Zusätzliche Review- und Governance-Blöcke außerhalb des Prozesskerns',
+          text: appendMixedSupportBlocks(sourceText),
+        },
+        {
+          id: 'neutral-language',
+          description: 'Neutralisierte Domänensprache bei unverändertem Prozesskern',
+          text: appendMixedSupportBlocks(neutralizeMixedLanguage(sourceText)),
+        },
+        {
+          id: 'separator-shift',
+          description: 'Leicht veränderte Trenner und zusätzlicher Hintergrundblock',
+          text: `${shiftSeparators(rewriteMixedHeadings(sourceText)).trim()}\n\n## Zusätzlicher Kontext\nDie Erläuterung bleibt unterstützend und erzeugt keinen weiteren Ablaufschritt.`,
+        },
+      ]
+    : [
+        {
+          id: 'headings-neutral',
+          description: 'Andere Überschriften und neutralisierte Rahmensprache',
+          text: appendGovernanceSection(neutralizeNarrativeLanguage(rewriteHeadings(sourceText))),
+        },
+        {
+          id: 'step-synonyms',
+          description: 'Mutierte Schrittlabels mit Synonymen und zusätzlicher Governance-Sektion',
+          text: appendGovernanceSection(mutateStepLabels(sourceText)),
+        },
+        {
+          id: 'column-order',
+          description: 'Vertauschte Tabellen-Spaltenreihenfolge',
+          text: reorderStructuredTables(sourceText),
+        },
+        {
+          id: 'separator-shift',
+          description: 'Andere Mehrwert-Trenner und neutralisierte Sprache',
+          text: neutralizeNarrativeLanguage(shiftSeparators(sourceText)),
+        },
+      ];
 
   const written = [];
   for (const variant of variants) {

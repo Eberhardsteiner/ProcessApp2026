@@ -1,0 +1,5 @@
+{
+  "fixtureFamily": "mixed-document-with-process-core",
+  "requiresMixedDocumentSegmentation": true,
+  "requiresClassificationConsistency": true
+}

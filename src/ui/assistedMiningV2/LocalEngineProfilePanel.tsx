@@ -35,8 +35,10 @@ function mixedSegmentLabel(key: string): string {
     quote: 'Zitat',
     question: 'Frage',
     'review-note': 'Review-Notiz',
-    table: 'Tabelle / Signal',
     'governance-note': 'Governance-Hinweis',
+    'signal-table': 'Signaltabelle',
+    'acceptance-instruction': 'Abnahmehinweis',
+    'support-context': 'Stützkontext',
   };
   return labels[key] ?? key;
 }

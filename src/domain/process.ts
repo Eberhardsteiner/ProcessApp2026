@@ -558,8 +558,10 @@ export type MixedDocumentSegmentType =
   | 'quote'
   | 'question'
   | 'review-note'
-  | 'table'
-  | 'governance-note';
+  | 'governance-note'
+  | 'signal-table'
+  | 'acceptance-instruction'
+  | 'support-context';
 
 export interface MixedDocumentSegmentSummary {
   totalSegments: number;

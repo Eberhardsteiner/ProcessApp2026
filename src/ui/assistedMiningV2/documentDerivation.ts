@@ -299,6 +299,7 @@ type DomainKey = 'complaints' | 'billing' | 'onboarding' | 'returns' | 'procurem
 const TIME_HEADING_RE = /^(\d{1,2}:\d{2}\s*Uhr)\s*\|\s*(.+)$/i;
 const MAJOR_HEADING_RE = /^\s*([1-9])\.\s+(.+)$/;
 const ALPHA_SECTION_HEADING_RE = /^\s*([A-ZÄÖÜ])\.\s+(.+)$/;
+const MARKDOWN_SECTION_HEADING_RE = /^\s*(#{1,6})\s+(.+?)\s*$/;
 const STORY_HEADING_RE = /^\s*3\.\s+Die Geschichte\s*$/im;
 const PIPE_ROW_RE = /^\s*\|(.+)\|\s*$/;
 const CASE_HEADING_RE = /^fall\s+[a-z0-9äöüß]+(?:\s*[·|-]\s*.+)?$/i;
@@ -306,6 +307,13 @@ const NARRATIVE_META_RE = /^(?:\d+\s*[·.-]\s+gute narrative fallserie|service-s
 const OPEN_QUESTION_FRAGMENT_RE = /^\s*(?:wer|wann|warum|wieso|wozu|wie)\b|\?\s*$/i;
 const REVIEW_FRAGMENT_RE = /^\s*(?:bitte\b|wichtig\b|signal\b|friktion\b|st[äa]rke\b|hinweis\b)/i;
 const QUOTE_FRAGMENT_RE = /^["'„“‚‘]|["'„“‚‘]/;
+const MIXED_SIGNAL_TABLE_RE = /\b(?:signaltabelle|signalmatrix|beobachtung(?:en)?|m[öo]gliche bedeutung|erkennbar im text|friktion|reibung|wirkung|risiko)\b/i;
+const MIXED_PROCESS_TABLE_RE = /\b(?:schritt|aktivit[aä]t|vorgang|prozessschritt|standardablauf|prozessablauf|verfahrensfolge|rolle|verantwort(?:ung|lich)|systeme?)\b/i;
+const MIXED_REVIEW_NOTE_RE = /\b(?:review|notiz|r[üu]ckmeldung|merkpunkt|bitte\b|redaktionell|pr[üu]fen|pruefen)\b/i;
+const MIXED_GOVERNANCE_NOTE_RE = /\b(?:governance|owner|eigent[üu]merschaft|verantwort|freigabestatus|management-freigabe|intern freigegeben|4-augen|audit|compliance|zieldatum|policy|richtlinie)\b/i;
+const MIXED_ACCEPTANCE_INSTRUCTION_RE = /\b(?:abnahme|abnahmekriter(?:ium|ien)?|annahmekriter(?:ium|ien)?|akzeptanz|done criteria|nur als hinweis|nicht in den kernprozess|nicht als kernschritt|nur unterst[üu]tzend|nur als stützmaterial)\b/i;
+const MIXED_SUPPORT_CONTEXT_RE = /\b(?:kontext|rahmen|hintergrund|erg[aä]nzend|zus[aä]tzlich|begleitend|einordnung)\b/i;
+const MIXED_PROCESS_CORE_RE = /\b(?:prozesskern|prozessschritt|standardablauf|prozessablauf|verfahrensfolge|ablauf|vorgehen|typischerweise|[üu]blicherweise|operative passage)\b/i;
 const HEADING_BLOCKLIST = [
   /rahmen der geschichte/i,
   /die person im prozess/i,
@@ -748,13 +756,76 @@ function emptyMixedSegmentCounts(): Record<MixedDocumentSegmentType, number> {
     quote: 0,
     question: 0,
     'review-note': 0,
-    table: 0,
     'governance-note': 0,
+    'signal-table': 0,
+    'acceptance-instruction': 0,
+    'support-context': 0,
   };
 }
 
 function hasProcessBearingParagraph(kinds: string[]): boolean {
-  return kinds.some(kind => ['timeline', 'procedural', 'decision', 'communication', 'knowledge'].includes(kind));
+  return kinds.some(kind => ['timeline', 'procedural', 'decision', 'communication'].includes(kind));
+}
+
+function isTableLikeMixedBlock(text: string): boolean {
+  return text.split('\n').some(line => PIPE_ROW_RE.test(normalizeWhitespace(line)));
+}
+
+function isMixedProcessTable(text: string): boolean {
+  if (!isTableLikeMixedBlock(text)) return false;
+  const normalized = normalizeWhitespace(text);
+  return MIXED_PROCESS_TABLE_RE.test(normalized) && /\b(?:schritt|aktivit[aä]t|vorgang|prozessschritt)\b/i.test(normalized);
+}
+
+function splitMixedSectionBlocks(body: string): string[] {
+  const lines = body.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const blocks: string[] = [];
+  let current: string[] = [];
+  let currentMode: 'table' | 'text' | null = null;
+
+  const flush = () => {
+    const block = current.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    if (block) blocks.push(block);
+    current = [];
+    currentMode = null;
+  };
+
+  for (const rawLine of lines) {
+    const line = normalizeWhitespace(rawLine);
+    if (!line) {
+      flush();
+      continue;
+    }
+
+    const isTableLine = PIPE_ROW_RE.test(line);
+    if (isTableLine) {
+      if (currentMode === 'text' && current.length > 0) flush();
+      currentMode = 'table';
+      current.push(line);
+      continue;
+    }
+
+    if (currentMode === 'table') flush();
+    currentMode = 'text';
+    current.push(line);
+  }
+
+  flush();
+  return blocks;
+}
+
+function deriveMixedBlockTitle(body: string, fallbackTitle?: string): string {
+  const lines = body.split('\n').map(line => normalizeWhitespace(line)).filter(Boolean);
+  const firstLine = normalizeWhitespace((lines[0] ?? '').replace(/^[•*-]\s*/, '').replace(/^>\s*/, ''));
+  if (firstLine && firstLine.length <= 96 && !/[.!?]/.test(firstLine)) {
+    return sentenceCase(firstLine.replace(/[.:]+$/g, '').trim());
+  }
+
+  const normalized = normalizeWhitespace(body);
+  const firstSentence = normalized.split(/(?<=[.!?])\s+/)[0] ?? normalized;
+  const candidate = sentenceCase(firstSentence.replace(/^[•*-]\s*/, '').replace(/[.:]+$/g, '').trim());
+  if (candidate.length >= 6 && candidate.length <= 96) return candidate;
+  return fallbackTitle || 'Abschnitt';
 }
 
 function classifyMixedSectionKind(params: {
@@ -764,36 +835,39 @@ function classifyMixedSectionKind(params: {
 }): MixedDocumentSegmentType {
   const combined = normalizeWhitespace(`${params.title} ${params.body}`);
   const lower = combined.toLowerCase();
-  if (!combined) return 'review-note';
-  if (
-    /signaltabelle|\bbeobachtung\b|m[öo]gliche bedeutung|\|/.test(lower)
-    || params.paragraphKinds.includes('tableLike')
-  ) {
-    return 'table';
-  }
+  const hasProcessParagraphs = hasProcessBearingParagraph(params.paragraphKinds);
+  const hasTableLike = params.paragraphKinds.includes('tableLike') || isTableLikeMixedBlock(params.body);
+  const hasProcessTable = hasTableLike && isMixedProcessTable(params.body);
+  const hasSignalTable = hasTableLike && !hasProcessTable && MIXED_SIGNAL_TABLE_RE.test(lower);
+  const hasReviewNote = MIXED_REVIEW_NOTE_RE.test(lower) || REVIEW_FRAGMENT_RE.test(params.title);
+  const hasGovernanceNote = MIXED_GOVERNANCE_NOTE_RE.test(lower) || params.paragraphKinds.includes('governance');
+  if (!combined) return 'support-context';
+  if (MIXED_ACCEPTANCE_INSTRUCTION_RE.test(lower)) return 'acceptance-instruction';
   if (
     /offene fragen|\bwer\b|\bwie\b|\bwann\b|\bwarum\b|\bsoll\b/.test(lower)
     || /\?/.test(params.body)
   ) {
     return 'question';
   }
-  if (
-    /governance|review|owner|eigent[üu]merschaft|verantwort|freigabestatus|management-freigabe|intern freigegeben|4-augen|audit|compliance|zieldatum|pilot-weitergabe/.test(lower)
-    || params.paragraphKinds.includes('governance')
-  ) {
-    return 'governance-note';
-  }
+  if (hasSignalTable) return 'signal-table';
+  if (hasGovernanceNote && !hasReviewNote) return 'governance-note';
+  if (hasReviewNote && !hasProcessParagraphs && !hasProcessTable) return 'review-note';
   if (
     /besprechungsausschnitt|e-?mail-auszug|mail-auszug|zitat/.test(lower)
-    || (QUOTE_FRAGMENT_RE.test(params.body) && !hasProcessBearingParagraph(params.paragraphKinds))
+    || (QUOTE_FRAGMENT_RE.test(params.body) && !hasProcessParagraphs && !hasProcessTable)
   ) {
     return 'quote';
   }
   if (
-    /operative passage|vermuteter ablauf|typischerweise|[üu]blicherweise|prozesskern|ablauf/.test(lower)
-    || hasProcessBearingParagraph(params.paragraphKinds)
+    hasProcessTable
+    || MIXED_PROCESS_CORE_RE.test(lower)
+    || hasProcessParagraphs
   ) {
     return 'process-core';
+  }
+  if (hasGovernanceNote) return 'governance-note';
+  if (MIXED_SUPPORT_CONTEXT_RE.test(lower) || params.paragraphKinds.some(kind => ['commentary', 'knowledge', 'measure'].includes(kind))) {
+    return 'support-context';
   }
   return 'review-note';
 }
@@ -822,6 +896,28 @@ function splitMixedDocumentSections(text: string): MixedDocumentSection[] {
       continue;
     }
 
+    const markdownHeading = rawLine.match(MARKDOWN_SECTION_HEADING_RE);
+    if (markdownHeading) {
+      flush();
+      current = {
+        heading: markdownHeading[1],
+        title: sentenceCase(markdownHeading[2]),
+        lines: [],
+      };
+      continue;
+    }
+
+    const majorHeading = line.match(MAJOR_HEADING_RE);
+    if (majorHeading) {
+      flush();
+      current = {
+        heading: majorHeading[1],
+        title: sentenceCase(majorHeading[2]),
+        lines: [],
+      };
+      continue;
+    }
+
     const alphaHeading = line.match(ALPHA_SECTION_HEADING_RE);
     if (alphaHeading) {
       flush();
@@ -845,22 +941,29 @@ function splitMixedDocumentSections(text: string): MixedDocumentSection[] {
   flush();
 
   return rawSections
-    .map((section, index) => {
+    .flatMap((section, index) => {
       const body = section.lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
-      const paragraphKinds = uniqueStrings(classifySourceParagraphs(body).map(paragraph => paragraph.kind));
-      const kind = classifyMixedSectionKind({
-        title: section.title,
-        body,
-        paragraphKinds,
+      const blocks = splitMixedSectionBlocks(body);
+      const normalizedBlocks = blocks.length > 0 ? blocks : [body];
+      return normalizedBlocks.map((block, blockIndex) => {
+        const blockTitle = normalizedBlocks.length === 1
+          ? section.title
+          : deriveMixedBlockTitle(block, section.title);
+        const paragraphKinds = uniqueStrings(classifySourceParagraphs(block).map(paragraph => paragraph.kind));
+        const kind = classifyMixedSectionKind({
+          title: blockTitle,
+          body: block,
+          paragraphKinds,
+        });
+        return {
+          key: `mixed-section:${index + 1}:${blockIndex + 1}`,
+          heading: blockIndex === 0 ? section.heading : undefined,
+          title: blockTitle,
+          body: block,
+          kind,
+          sourceParagraphKinds: paragraphKinds,
+        } satisfies MixedDocumentSection;
       });
-      return {
-        key: `mixed-section:${index + 1}`,
-        heading: section.heading,
-        title: section.title,
-        body,
-        kind,
-        sourceParagraphKinds: paragraphKinds,
-      } satisfies MixedDocumentSection;
     })
     .filter(section => normalizeWhitespace(`${section.title} ${section.body}`).length >= 8);
 }
@@ -938,7 +1041,7 @@ function extractIssueSignals(text: string, context?: { primary: DomainKey; secon
   return uniqueStrings(labels.filter(label => isIssueAllowedInDomain(label, context)));
 }
 
-const LOCAL_ISSUE_CUE_RE = /\b(problem|risiko|issue|hinder|st[öo]r|warn|verz[öo]ger|warte|block|eskal|konflikt|fehl\w+|unvollst[aä]ndig|mehrfach|medienbruch|r[üu]ckfrage|unklar|nacharbeit|abweich|druck|engpass|stillstand|kritisch|schwach)\b/i;
+const LOCAL_ISSUE_CUE_RE = /\b(problem|risiko|issue|hinder|st[öo]r|warn|verz[öo]ger|verlangsam|warte|block|eskal|konflikt|fehl\w+|unvollst[aä]ndig|mehrfach|medienbruch|r[üu]ckfrage|unklar|nacharbeit|abweich|druck|engpass|stillstand|kritisch|schwach|erschwer|belast|mehraufwand|zus[aä]tzlichen?\s+aufwand|aufwendig)\b/i;
 
 function normalizeIssueEvidenceEntry(entry: IssueEvidence): IssueEvidence {
   const snippet = sentenceCase(normalizeWhitespace(entry.snippet)).slice(0, 220);
@@ -985,6 +1088,7 @@ function extractIssueEvidence(text: string, context?: { primary: DomainKey; seco
 
   const evidence: IssueEvidence[] = [];
   for (const snippet of snippets) {
+    if (!LOCAL_ISSUE_CUE_RE.test(snippet)) continue;
     for (const [re, label] of ISSUE_PATTERNS) {
       if (re.test(snippet)) {
         evidence.push({
@@ -1013,6 +1117,7 @@ function extractIssueEvidence(text: string, context?: { primary: DomainKey; seco
     if (/beobachtete reibung|erwartete wirkung|erkennbar im text|nutzen fu?r den test|sinnvolle ki-unterstützung|sinnvolle ki-unterstuetzung/i.test(joined)) {
       continue;
     }
+    if (!LOCAL_ISSUE_CUE_RE.test(joined)) continue;
     for (const [re, label] of SIGNAL_ROW_HINTS) {
       if (re.test(joined)) {
         evidence.push({
@@ -1747,16 +1852,20 @@ function buildNarrativeDerivation(params: {
 
 function supportLabelForMixedSection(section: MixedDocumentSection): string {
   switch (section.kind) {
-    case 'table':
+    case 'signal-table':
       return section.title || 'Signaltabelle';
     case 'governance-note':
       return section.title || 'Governance-Hinweis';
+    case 'acceptance-instruction':
+      return section.title || 'Abnahmehinweis';
     case 'question':
       return section.title || 'Offene Fragen';
     case 'quote':
       return section.title || 'Zitat oder Besprechungsausschnitt';
     case 'review-note':
       return section.title || 'Review-Notiz';
+    case 'support-context':
+      return section.title || 'Stützkontext';
     default:
       return section.title || 'Prozesskern';
   }
@@ -1808,15 +1917,16 @@ function buildMixedDocumentDerivation(params: {
     documentClassLabel: 'Mischdokument',
     classificationReasons: uniqueStrings([
       ...(baseSourceProfile.classificationReasons ?? []),
-      'Mischdokumentpfad trennt Prozesskern, Fragen, Review-Notizen, Tabellen und Governance explizit.',
-      `${segmentSummary.counts['process-core']} Kernsegmente, ${segmentSummary.counts['review-note']} Review-Segmente, ${segmentSummary.counts.table} Tabellen- oder Signal-Segmente, ${segmentSummary.counts['governance-note']} Governance-Hinweise erkannt.`,
+      'Mischdokumentpfad trennt Prozesskern, Zitate, Fragen, Review-, Governance-, Abnahme- und Signalschichten explizit.',
+      `${segmentSummary.counts['process-core']} Kernsegmente, ${segmentSummary.counts['review-note']} Review-Segmente, ${segmentSummary.counts['signal-table']} Signaltabellen, ${segmentSummary.counts.question} Fragen, ${segmentSummary.counts['governance-note']} Governance-Hinweise und ${segmentSummary.counts['acceptance-instruction']} Abnahmehinweise erkannt.`,
     ]),
     supportParagraphCount: Math.max(baseSourceProfile.supportParagraphCount ?? 0, sections.length - processSections.length),
     evidenceParagraphCount: Math.max(baseSourceProfile.evidenceParagraphCount ?? 0, sections.length),
     extractionPlan: uniqueStrings([
       ...(baseSourceProfile.extractionPlan ?? []),
       'Mischdokumente über Segmenttypen statt rein narrativ verdichten',
-      'Prozesskern und Review-/Governance-Segmente strikt trennen',
+      'Nur process-core-Segmente in Kernschritte verdichten',
+      'Review-, Governance-, Frage-, Zitat- und Abnahme-Segmente als Nebenschichten halten',
     ]),
   };
   const sourceProfileNote = buildSourceProfileNote(sourceProfile);
@@ -1941,9 +2051,9 @@ function buildMixedDocumentDerivation(params: {
       normalizedLabel: section.title,
       evidenceAnchor,
       contextWindow,
-      confidence: section.kind === 'table' || section.kind === 'governance-note' ? 'medium' : 'low',
-      originChannel: section.kind === 'table' ? 'table-row' : 'paragraph',
-      sourceFragmentType: section.kind === 'table' ? 'table-row' : 'paragraph',
+      confidence: ['signal-table', 'governance-note', 'acceptance-instruction'].includes(section.kind) ? 'medium' : 'low',
+      originChannel: section.kind === 'signal-table' ? 'table-row' : 'paragraph',
+      sourceFragmentType: section.kind === 'signal-table' ? 'table-row' : 'paragraph',
       routingContext,
       sourceRef: buildEvidenceSourceRef(caseItem.id, section.key),
       supportClass: section.kind === 'governance-note' ? 'governance-note' : 'support-evidence',
@@ -1953,28 +2063,31 @@ function buildMixedDocumentDerivation(params: {
 
     const sectionIssues = extractIssueEvidence(`${section.title}\n${section.body}`, domainContext);
     sectionIssues.forEach((entry, issueIndex) => {
-      const issueKey = `${normalizeWhitespace(entry.label).toLowerCase()}::${normalizeWhitespace(entry.snippet).toLowerCase()}`;
+      const issueEvidenceAnchor = normalizeWhitespace(entry.evidenceAnchor ?? entry.snippet).slice(0, 320);
+      const issueKey = `${normalizeWhitespace(entry.label).toLowerCase()}::${issueEvidenceAnchor.toLowerCase()}`;
       if (seenIssueKeys.has(issueKey)) return;
       seenIssueKeys.add(issueKey);
+      const issueContextWindow = normalizeWhitespace(entry.contextWindow ?? contextWindow).slice(0, 320);
       observations.push(createObservation({
         caseId: caseItem.id,
         label: entry.label,
-        evidenceSnippet: entry.snippet,
+        evidenceSnippet: issueEvidenceAnchor,
         kind: 'issue',
         sequenceIndex: processBlocks.length + observations.filter(item => item.kind === 'issue').length,
       }));
       extractionCandidates.push(createSupportCandidate({
         candidateType: 'signal',
         rawLabel: entry.label,
-        evidenceAnchor: entry.snippet,
-        contextWindow,
-        confidence: section.kind === 'table' ? 'medium' : 'low',
-        originChannel: section.kind === 'table' ? 'table-row' : 'paragraph',
-        sourceFragmentType: section.kind === 'table' ? 'table-row' : 'paragraph',
+        evidenceAnchor: issueEvidenceAnchor,
+        contextWindow: issueContextWindow,
+        confidence: entry.confidence ?? (section.kind === 'signal-table' ? 'medium' : 'low'),
+        originChannel: entry.originChannel ?? (section.kind === 'signal-table' ? 'table-row' : 'paragraph'),
+        sourceFragmentType: entry.sourceFragmentType ?? (section.kind === 'signal-table' ? 'table-row' : 'paragraph'),
         routingContext,
         sourceRef: buildEvidenceSourceRef(caseItem.id, `${section.key}:signal:${issueIndex + 1}`),
         relatedCandidateId: supportCandidate.candidateId,
         supportClass: section.kind === 'governance-note' ? 'governance-note' : undefined,
+        status: entry.status ?? 'support-only',
       }));
     });
   });
@@ -1985,7 +2098,7 @@ function buildMixedDocumentDerivation(params: {
 
   const documentSummary = [
     buildAnalysisModeNotice({ mode: 'process-draft', caseCount: 1, documentKind: 'mixed-document' }),
-    `Mischdokumentpfad aktiv: ${segmentSummary.counts['process-core']} Prozesskern-Segmente werden in Schritte verdichtet; ${segmentSummary.counts.table} Tabellen-/Signalschichten, ${segmentSummary.counts['review-note']} Review-Notizen, ${segmentSummary.counts.question} Fragen und ${segmentSummary.counts['governance-note']} Governance-Hinweise bleiben als Stützmaterial erhalten.`,
+    `Mischdokumentpfad aktiv: ${segmentSummary.counts['process-core']} Prozesskern-Segmente werden in Schritte verdichtet; ${segmentSummary.counts['signal-table']} Signaltabellen, ${segmentSummary.counts['review-note']} Review-Notizen, ${segmentSummary.counts.question} Fragen, ${segmentSummary.counts.quote} Zitate, ${segmentSummary.counts['governance-note']} Governance-Hinweise und ${segmentSummary.counts['acceptance-instruction']} Abnahmehinweise bleiben Nebenschichten.`,
     sourceProfileNote,
     issueSignals.length > 0 ? `Wichtige Reibungssignale: ${issueSignals.slice(0, 3).join(', ')}.` : '',
   ].filter(Boolean).join(' ').trim();
