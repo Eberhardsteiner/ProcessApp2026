@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { AppSettings } from '../settings/appSettings';
 import { FieldLabel } from './components/FieldLabel';
+import { resolveAnalysisMode, describeAnalysisMode, getAiApiReadiness } from '../ai/analysisMode';
 
 interface AiApiSettingsCardProps {
   settings: AppSettings;
@@ -46,6 +47,28 @@ export function AiApiSettingsCard({ settings, onChange }: AiApiSettingsCardProps
       },
     });
   };
+
+  const handleToggleAnalysis = (useForAnalysis: boolean) => {
+    onChange({ ...settings, ai: { ...settings.ai, useForAnalysis } });
+  };
+
+  const handleGrantConsent = () => {
+    onChange({ ...settings, ai: { ...settings.ai, externalConsentGivenAt: new Date().toISOString() } });
+  };
+
+  const handleRevokeConsent = () => {
+    onChange({ ...settings, ai: { ...settings.ai, externalConsentGivenAt: null } });
+  };
+
+  const handleBudgetChange = (field: 'maxInputChars' | 'warnInputChars', value: number) => {
+    onChange({ ...settings, ai: { ...settings.ai, [field]: value } });
+  };
+
+  // Reaktiv abgeleiteter Zustand für die Anzeige (ändert kein Extraktionsverhalten).
+  const effectiveMode = resolveAnalysisMode(settings);
+  const apiReadiness = getAiApiReadiness(settings);
+  const consentGivenAt = settings.ai.externalConsentGivenAt;
+  const estTokens = (chars: number) => Math.round(chars / 4).toLocaleString('de-DE');
 
   return (
     <div>
@@ -202,6 +225,12 @@ export function AiApiSettingsCard({ settings, onChange }: AiApiSettingsCardProps
                 <p className="text-xs text-slate-500 mt-1">
                   API Key wird lokal im Browser gespeichert.
                 </p>
+                <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 leading-relaxed">
+                  <strong>Wichtig:</strong> Dieses Feld enthält <strong>nicht</strong> den Anthropic-Schlüssel,
+                  sondern bei authMode „bearer" das <strong>PROXY_SHARED_SECRET</strong> Ihres Proxys. Bei
+                  authMode „none" bleibt es leer. Der echte Anthropic-Schlüssel liegt ausschließlich im Proxy,
+                  niemals im Browser.
+                </div>
               </div>
             )}
 
@@ -240,6 +269,120 @@ export function AiApiSettingsCard({ settings, onChange }: AiApiSettingsCardProps
             </div>
           </div>
         )}
+
+        {/* === Analyse-Modus & KI ============================================= */}
+        <div className="border-t-2 border-slate-200 pt-5 space-y-4">
+          <div>
+            <h4 className="text-base font-semibold text-slate-900">Analyse-Modus &amp; KI</h4>
+            <p className="mt-1 text-sm text-slate-600">
+              Steuert, ob die Analyse die KI nutzt. Ohne Zustimmung und ohne aktive API-Konfiguration
+              wird nichts automatisch gesendet.
+            </p>
+          </div>
+
+          {/* Master-Schalter: KI für die Analyse verwenden */}
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.ai.useForAnalysis}
+              onChange={(e) => handleToggleAnalysis(e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              <span className="block text-sm font-medium text-slate-800">KI für die Analyse verwenden</span>
+              <span className="block text-xs text-slate-500 mt-0.5">
+                Aus = lokale Vorschau ohne KI. Ein = KI automatisch (bei aktiver API und erteilter Zustimmung)
+                oder über Kopieren &amp; Einfügen.
+              </span>
+            </span>
+          </label>
+
+          {/* Effektiver Analyse-Modus (reagiert live auf Änderungen) */}
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            <p className="text-sm text-slate-700">
+              <span className="font-medium">Effektiver Analyse-Modus:</span>{' '}
+              <span className="font-semibold text-slate-900">{describeAnalysisMode(effectiveMode)}</span>
+            </p>
+            {settings.ai.useForAnalysis && effectiveMode !== 'ai-api' && apiReadiness.missing.length > 0 && (
+              <p className="mt-1 text-xs text-amber-700">
+                Für „KI automatisch (über Endpoint)" fehlt noch: {apiReadiness.missingLabels.join(', ')}.
+              </p>
+            )}
+          </div>
+
+          {/* Consent-Block (nur relevant für den automatischen API-Versand) */}
+          <div className="rounded-lg border border-slate-200 p-3 space-y-2">
+            <p className="text-sm font-medium text-slate-800">Zustimmung zum externen Versand</p>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Bei „KI automatisch" wird der eingegebene bzw. hochgeladene <strong>Analysetext</strong>
+              {' '}(optional inklusive der von Ihnen bereitgestellten <strong>Übersetzung</strong>) an den
+              konfigurierten <strong>externen Endpoint</strong> gesendet — also an Ihren Proxy, der die Anfrage
+              an die Anthropic-API weiterreicht. <strong>Ohne diese Zustimmung und ohne aktive API-Konfiguration
+              wird nichts automatisch gesendet.</strong>
+            </p>
+            {consentGivenAt ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-green-700">
+                  Zustimmung erteilt am {new Date(consentGivenAt).toLocaleString('de-DE')}.
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRevokeConsent}
+                  className="px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Zustimmung widerrufen
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-slate-500">Noch keine Zustimmung erteilt.</span>
+                <button
+                  type="button"
+                  onClick={handleGrantConsent}
+                  className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Zustimmung erteilen
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Eingabe-Budget */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <div className="mb-1">
+                <FieldLabel label="Max. Eingabezeichen" />
+              </div>
+              <input
+                type="number"
+                min={0}
+                value={settings.ai.maxInputChars}
+                onChange={(e) => handleBudgetChange('maxInputChars', parseInt(e.target.value, 10) || 0)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Harte Obergrenze für den Analysetext. Entspricht grob ungefähr {estTokens(settings.ai.maxInputChars)} Tokens
+                (grobe Schätzung).
+              </p>
+            </div>
+            <div>
+              <div className="mb-1">
+                <FieldLabel label="Warnschwelle (Zeichen)" />
+              </div>
+              <input
+                type="number"
+                min={0}
+                value={settings.ai.warnInputChars}
+                onChange={(e) => handleBudgetChange('warnInputChars', parseInt(e.target.value, 10) || 0)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Ab dieser Länge wird vor langer Eingabe gewarnt. Entspricht grob ungefähr {estTokens(settings.ai.warnInputChars)} Tokens
+                (grobe Schätzung).
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

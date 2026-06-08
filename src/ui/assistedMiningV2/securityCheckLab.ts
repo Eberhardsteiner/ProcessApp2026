@@ -84,6 +84,7 @@ export function runSecurityCheckSuite(): SecurityCheckSuiteResult {
     ...DEFAULT_SETTINGS,
     dataHandlingMode: 'external',
     ai: {
+      ...DEFAULT_SETTINGS.ai,
       mode: 'api',
       api: {
         endpointUrl: 'https://api.example.invalid/v1/process',
@@ -103,6 +104,7 @@ export function runSecurityCheckSuite(): SecurityCheckSuiteResult {
   const pilotSettings: AppSettings = {
     ...DEFAULT_SETTINGS,
     ai: {
+      ...DEFAULT_SETTINGS.ai,
       mode: 'api',
       api: {
         endpointUrl: 'https://proxy.internal.example/v1/process',

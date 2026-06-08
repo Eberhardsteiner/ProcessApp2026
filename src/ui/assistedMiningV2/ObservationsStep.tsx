@@ -35,7 +35,10 @@ import {
   buildReviewOverview,
 } from './reviewSuggestions';
 import { applyNormalizationRules } from './reviewNormalization';
-import { deriveProcessArtifactsFromText } from './documentDerivation';
+import type { DerivationResult } from './documentDerivation';
+import { useProcessAnalysis } from './useProcessAnalysis';
+import { AnalysisStatus } from './AnalysisStatus';
+import type { SourceType } from '../../ai/aiToObservations';
 import { computeQualitySummary } from './narrativeParsing';
 import { getAnalysisModeLabel } from './pmShared';
 import { getOperatingModeProfile } from './operatingMode';
@@ -102,6 +105,11 @@ export function ObservationsStep({ process, version, settings, state, integrity,
   const undoHistoryRef = useRef<SessionHistoryEntry[]>([]);
   const redoHistoryRef = useRef<SessionHistoryEntry[]>([]);
   const [historyCounts, setHistoryCounts] = useState({ undo: 0, redo: 0 });
+
+  // Analyse-Weiche (Prompt 7): ein Fall gleichzeitig in Analyse; Status erscheint
+  // nur in der Zeile des aktiven Falls.
+  const analysis = useProcessAnalysis();
+  const [activeCase, setActiveCase] = useState<ProcessMiningObservationCase | null>(null);
 
   const cases = state.cases as ProcessMiningObservationCase[];
   const observations = state.observations as ProcessMiningObservation[];
@@ -441,16 +449,24 @@ export function ObservationsStep({ process, version, settings, state, integrity,
     return caseItem.sourceType !== 'eventlog' && caseItem.routingContext?.routingClass !== 'eventlog-table';
   }
 
-  function extractForCase(caseItem: ProcessMiningObservationCase) {
-    if (!canReanalyzeCase(caseItem)) return;
-    const sourceText = (caseItem.rawText || caseItem.narrative || '').trim();
-    if (!sourceText) return;
-
-    const result = deriveProcessArtifactsFromText({
-      text: sourceText,
-      fileName: caseItem.name,
+  // Analyse-Eingaben aus einem Fall (identisch zur bisherigen extractForCase-Logik).
+  function analysisInputsForCase(caseItem: ProcessMiningObservationCase): {
+    text: string;
+    sourceName: string;
+    sourceType: SourceType;
+  } {
+    return {
+      text: (caseItem.rawText || caseItem.narrative || '').trim(),
+      sourceName: caseItem.name,
       sourceType: caseItem.sourceType === 'eventlog' ? 'narrative' : (caseItem.sourceType ?? 'narrative'),
-    });
+    };
+  }
+
+  // Bestandsfall-Bindung — EXAKT wie bisher: Observations an caseItem.id binden,
+  // Fall-Text/Labels auffrischen, via mergeState mergen. Genutzt von KI-Ergebnis,
+  // Heuristik-Fallback UND Paste-Import (Formparität, keine Streufälle).
+  function applyResultForCase(caseItem: ProcessMiningObservationCase, result: DerivationResult) {
+    const sourceText = (caseItem.rawText || caseItem.narrative || '').trim();
 
     const refreshedCase: ProcessMiningObservationCase = {
       ...caseItem,
@@ -475,6 +491,20 @@ export function ObservationsStep({ process, version, settings, state, integrity,
     setExpandedEditorCaseId(caseItem.id);
     setShowCaseDetails(true);
     setShowDetailsSection(true);
+  }
+
+  async function extractForCase(caseItem: ProcessMiningObservationCase) {
+    if (!canReanalyzeCase(caseItem)) return;
+    if (analysis.state.status === 'running') return; // nur ein Fall gleichzeitig in Analyse
+    const { text, sourceName, sourceType } = analysisInputsForCase(caseItem);
+    if (!text) return;
+
+    setActiveCase(caseItem);
+    const outcome = await analysis.run({ text, sourceName, sourceType, settings, captureMode: 'case' });
+    if (outcome.kind === 'result') {
+      applyResultForCase(caseItem, outcome.result);
+    }
+    // 'blocked'/'error'/'needs-paste' werden von <AnalysisStatus> in der Fallzeile gezeigt.
   }
 
   function handleFileImport(importedCases: ProcessMiningObservationCase[], importedObservations: ProcessMiningObservation[], derivationSummary?: DerivationSummary) {
@@ -875,6 +905,22 @@ export function ObservationsStep({ process, version, settings, state, integrity,
                               editorOpen={expandedEditorCaseId === caseItem.id}
                               dragHandleProps={{ onMouseDown: () => {} }}
                             />
+                            {activeCase?.id === caseItem.id && (
+                              <div className="mt-2">
+                                <AnalysisStatus
+                                  state={analysis.state}
+                                  onUseHeuristicFallback={() =>
+                                    applyResultForCase(caseItem, analysis.runHeuristicFallback(analysisInputsForCase(caseItem)))
+                                  }
+                                  onImportPasted={(aiText) => {
+                                    const i = analysisInputsForCase(caseItem);
+                                    const r = analysis.importPasted({ aiText, originalText: i.text, sourceName: i.sourceName, sourceType: i.sourceType });
+                                    if (r.ok && r.result) applyResultForCase(caseItem, r.result);
+                                  }}
+                                  onRetry={() => extractForCase(caseItem)}
+                                />
+                              </div>
+                            )}
                             {expandedEditorCaseId === caseItem.id && caseObservations.length > 0 && (
                               <ObservationEditor observations={observations} onUpdate={updateObservations} caseId={caseItem.id} caseName={caseItem.name} />
                             )}

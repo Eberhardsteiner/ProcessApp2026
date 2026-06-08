@@ -1,3 +1,13 @@
+## v0.46.0 – KI-Extraktion als opt-in Standardpfad für die Analyse
+
+- die operative „Analyse" kann jetzt direkt KI nutzen (Schema `ai-capture-v1`); die lokale Heuristik bleibt vollwertiger Fallback und wird im Ergebnis als „Lokale Vorschau ohne KI" gekennzeichnet
+- neuer schlanker KI-Proxy unter `server/` (Vertrag `process-ai-proxy-v1` → Anthropic Messages API); der Anthropic-Schlüssel liegt ausschließlich serverseitig (Env), nie im Browser
+- zentraler Analyse-Modus-Resolver `resolveAnalysisMode` (`ai-api` / `ai-copy-paste` / `heuristic`) plus reine Analyse-Funktion `runProcessAnalysis` als gemeinsame Weiche; kein stiller Heuristik-Fallback, Fehler werden als Outcome zurückgegeben statt geworfen
+- Consent-Gate für den automatischen externen Versand und Eingabe-Budget (`ai.maxInputChars` / `ai.warnInputChars`) in den Einstellungen; ohne Zustimmung und ohne aktive API wird nichts automatisch gesendet
+- alle drei operativen Trigger (ObservationIntakePanel, ObservationsStep, FileImportPanel) laufen über die gemeinsame Weiche; Default bleibt unverändert die lokale Vorschau (`resolveAnalysisMode(DEFAULT_SETTINGS) === 'heuristic'`)
+- Adapter `aiToObservations` bildet `ai-capture-v1` formgleich auf das `DerivationResult` der lokalen Engine ab; `documentDerivation.ts` und damit der Benchmark der lokalen Engine bleiben unverändert (Durchschnitt 77/100)
+- bestehende localStorage-Einstellungen (`process-app-settings-v1`) bleiben rückwärtskompatibel: fehlende neue Felder werden beim Laden mit Defaults aufgefüllt
+
 ## v0.45.2 – Structured Row-Retention und evidenzreine Signalspur
 
 - strukturierte Ablaufzeilen halten explizite Rollen- und Systemwerte jetzt generisch robuster als lokale Zeilenwahrheit, inklusive breiterer Header-Erkennung für Verantwortung-, Team-, Tool- und Anwendungs-Spalten

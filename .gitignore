@@ -21,3 +21,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# KI-Proxy: Secrets niemals committen (bereits durch .env oben abgedeckt, explizit zur Klarheit)
+server/.env

@@ -27,6 +27,12 @@ export interface AppSettings {
   ai: {
     mode: AiIntegrationMode;
     api: AiApiSettings;
+    // Analyse-Pfad (Paket 1): steuert, ob KI in der Analyse genutzt wird,
+    // ob/wann der externe Versand bestätigt wurde und das Eingabe-Budget.
+    useForAnalysis: boolean;
+    externalConsentGivenAt: string | null;
+    maxInputChars: number;
+    warnInputChars: number;
   };
 
   processMining: {
@@ -56,6 +62,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
       apiKey: '',
       timeoutMs: 60000,
     },
+    useForAnalysis: false,
+    externalConsentGivenAt: null,
+    maxInputChars: 250000,
+    warnInputChars: 40000,
   },
   processMining: {
     externalizeEvents: false,

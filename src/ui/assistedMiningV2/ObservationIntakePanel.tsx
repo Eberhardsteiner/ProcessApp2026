@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Sparkles, Plus, Info, CheckCircle2 } from 'lucide-react';
 import type { ProcessMiningObservationCase, ProcessMiningObservation, DerivationSummary } from '../../domain/process';
-import { deriveProcessArtifactsFromText } from './documentDerivation';
+import type { DerivationResult } from './documentDerivation';
 import { HelpPopover } from '../components/HelpPopover';
+import { useAppSettings } from '../../settings/useAppSettings';
+import { useProcessAnalysis } from './useProcessAnalysis';
+import { AnalysisStatus } from './AnalysisStatus';
 
 interface Props {
   existingCaseCount: number;
@@ -23,8 +26,12 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
   const [caseRef, setCaseRef] = useState('');
   const [dateHints, setDateHints] = useState('');
   const [sourceNote, setSourceNote] = useState('');
-  const [deriving, setDeriving] = useState(false);
   const [lastResult, setLastResult] = useState<{ stepCount: number; confidence: string } | null>(null);
+
+  const { settings } = useAppSettings();
+  const analysis = useProcessAnalysis();
+  const isRunning = analysis.state.status === 'running';
+  const caseName = () => name.trim() || `Fall ${existingCaseCount + 1}`;
 
   function buildCase(): ProcessMiningObservationCase {
     const now = new Date().toISOString();
@@ -58,21 +65,32 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
     reset();
   }
 
-  function handleAutoDerive() {
-    if (!narrative.trim()) return;
-    setDeriving(true);
+  // Einheitliche Ergebnisverarbeitung — identisch zur bisherigen Logik. Wird von
+  // KI-Ergebnis, Heuristik-Fallback UND Paste-Import gleichermaßen genutzt (Formparität).
+  function applyResult(result: DerivationResult) {
     const caseItem = buildCase();
-    const result = deriveProcessArtifactsFromText({
-      text: narrative.trim(),
-      fileName: caseItem.name,
-      sourceType: 'narrative',
-    });
     caseItem.id = result.cases[0]?.id ?? caseItem.id;
     const caseToUse = result.cases[0] ?? caseItem;
-    setDeriving(false);
     setLastResult({ stepCount: result.observations.length, confidence: result.confidence });
     onAddDerived(caseToUse, result.observations, result.summary);
     reset();
+  }
+
+  async function handleAutoDerive() {
+    const text = narrative.trim();
+    if (!text) return;
+    const outcome = await analysis.run({
+      text,
+      sourceName: caseName(),
+      sourceType: 'narrative',
+      settings,
+      captureMode: 'case',
+    });
+    if (outcome.kind === 'result') {
+      applyResult(outcome.result);
+    }
+    // 'blocked'/'error'/'needs-paste' werden NICHT hier behandelt,
+    // sondern von <AnalysisStatus> angezeigt.
   }
 
   const canSubmit = narrative.trim().length > 10;
@@ -159,12 +177,12 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
       <div className="flex items-center gap-2 flex-wrap">
         <button
           type="button"
-          disabled={!canSubmit || deriving}
+          disabled={!canSubmit || isRunning}
           onClick={handleAutoDerive}
           className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <Sparkles className="w-4 h-4" />
-          {deriving ? 'Wird erkannt…' : 'Prozess automatisch erkennen'}
+          {isRunning ? 'Wird erkannt…' : 'Prozess automatisch erkennen'}
         </button>
         <button
           type="button"
@@ -176,6 +194,20 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
           Nur als Rohtext speichern
         </button>
       </div>
+
+      <AnalysisStatus
+        state={analysis.state}
+        onUseHeuristicFallback={() =>
+          applyResult(
+            analysis.runHeuristicFallback({ text: narrative.trim(), sourceName: caseName(), sourceType: 'narrative' }),
+          )
+        }
+        onImportPasted={(aiText) => {
+          const r = analysis.importPasted({ aiText, originalText: narrative.trim(), sourceName: caseName(), sourceType: 'narrative' });
+          if (r.ok && r.result) applyResult(r.result);
+        }}
+        onRetry={handleAutoDerive}
+      />
     </div>
   );
 }

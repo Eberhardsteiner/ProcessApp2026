@@ -36,7 +36,7 @@ export interface AiImportResult {
   warnings: string[];
 }
 
-function extractJsonFromText(text: string): AiCaptureResultV1 {
+export function extractJsonFromText(text: string): AiCaptureResultV1 {
   let cleanText = text.trim();
 
   const codeBlockMatch = cleanText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
@@ -65,7 +65,7 @@ function extractJsonFromText(text: string): AiCaptureResultV1 {
   }
 }
 
-function validateAiCapture(data: AiCaptureResultV1): void {
+export function validateAiCapture(data: AiCaptureResultV1): void {
   if (data.schemaVersion !== 'ai-capture-v1') {
     throw new Error(
       `Ungültige Schema-Version: "${data.schemaVersion}". Erwartet: "ai-capture-v1".`

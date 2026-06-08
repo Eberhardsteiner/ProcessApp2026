@@ -1,4 +1,4 @@
-> Aktueller Produktstand: **v0.45.2**
+> Aktueller Produktstand: **v0.46.0**
 
 # Start hier
 
@@ -61,6 +61,14 @@ npm run dev
   nominale Positionierung aus dem Analysemodus, effektive Claim-Stärke aus der realen Evidenzlage; Overclaiming und unnötige Untertreibung werden sichtbar.
 - Der Export bleibt rückwärtskompatibel nutzbar und ergänzt die neue Transparenz in [src/ui/assistedMiningV2/qualityExport.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ui/assistedMiningV2/qualityExport.ts):
   `qualityAssessment.scoringProfile`, `analysisPositioning.nominalClaimStrength`, `analysisPositioning.claimStrength`, `analysisPositioning.claimCalibration`, `analysisPositioning.nominalClaimNote`, `analysisPositioning.claimNote`.
+
+## KI-gestützte Analyse (opt-in, Paket 1)
+
+- Die operative **Analyse** kann KI direkt nutzen. Standard bleibt die **lokale Vorschau ohne KI** (`resolveAnalysisMode(DEFAULT_SETTINGS) === 'heuristic'`); ohne Zustimmung und ohne aktive API wird nichts automatisch gesendet.
+- Aktivierung in den Einstellungen: Datenmodus **„Externer Dienst"**, KI-Modus **„API"**, Endpoint setzen, **„Zustimmung erteilen"** und **„KI für die Analyse verwenden"** einschalten.
+- Ohne aktive API zeigt der KI-Modus einen **Copy/Paste-Prompt** (needs-paste); die lokale Heuristik ist immer als Fallback verfügbar. Ergebnisse sind als „Mit KI erstellt" bzw. „Lokale Vorschau ohne KI" gekennzeichnet.
+- Der Anthropic-Schlüssel liegt ausschließlich serverseitig im Proxy unter `server/` (Vertrag `process-ai-proxy-v1` → Anthropic). Start/Konfiguration: siehe [server/README.md](C:/Users/eberh/Documents/GitHub/ProcessApp2026/server/README.md).
+- Logik: [src/ai/analysisMode.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ai/analysisMode.ts) (Resolver), [src/ai/runAnalysis.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ai/runAnalysis.ts) (gemeinsame Weiche), [src/ai/aiToObservations.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ai/aiToObservations.ts) (Adapter → `DerivationResult`). Die lokale Engine in `documentDerivation.ts` bleibt unverändert.
 
 ## Standardprüfung
 - **Standard (Produktivmodus):** QA-/Self-Test-/Freigabe-Surfaces sind aus dem Nutzerpfad entfernt.

@@ -6,6 +6,16 @@ Der KI-Assistent ermöglicht es, unstrukturierte Prozessbeschreibungen (Text, SO
 
 **Wichtig:** Die App sendet keine Daten automatisch an externe Dienste. Standard ist Copy/Paste. Optional kann ein API‑Modus aktiviert werden (nur im Datenmodus „Externer Dienst") und sendet ausschließlich auf expliziten Klick mit Consent.
 
+## Direkte KI-Nutzung in der operativen Analyse (Paket 1)
+
+Zusätzlich zum Copy/Paste-Assistenten kann die operative **Analyse** (Upload → Analyse) die KI jetzt **direkt** nutzen. Eine gemeinsame Weiche (`src/ai/runAnalysis.ts`) wählt anhand der Einstellungen zwischen:
+
+- **`heuristic`** – lokale Vorschau ohne KI (Default; non-breaking),
+- **`ai-copy-paste`** – KI aktiviert, aber ohne aktive API: die App zeigt den erzeugten Prompt zum Kopieren und ein Feld zum Zurückspielen der JSON-Antwort,
+- **`ai-api`** – automatischer Versand über den konfigurierten Endpoint (Proxy → Anthropic), nur mit erteilter Zustimmung.
+
+Aktivierung: Datenmodus „Externer Dienst" + KI-Modus „API" + Endpoint + „Zustimmung erteilen" + „KI für die Analyse verwenden". Ohne Zustimmung und ohne aktive API wird nichts automatisch gesendet. Ergebnisse sind als „Mit KI erstellt" bzw. „Lokale Vorschau ohne KI" gekennzeichnet. Der Anthropic-Schlüssel liegt ausschließlich serverseitig im Proxy — Details in [server/README.md](../server/README.md). Das KI-Ergebnis nutzt dasselbe Schema `ai-capture-v1` und wird über `src/ai/aiToObservations.ts` formgleich in den lokalen Analyse-Zustand (`DerivationResult`) übernommen; die lokale Engine in `documentDerivation.ts` bleibt unverändert.
+
 ## Workflow
 
 ### 1. Quelltext eingeben

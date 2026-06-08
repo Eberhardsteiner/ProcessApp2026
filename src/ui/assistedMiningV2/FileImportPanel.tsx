@@ -19,7 +19,11 @@ import { extractTextFromDocx } from '../../import/extractTextFromDocx';
 import { extractTablesFromXlsx } from '../../import/extractTextFromXlsx';
 import type { XlsxSheet } from '../../import/extractTextFromXlsx';
 import { parseCsvForImport } from './fileImport';
-import { deriveProcessArtifactsFromText } from './documentDerivation';
+import { useAppSettings } from '../../settings/useAppSettings';
+import { useProcessAnalysis } from './useProcessAnalysis';
+import { AnalysisStatus } from './AnalysisStatus';
+import { AnalysisOriginBadge } from './AnalysisOriginBadge';
+import type { SourceType } from '../../ai/aiToObservations';
 import { runTableEventPipeline } from './tableEventPipeline';
 import { getAnalysisModeLabel } from './pmShared';
 import type { DerivationResult } from './documentDerivation';
@@ -120,6 +124,7 @@ function DerivationResultCard({
         )}
         <ConfidenceBadge confidence={result.confidence} />
         <MethodBadge method={result.method} />
+        <AnalysisOriginBadge provenance={result.summary.provenance} />
       </div>
 
       <div className="text-xs text-slate-500">{getAnalysisModeLabel(result.summary.analysisMode)}</div>
@@ -384,6 +389,17 @@ export function FileImportPanel({ onImport }: Props) {
   const [doneInfo, setDoneInfo] = useState<{ caseCount: number; stepCount: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Analyse-Weiche (Prompt 8): Settings via kanonischem Hook (keine settings-Prop hier).
+  const { settings } = useAppSettings();
+  const analysis = useProcessAnalysis();
+  const [lastUpload, setLastUpload] = useState<{ text: string; sourceName: string; sourceType: SourceType } | null>(null);
+
+  // EXAKT die heutige Upload-Ergebnisverarbeitung der Derive-Stufe: Vorschau setzen.
+  function applyResult(result: DerivationResult) {
+    setDerivationResult(result);
+    setPhase('preview-derived');
+  }
+
   function getFileType(name: string): FileType | null {
     const lower = name.toLowerCase();
     if (lower.endsWith('.pdf')) return 'pdf';
@@ -419,17 +435,19 @@ export function FileImportPanel({ onImport }: Props) {
         }
         setParsedFile({ name: file.name, type, text, warnings: [] });
         setPhase('deriving');
-        const result = deriveProcessArtifactsFromText({ text, fileName: file.name, sourceType: 'pdf' });
-        setDerivationResult(result);
-        setPhase('preview-derived');
+        const pdfSourceType: SourceType = 'pdf';
+        setLastUpload({ text, sourceName: file.name, sourceType: pdfSourceType });
+        const pdfOutcome = await analysis.run({ text, sourceName: file.name, sourceType: pdfSourceType, settings, captureMode: 'case' });
+        if (pdfOutcome.kind === 'result') applyResult(pdfOutcome.result);
 
       } else if (type === 'docx') {
         const r = await extractTextFromDocx(file);
         setParsedFile({ name: file.name, type, text: r.text, warnings: r.warnings });
         setPhase('deriving');
-        const result = deriveProcessArtifactsFromText({ text: r.text, fileName: file.name, sourceType: 'docx' });
-        setDerivationResult(result);
-        setPhase('preview-derived');
+        const docxSourceType: SourceType = 'docx';
+        setLastUpload({ text: r.text, sourceName: file.name, sourceType: docxSourceType });
+        const docxOutcome = await analysis.run({ text: r.text, sourceName: file.name, sourceType: docxSourceType, settings, captureMode: 'case' });
+        if (docxOutcome.kind === 'result') applyResult(docxOutcome.result);
 
       } else if (type === 'csv') {
         const text = await file.text();
@@ -511,6 +529,54 @@ export function FileImportPanel({ onImport }: Props) {
         <button type="button" onClick={reset} className="text-xs text-green-700 underline hover:text-green-800 shrink-0">
           Weitere Datei importieren
         </button>
+      </div>
+    );
+  }
+
+  if (
+    analysis.state.status === 'running' ||
+    analysis.state.status === 'error' ||
+    analysis.state.status === 'blocked' ||
+    analysis.state.status === 'needs-paste'
+  ) {
+    return (
+      <div className="space-y-3">
+        <AnalysisStatus
+          state={analysis.state}
+          onUseHeuristicFallback={() => {
+            if (lastUpload) applyResult(analysis.runHeuristicFallback(lastUpload));
+          }}
+          onImportPasted={(aiText) => {
+            if (!lastUpload) return;
+            const r = analysis.importPasted({
+              aiText,
+              originalText: lastUpload.text,
+              sourceName: lastUpload.sourceName,
+              sourceType: lastUpload.sourceType,
+            });
+            if (r.ok && r.result) applyResult(r.result);
+          }}
+          onRetry={() => {
+            if (!lastUpload) return;
+            analysis
+              .run({ ...lastUpload, settings, captureMode: 'case' })
+              .then((o) => {
+                if (o.kind === 'result') applyResult(o.result);
+              });
+          }}
+        />
+        {analysis.state.status !== 'running' && (
+          <button
+            type="button"
+            onClick={() => {
+              analysis.reset();
+              reset();
+            }}
+            className="text-xs text-slate-400 hover:text-slate-600 underline"
+          >
+            Abbrechen / andere Datei
+          </button>
+        )}
       </div>
     );
   }
