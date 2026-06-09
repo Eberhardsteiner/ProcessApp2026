@@ -1,4 +1,4 @@
-> Aktueller Produktstand: **v0.47.0**
+> Aktueller Produktstand: **v0.48.0**
 
 # Start hier
 
@@ -11,9 +11,12 @@ npm run dev
 
 ## Bedienmodi: Geführt vs. Experte
 
-- **Umschalter im Kopfbereich** des Arbeitsbereichs (Geführt ⇄ Experte). Der Wechsel passiert nur bewusst über diesen Schalter — keine verdeckten Modus-Sprünge mehr.
-- **Geführt (Standard):** schlanker Klartext-Fluss **Material → Analyse → Prüfen → Export**. Sichtbar sind nur das Hinzufügen von Material und die erkannten Schritte zum Prüfen („Stimmt der Prozess? Fehlt etwas? Wer macht das?"); fortgeschrittene Schritte und Panels bleiben ausgeblendet.
-- **Experte:** voller Arbeitsbereich mit allen Tabs. Die komplette Analyse-Workbench ist zusätzlich als eigener Tab **„Analyse-Workbench"** erreichbar; das datenintensive Event-Log-Mining bleibt im Tab **„Process Mining"** unverändert.
+- **Umschalter im Kopfbereich** des Arbeitsbereichs (Geführt ⇄ Experte). Der Wechsel passiert nur bewusst über diesen Schalter — keine verdeckten Modus-Sprünge.
+- **Geführt (Standard):** drei klare Schritte **Start → Analysieren → Ergebnis**.
+  - **Start:** Projekt & Prozess wählen oder vorbereiten.
+  - **Analysieren:** Material direkt eingeben — Dokument hochladen, Text einfügen oder **diktieren** (Browser-Spracherkennung mit Start/Stop und Live-Vorschau) — anschließend die automatisch erkannten Schritte prüfen („Stimmt der Prozess? Fehlt etwas? Wer macht das?") und als Qualitäts-Export sichern. Ein optionaler, **consent-gegateter KI-Schalter „Mit KI analysieren"** erscheint nur bei konfigurierter API; ohne ihn läuft die lokale Vorschau ohne KI.
+  - **Ergebnis:** Verbesserungs-Coach und Maßnahmen.
+- **Experte:** voller Arbeitsbereich mit allen Tabs (unverändert). Die komplette Analyse-Workbench ist zusätzlich als Tab **„Analyse-Workbench"** erreichbar; das datenintensive Event-Log-Mining bleibt im Tab **„Process Mining"**.
 - **QA-/Governance-Flächen** bleiben unverändert hinter dem Dev-Flag (`VITE_ENABLE_QA_SURFACES=1` bzw. `?qa=1`).
 
 ## Produktivmodus vs. QA-/Dev-Modus

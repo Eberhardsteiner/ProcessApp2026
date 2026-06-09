@@ -1,3 +1,10 @@
+## v0.48.0 – Geführter Modus auf drei Schritte gestrafft
+
+- geführter Fluss von sechs auf **drei Schritte** reduziert: **Start → Analysieren → Ergebnis**. Entfernt wurden die redundanten Schritte „Beschreiben", „Erfassen/Prompt" und „Einstellungen" — Material-Eingabe und Extraktion finden direkt im Analysieren-Schritt statt (seit der KI-Direktextraktion aus Paket 1 ist der alte Copy-Paste-Weg im Geführt-Modus überflüssig)
+- **Diktat** als Eingabequelle im geführten Analysieren-Schritt ergänzt (narrative Schilderung per Browser-Spracherkennung, Start/Stop, Live-Vorschau); der diktierte Text fließt direkt in die Extraktion statt über den alten Copy-Paste-Weg
+- kleiner **consent-gegateter KI-Inline-Schalter „Mit KI analysieren"** im Analysieren-Schritt: erscheint nur bei konfigurierter API; Einschalten ohne vorherige Freigabe führt durch eine kompakte Zustimmung (setzt `externalConsentGivenAt`); aus = lokale Vorschau ohne KI
+- geteilte KI-States/Handler des Experten-„ai"-Tabs unangetastet; **Experten-Modus byte-identisch**; Engine/Benchmark unverändert (**77/100**); `WizardPlayground`-Bundle rund **−32 kB** durch entfernten toten/redundanten Code
+
 ## v0.47.0 – Zwei klar getrennte Bedienmodi „Geführt" und „Experte"
 
 - bewusster, beschrifteter Modus-Umschalter im Kopfbereich („Geführt"/„Experte"); die bisherigen verdeckten `setUiMode`-Sprünge aus der Geführt-Ansicht wurden entfernt

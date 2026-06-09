@@ -31,7 +31,6 @@ import { CatalogMergeTool } from './CatalogMergeTool';
 import { buildClaudeExtractionPrompt } from '../ai/claudePrompt';
 import { importAiCaptureToNewVersion } from '../ai/aiImport';
 import { buildSeedFromVersion } from '../ai/assistedCaptureSeed';
-import { AssistedSeedCapturePanel } from './assisted/AssistedSeedCapturePanel';
 import { runAiProxyRequest } from '../ai/aiApiClient';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PROCESS_TEMPLATES, getProcessTemplate } from '../templates/processTemplates';
@@ -53,7 +52,7 @@ import { detectCsvMode, detectZipLooksLikeHtmlBundle, detectHtmlMode } from '../
 import type { DetectedImportHint } from '../import/importModeDetection';
 import { SemanticQuestionsChecklistEditor } from './SemanticQuestionsChecklistEditor';
 import { cloneMiningSidecarEventBlobs } from '../storage/eventBlobLifecycle';
-import { Mic, Square, Settings2, Upload, FileText, X, Search, Copy, Send, ExternalLink, CheckCircle2, Eye, File as FileEdit, AlertTriangle, Sparkles, TrendingUp, RefreshCw, ArrowDownUp, Check, Info, Download, Users, Target, MoreVertical } from 'lucide-react';
+import { Mic, Square, Settings2, Upload, FileText, X, Search, CheckCircle2, File as FileEdit, Sparkles, TrendingUp, RefreshCw, ArrowDownUp, Check, Info, Download, Users, Target, MoreVertical } from 'lucide-react';
 import { ModeToggle } from './components/ModeToggle';
 import { InfoPopover } from './components/InfoPopover';
 import { FieldLabel } from './components/FieldLabel';
@@ -62,7 +61,7 @@ import { OverlayLoadingState, SectionLoadingState } from './components/LoadingSt
 import { resetAllAppData, APP_RESET_SCOPE_NOTE } from '../persistence/resetAllAppData';
 
 type TabId = 'setup' | 'wizard' | 'draft' | 'review' | 'issues' | 'improvements' | 'report' | 'ai' | 'mining' | 'analysis-workbench' | 'changes' | 'workshop' | 'settings' | 'transfer';
-type AssistedStepId = 'context' | 'setup' | 'describe' | 'prompt' | 'analyze' | 'optimize';
+type AssistedStepId = 'context' | 'analyze' | 'optimize';
 
 interface TabConfig {
   id: TabId;
@@ -110,9 +109,6 @@ const LazyAiApiSettingsCard = lazy(async () => ({ default: (await import('./AiAp
 
 const ASSISTED_STEPS = [
   { id: 'context', label: 'Start', description: 'Projekt & Prozess wählen' },
-  { id: 'setup', label: 'Einstellungen', description: 'KI & Sprache (optional)' },
-  { id: 'describe', label: 'Beschreiben', description: 'Worum geht es?' },
-  { id: 'prompt', label: 'Erfassen', description: 'Vorerfassen & ergänzen' },
   { id: 'analyze', label: 'Analysieren', description: 'Schritte erkennen & prüfen' },
   { id: 'optimize', label: 'Ergebnis', description: 'Verbessern & abschließen' },
 ];
@@ -206,7 +202,9 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
   const [aiResponseJson, setAiResponseJson] = useState<string>('');
   const [aiImportWarnings, setAiImportWarnings] = useState<string[]>([]);
   const [aiImporting, setAiImporting] = useState(false);
-  const [aiImportSuccess, setAiImportSuccess] = useState(false);
+  // aiImportSuccess-Wert wird nicht mehr gelesen (war nur im entfernten geführten
+  // prompt-Schritt sichtbar); der Setter bleibt für handleImportAiResponse erhalten.
+  const [, setAiImportSuccess] = useState(false);
   const [aiCaptureMode, setAiCaptureMode] = useState<'artifact' | 'case' | 'cases'>('artifact');
   const [aiEvidenceSourceLabel, setAiEvidenceSourceLabel] = useState<string>('');
   const [aiDictationActive, setAiDictationActive] = useState(false);
@@ -749,7 +747,7 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
       }
 
       setStatusMessage('Arbeitsbereich bereit.');
-      setAssistedStep('describe');
+      setAssistedStep('analyze');
     } catch (error) {
       setStatusMessage(`Fehler bei der Vorbereitung: ${error instanceof Error ? error.message : 'Unbekannt'}`);
     } finally {
@@ -1139,60 +1137,6 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
     } finally {
       setSaving(false);
     }
-  };
-
-  const ensureBpmnXml = async (): Promise<boolean> => {
-    if (!process || !version) {
-      setStatusMessage('Prozess oder Version fehlt');
-      return false;
-    }
-
-    if (version.bpmn?.bpmnXml && version.bpmn.bpmnXml.trim().length > 0) return true;
-
-    const hpLen = version.sidecar.captureDraft?.happyPath?.length ?? 0;
-    if (hpLen === 0) {
-      setStatusMessage('Kein Draft vorhanden. BPMN Vorschau ist aktuell nicht möglich.');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return false;
-    }
-
-    setGeneratingBpmn(true);
-    setBpmnWarnings([]);
-    setStatusMessage('Erzeuge BPMN für die Vorschau...');
-
-    try {
-      const result = buildBpmnXmlFromDraft(process, version);
-      setBpmnWarnings(result.warnings);
-
-      const updated = await updateVersion(process.processId, version.versionId, {
-        bpmn: {
-          ...version.bpmn,
-          bpmnXml: result.xml,
-          lastExportedAt: new Date().toISOString(),
-        },
-      });
-
-      setVersion(updated);
-
-      if (result.warnings?.length) {
-        setStatusMessage(`BPMN erzeugt (Hinweise: ${result.warnings.length}). Öffne Vorschau...`);
-      } else {
-        setStatusMessage('BPMN erzeugt. Öffne Vorschau...');
-      }
-
-      return true;
-    } catch (error) {
-      setStatusMessage(`Fehler bei BPMN-Generierung: ${error instanceof Error ? error.message : 'Unbekannt'}`);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return false;
-    } finally {
-      setGeneratingBpmn(false);
-    }
-  };
-
-  const handleOpenBpmnPreview = async () => {
-    const ok = await ensureBpmnXml();
-    if (ok) setBpmnPreviewOpen(true);
   };
 
   const handleGenerateBpmn = async () => {
@@ -2849,546 +2793,20 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
                         >
                           {preparingContext ? 'Bereite vor...' : 'Arbeitsbereich vorbereiten'}
                         </button>
-                      ) : null}
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setAssistedStep('analyze')}
+                          className="px-6 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium"
+                        >
+                          Weiter: Analysieren
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {contextSubTab === 'meta' && renderContextMetaEditor({ variant: 'assisted' })}
-              </div>
-            )}
-
-            {assistedStep === 'setup' && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-semibold text-slate-900 mb-2">Setup</h2>
-                  <p className="text-slate-600">
-                    Konfigurieren Sie Spracheingabe, Übersetzung und KI (Copy/Paste oder API).
-                  </p>
-                </div>
-
-                <div className="bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow-sm p-6">
-                  <Suspense fallback={<SectionLoadingState title="Spracheinstellungen werden geladen" description="Sprach- und Übersetzungseinstellungen werden nur bei Bedarf nachgeladen." compact />}>
-                    <LazySpeechAndTranslationSettingsCard settings={settings} onChange={setSettings} />
-                  </Suspense>
-                </div>
-
-                <div className="bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow-sm p-6">
-                  <Suspense fallback={<SectionLoadingState title="API-Einstellungen werden geladen" description="Die optionale KI-Anbindung wird nur bei Bedarf nachgeladen." compact />}>
-                    <LazyAiApiSettingsCard settings={settings} onChange={setSettings} />
-                  </Suspense>
-                </div>
-
-                <div className="flex justify-between">
-                  <button
-                    onClick={() => setAssistedStep('context')}
-                    className="px-6 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
-                  >
-                    Zurück
-                  </button>
-                  <button
-                    onClick={() => setAssistedStep('describe')}
-                    className="px-6 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium"
-                  >
-                    Weiter: Beschreiben
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {assistedStep === 'describe' && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-semibold text-slate-900 mb-2">Prozess beschreiben</h2>
-                  <p className="text-slate-600">
-                    Beschreiben Sie den Prozess per Sprache, Dokumenten-Upload oder direkt als Text.
-                  </p>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow-sm p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <h3 className="text-lg font-semibold text-slate-900">Spracheingabe</h3>
-                      <InfoPopover title="Wofür ist das?" ariaLabel="Spracheingabe Info">
-                        <p className="text-sm">
-                          Nutzen Sie die Browser-Spracherkennung, um Ihre Prozessbeschreibung bequem zu diktieren.
-                        </p>
-                      </InfoPopover>
-                    </div>
-
-                    {!canUseAiDictation && needsAiDictationSetup && isWebSpeechSupported() && (
-                      <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
-                        <p className="text-sm text-amber-900 mb-3">
-                          Spracheingabe ist noch nicht aktiviert. Möchten Sie die Browser-Spracherkennung nutzen?
-                        </p>
-                        <button
-                          onClick={() => {
-                            setSettings({
-                              ...settings,
-                              dataHandlingMode: 'external',
-                              transcription: {
-                                ...settings.transcription,
-                                providerId: 'web_speech',
-                              },
-                            });
-                            setStatusMessage('Spracheingabe aktiviert');
-                          }}
-                          className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
-                        >
-                          Spracheingabe aktivieren
-                        </button>
-                      </div>
-                    )}
-
-                    {!isWebSpeechSupported() && (
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                        <p className="text-sm text-slate-600">
-                          Ihr Browser unterstützt die Web Speech API nicht. Bitte verwenden Sie Chrome, Edge oder Safari.
-                        </p>
-                      </div>
-                    )}
-
-                    {canUseAiDictation && (
-                      <div className="space-y-3">
-                        {!aiDictationActive ? (
-                          <button
-                            onClick={handleStartAiDictation}
-                            className="w-full px-4 py-3 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition-colors font-medium flex items-center justify-center gap-2"
-                          >
-                            <Mic className="w-5 h-5" />
-                            Diktat starten
-                          </button>
-                        ) : (
-                          <button
-                            onClick={handleStopAiDictation}
-                            className="w-full px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium flex items-center justify-center gap-2"
-                          >
-                            <Square className="w-5 h-5" />
-                            Diktat beenden
-                          </button>
-                        )}
-
-                        <div className="text-xs text-slate-500 text-center">
-                          Sprache: {settings.transcription.language === 'de-DE' ? 'Deutsch' : settings.transcription.language}
-                        </div>
-
-                        {aiDictationActive && aiDictationInterim && (
-                          <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-3">
-                            <div className="text-xs font-medium text-cyan-900 mb-1">Live:</div>
-                            <div className="text-sm text-cyan-800">{aiDictationInterim}</div>
-                          </div>
-                        )}
-
-                        {aiDictationError && (
-                          <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                            <p className="text-sm text-red-800">{aiDictationError}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow-sm p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <h3 className="text-lg font-semibold text-slate-900">Dokumente hochladen</h3>
-                      <InfoPopover title="Wofür ist das?" ariaLabel="Upload Info">
-                        <p className="text-sm">
-                          Laden Sie bestehende Dokumentation hoch. Unterstützt werden Text-, PDF-, Word-, HTML- und CSV-Dateien.
-                        </p>
-                      </InfoPopover>
-                    </div>
-
-                    <button
-                      onClick={() => aiFileInputRef.current?.click()}
-                      disabled={aiDictationActive}
-                      className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Upload className="w-5 h-5" />
-                      Datei auswählen
-                    </button>
-
-                    <input
-                      ref={aiFileInputRef}
-                      type="file"
-                      accept=".txt,.md,.csv,.json,.log,.pdf,.docx,.html,.htm,.zip,text/*,application/json,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,application/zip,application/x-zip-compressed"
-                      onChange={handleAiFileSelect}
-                      onClick={(e) => { (e.currentTarget as HTMLInputElement).value = ''; }}
-                      className="hidden"
-                    />
-
-                    <div className="mt-3 text-xs text-slate-500 space-y-1">
-                      <div>Unterstützte Formate:</div>
-                      <div>Text, PDF, Word, HTML, CSV, ZIP</div>
-                    </div>
-
-                    {aiFileError && (
-                      <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3">
-                        <p className="text-sm text-red-800">{aiFileError}</p>
-                      </div>
-                    )}
-
-                    {aiFilePending && (
-                      <div className="mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
-                        <div className="text-sm text-slate-700">
-                          <strong>Datei:</strong> {aiFilePending.name}
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleAiApplyFileReplace}
-                            className="flex-1 px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors text-sm font-medium"
-                          >
-                            Ersetzen
-                          </button>
-                          <button
-                            onClick={handleAiApplyFileAppend}
-                            className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                          >
-                            Anhängen
-                          </button>
-                          <button
-                            onClick={handleAiCancelFilePending}
-                            className="px-3 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors text-sm font-medium"
-                          >
-                            Abbrechen
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow-sm p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-lg font-semibold text-slate-900">Prozessbeschreibung</h3>
-                    <InfoPopover title="Wofür ist das?" ariaLabel="Text Info">
-                      <p className="text-sm">
-                        Hier erscheint Ihre Prozessbeschreibung aus Spracheingabe oder Datei-Upload. Sie können den Text auch direkt bearbeiten oder einfügen.
-                      </p>
-                    </InfoPopover>
-                  </div>
-
-                  <textarea
-                    value={aiRawText}
-                    onChange={(e) => setAiRawText(e.target.value)}
-                    placeholder="Beschreiben Sie Ihren Prozess hier oder nutzen Sie Spracheingabe/Upload..."
-                    className="w-full h-48 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
-                  />
-
-                  <div className="flex items-center gap-3 mt-3">
-                    <button
-                      onClick={() => setAiRawText('')}
-                      className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
-                    >
-                      Leeren
-                    </button>
-                    <div className="text-xs text-slate-500">
-                      {aiRawText.length} Zeichen
-                    </div>
-                  </div>
-
-                  <details className="mt-4">
-                    <summary className="cursor-pointer text-sm font-medium text-slate-700 hover:text-slate-900">
-                      Optional: Übersetzung hinzufügen
-                    </summary>
-                    <div className="mt-3">
-                      <textarea
-                        value={aiTranslatedText}
-                        onChange={(e) => setAiTranslatedText(e.target.value)}
-                        placeholder="Übersetzte Version (optional)..."
-                        className="w-full h-32 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
-                      />
-                    </div>
-                  </details>
-                </div>
-
-                <div className="flex justify-between">
-                  <button
-                    onClick={() => setAssistedStep('context')}
-                    className="px-6 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
-                  >
-                    Zurück
-                  </button>
-                  <button
-                    onClick={() => setAssistedStep('prompt')}
-                    disabled={!aiRawText.trim()}
-                    className="px-6 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Weiter zur Erfassung
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {assistedStep === 'prompt' && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-semibold text-slate-900 mb-2">Erfassen & KI ergänzen</h2>
-                  <p className="text-slate-600">
-                    Erfassen Sie den Prozess vorab in der App, generieren Sie dann einen KI-Prompt und übernehmen Sie die KI-Antwort direkt in diesem Schritt.
-                  </p>
-                </div>
-
-                <div className="bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow-sm p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold shrink-0">A</span>
-                    <h3 className="text-lg font-semibold text-slate-900">Vorerfassung in der App</h3>
-                    <InfoPopover title="Wofür ist das?" ariaLabel="Vorerfassung Info">
-                      <p className="text-sm">
-                        Tragen Sie die wichtigsten Prozessinformationen vorab ein. Diese Daten werden beim Prompt-Generieren als Seed an die KI übergeben – die KI ergänzt, ohne Ihre manuelle Erfassung zu überschreiben.
-                      </p>
-                    </InfoPopover>
-                  </div>
-
-                  {process && version ? (
-                    <AssistedSeedCapturePanel
-                      process={process}
-                      version={version}
-                      onSaved={(updated) => setVersion(updated)}
-                    />
-                  ) : (
-                    <div className="text-sm text-amber-600 flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4" />
-                      Bitte erst im Schritt „Kontext" einen Prozess und eine Version vorbereiten.
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow-sm p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold shrink-0">B</span>
-                    <h3 className="text-lg font-semibold text-slate-900">KI-Prompt generieren</h3>
-                    <InfoPopover title="Wofür ist das?" ariaLabel="Prompt Info">
-                      <p className="text-sm">
-                        Generiert einen optimierten Prompt für Claude. Die Vorerfassung aus Abschnitt A wird als Seed eingebettet.
-                      </p>
-                    </InfoPopover>
-                  </div>
-
-                  {!aiGeneratedPrompt ? (
-                    <button
-                      onClick={handleGenerateAiPrompt}
-                      disabled={!aiRawText.trim()}
-                      className="px-6 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Prompt generieren
-                    </button>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                        <p className="text-sm text-slate-700 mb-2">
-                          <strong>Prompt generiert!</strong> Kopieren Sie ihn und fügen Sie ihn in Claude ein.
-                        </p>
-                        <textarea
-                          readOnly
-                          value={aiGeneratedPrompt}
-                          className="w-full h-48 px-3 py-2 border border-slate-300 rounded-lg font-mono text-xs bg-white resize-none"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleCopyPrompt}
-                          className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium flex items-center justify-center gap-2"
-                        >
-                          <Copy className="w-4 h-4" />
-                          Kopieren
-                        </button>
-                        <button
-                          onClick={() => setAiGeneratedPrompt('')}
-                          className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-medium"
-                        >
-                          Neu generieren
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow-sm p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold shrink-0">C</span>
-                    <h3 className="text-lg font-semibold text-slate-900">KI-Antwort einfügen und übernehmen</h3>
-                    <InfoPopover title="Wofür ist das?" ariaLabel="Antwort Info">
-                      <p className="text-sm">
-                        Fügen Sie die JSON-Antwort von Claude ein und übernehmen Sie sie direkt. Eine neue Version wird erstellt – Ihre Vorerfassung bleibt führend.
-                      </p>
-                    </InfoPopover>
-                  </div>
-
-                  <textarea
-                    value={aiResponseJson}
-                    onChange={(e) => setAiResponseJson(e.target.value)}
-                    placeholder='KI-Antwort (JSON) hier einfügen…'
-                    className="w-full h-40 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none font-mono text-sm"
-                  />
-
-                  {settings.dataHandlingMode === 'external' &&
-                   settings.ai.mode === 'api' &&
-                   settings.ai.api.endpointUrl.trim() && (
-                    <div className="mt-4 pt-4 border-t border-slate-200">
-                      <label className="flex items-start gap-2 mb-3">
-                        <input
-                          type="checkbox"
-                          checked={aiApiConsent}
-                          onChange={(e) => setAiApiConsent(e.target.checked)}
-                          className="mt-1"
-                        />
-                        <span className="text-xs text-slate-600">
-                          Ich verstehe, dass der Prompt an einen externen Dienst gesendet wird.
-                        </span>
-                      </label>
-                      <button
-                        onClick={handleRunAiExtractionViaApi}
-                        disabled={!aiApiConsent || !aiRawText.trim() || aiApiRunning}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        {aiApiRunning ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Sende...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="w-4 h-4" />
-                            Per API senden
-                          </>
-                        )}
-                      </button>
-                      {aiApiError && (
-                        <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3">
-                          <p className="text-sm font-medium text-red-900">API Fehler:</p>
-                          <p className="text-sm text-red-700 mt-1">{aiApiError}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {settings.dataHandlingMode !== 'external' && (
-                    <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3">
-                      <p className="text-xs text-amber-900 mb-2">
-                        API-Integration ist im lokalen Modus nicht verfügbar.
-                      </p>
-                      <button
-                        onClick={() => setAssistedStep('setup')}
-                        className="text-xs text-amber-700 hover:text-amber-900 underline flex items-center gap-1"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        Setup öffnen
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="mt-4">
-                    <button
-                      onClick={handleImportAiResponse}
-                      disabled={aiImporting || !aiResponseJson.trim() || !process || !version}
-                      className="w-full px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {aiImporting ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Übernehme...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4" />
-                          KI-Ergebnis übernehmen
-                        </>
-                      )}
-                    </button>
-
-                    {(!process || !version) && (
-                      <div className="mt-3 text-sm text-amber-600 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4" />
-                        Bitte erst Prozess und Version im Schritt „Kontext" vorbereiten.
-                      </div>
-                    )}
-                  </div>
-
-                  {aiImportWarnings.length > 0 && (
-                    <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                      <h3 className="font-medium text-yellow-900 mb-2 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4" />
-                        Übernahme-Hinweise
-                      </h3>
-                      <ul className="space-y-1 text-sm text-yellow-800">
-                        {aiImportWarnings.map((warning, idx) => (
-                          <li key={idx}>• {warning}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-
-                {aiImportSuccess && version?.sidecar.captureDraft?.happyPath && version.sidecar.captureDraft.happyPath.length > 0 && (
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200 shadow-sm p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                      <h3 className="text-lg font-semibold text-slate-900">Entwurf bereit</h3>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-white/80 backdrop-blur rounded-xl p-4 border border-green-100">
-                        <div className="text-2xl font-bold text-green-700">
-                          {version.sidecar.captureDraft.happyPath.length}
-                        </div>
-                        <div className="text-xs text-slate-600 mt-1">Prozessschritte</div>
-                      </div>
-                      <div className="bg-white/80 backdrop-blur rounded-xl p-4 border border-green-100">
-                        <div className="text-2xl font-bold text-green-700">
-                          {version.sidecar.roles?.length || 0}
-                        </div>
-                        <div className="text-xs text-slate-600 mt-1">Rollen</div>
-                      </div>
-                      <div className="bg-white/80 backdrop-blur rounded-xl p-4 border border-green-100">
-                        <div className="text-2xl font-bold text-green-700">
-                          {version.sidecar.systems?.length || 0}
-                        </div>
-                        <div className="text-xs text-slate-600 mt-1">IT-Systeme</div>
-                      </div>
-                      <div className="bg-white/80 backdrop-blur rounded-xl p-4 border border-green-100">
-                        <div className="text-2xl font-bold text-green-700">
-                          {version.sidecar.dataObjects?.length || 0}
-                        </div>
-                        <div className="text-xs text-slate-600 mt-1">Datenobjekte</div>
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={handleOpenBpmnPreview}
-                        disabled={generatingBpmn}
-                        className="px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        <Eye className="w-4 h-4" />
-                        BPMN Vorschau
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAssistedStep('analyze')}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        Weiter: Analysieren
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-between">
-                  <button
-                    onClick={() => setAssistedStep('describe')}
-                    className="px-6 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
-                  >
-                    Zurück
-                  </button>
-                  <button
-                    onClick={() => setAssistedStep('analyze')}
-                    className="px-6 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium"
-                  >
-                    Weiter: Analysieren
-                  </button>
-                </div>
               </div>
             )}
 
@@ -3433,7 +2851,7 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
                 <div className="flex justify-between pt-2">
                   <button
                     type="button"
-                    onClick={() => setAssistedStep('prompt')}
+                    onClick={() => setAssistedStep('context')}
                     className="px-6 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
                   >
                     Zurück

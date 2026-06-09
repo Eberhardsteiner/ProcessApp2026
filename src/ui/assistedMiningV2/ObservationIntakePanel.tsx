@@ -1,11 +1,14 @@
-import { useState } from 'react';
-import { Sparkles, Plus, Info, CheckCircle2 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Sparkles, Plus, Info, CheckCircle2, Mic, MicOff } from 'lucide-react';
 import type { ProcessMiningObservationCase, ProcessMiningObservation, DerivationSummary } from '../../domain/process';
 import type { DerivationResult } from './documentDerivation';
 import { HelpPopover } from '../components/HelpPopover';
 import { useAppSettings } from '../../settings/useAppSettings';
 import { useProcessAnalysis } from './useProcessAnalysis';
 import { AnalysisStatus } from './AnalysisStatus';
+import { startWebSpeechTranscription, type WebSpeechSession } from '../../speech/webSpeechTranscription';
+import { isWebSpeechSupported } from '../../speech/transcriptionProviders';
+import { getAiApiReadiness } from '../../ai/analysisMode';
 
 interface Props {
   existingCaseCount: number;
@@ -15,11 +18,15 @@ interface Props {
     observations: ProcessMiningObservation[],
     summary?: DerivationSummary,
   ) => void;
+  // Nur der geführte Aufrufer aktiviert Diktat; ohne die Prop bleibt jeder andere Mount unverändert.
+  enableDictation?: boolean;
+  // Nur der geführte Aufrufer zeigt den Inline-KI-Schalter; ohne die Prop unverändert.
+  enableInlineAiToggle?: boolean;
 }
 
 const EXAMPLE_NARRATIVE = `Beispiel: Am Montag öffnet die Sachbearbeiterin das Ticket. Sie prüft die Angaben — das dauert etwa 10 Minuten. Falls Unterlagen fehlen, schreibt sie eine E-Mail und wartet bis zu 2 Tage. Danach leitet sie den Vorgang weiter. Am Ende informiert sie den Kunden per E-Mail.`;
 
-export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDerived }: Props) {
+export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDerived, enableDictation = false, enableInlineAiToggle = false }: Props) {
   const [name, setName] = useState('');
   const [narrative, setNarrative] = useState('');
   const [showExtra, setShowExtra] = useState(false);
@@ -28,10 +35,122 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
   const [sourceNote, setSourceNote] = useState('');
   const [lastResult, setLastResult] = useState<{ stepCount: number; confidence: string } | null>(null);
 
-  const { settings } = useAppSettings();
+  const { settings, setSettings } = useAppSettings();
   const analysis = useProcessAnalysis();
   const isRunning = analysis.state.status === 'running';
   const caseName = () => name.trim() || `Fall ${existingCaseCount + 1}`;
+
+  // Inline-KI-Schalter (nur im geführten Aufruf via enableInlineAiToggle).
+  // Single source of truth = settings (process-app-settings-v1) über setSettings;
+  // kein neues Settings-Feld, kein zweiter State. "Konfiguriert" = alles außer
+  // Consent erfüllt (Endpoint/extern/api-mode) -> Consent wird hier inline eingeholt.
+  const aiReadiness = getAiApiReadiness(settings);
+  const aiApiConfigured = aiReadiness.missing.every((m) => m === 'consent');
+  const aiOn = settings.ai.useForAnalysis === true;
+  const consentGiven = Boolean(settings.ai.externalConsentGivenAt);
+  const showAiToggle = enableInlineAiToggle && aiApiConfigured;
+  const [showAiConsent, setShowAiConsent] = useState(false);
+
+  function setUseForAnalysis(on: boolean) {
+    setSettings({ ...settings, ai: { ...settings.ai, useForAnalysis: on } });
+  }
+
+  function handleToggleAi() {
+    if (aiOn) {
+      // Ausschalten — Consent NICHT löschen (bleibt wie eine Einstellung erhalten).
+      setUseForAnalysis(false);
+      setShowAiConsent(false);
+      return;
+    }
+    if (consentGiven) {
+      setUseForAnalysis(true);
+    } else {
+      // Einschalten ohne vorherige Freigabe -> Inline-Zustimmung (Consent nicht umgehen).
+      setShowAiConsent(true);
+    }
+  }
+
+  function handleConfirmAiConsent() {
+    // Gleiche Bedeutung wie in AiApiSettingsCard: Zustimmung = ISO-Zeitstempel.
+    setSettings({
+      ...settings,
+      ai: { ...settings.ai, externalConsentGivenAt: new Date().toISOString(), useForAnalysis: true },
+    });
+    setShowAiConsent(false);
+  }
+
+  function handleCancelAiConsent() {
+    setShowAiConsent(false); // Schalter bleibt aus
+  }
+
+  // Diktat (nur im geführten Aufruf via enableDictation). Nutzt die bewährte
+  // Web-Speech-Schicht; diktierter Text wird an den vorhandenen narrative-State
+  // angehängt (denselben, den handleAutoDerive liest). Keine Verdrahtung zu aiRawText.
+  const speechSupported = isWebSpeechSupported();
+  const [dictating, setDictating] = useState(false);
+  const [dictationInterim, setDictationInterim] = useState('');
+  const [dictationError, setDictationError] = useState('');
+  const dictationSessionRef = useRef<WebSpeechSession | null>(null);
+
+  useEffect(() => {
+    // Bei Unmount Mikrofon sauber beenden (kein weiterlaufendes Mikrofon, kein Leak).
+    return () => {
+      if (dictationSessionRef.current) {
+        dictationSessionRef.current.abort();
+        dictationSessionRef.current = null;
+      }
+    };
+  }, []);
+
+  function handleStartDictation() {
+    if (!enableDictation || !speechSupported || dictating) return;
+    setDictationError('');
+    setDictationInterim('');
+    const session = startWebSpeechTranscription(
+      {
+        language: settings.transcription.language || 'de-DE',
+        interimResults: true,
+        continuous: true,
+      },
+      {
+        onInterim: (text) => setDictationInterim(text),
+        onFinal: (text) => {
+          const clean = text.trim();
+          if (clean) {
+            // nicht-destruktiv an bereits getippten Text anhängen
+            setNarrative((prev) => (prev.trim() ? `${prev.trim()} ${clean}` : clean));
+          }
+          setDictationInterim('');
+        },
+        onError: (msg) => {
+          setDictationError(msg || 'Spracherkennung konnte nicht gestartet werden.');
+          setDictating(false);
+          setDictationInterim('');
+          dictationSessionRef.current = null;
+        },
+        onEnd: () => {
+          setDictating(false);
+          setDictationInterim('');
+          dictationSessionRef.current = null;
+        },
+      },
+    );
+    if (session) {
+      dictationSessionRef.current = session;
+      setDictating(true);
+    } else {
+      setDictating(false);
+    }
+  }
+
+  function handleStopDictation() {
+    if (dictationSessionRef.current) {
+      dictationSessionRef.current.stop();
+      dictationSessionRef.current = null;
+    }
+    setDictating(false);
+    setDictationInterim('');
+  }
 
   function buildCase(): ProcessMiningObservationCase {
     const now = new Date().toISOString();
@@ -141,6 +260,39 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
           />
         </div>
 
+        {enableDictation && (speechSupported ? (
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={dictating ? handleStopDictation : handleStartDictation}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${dictating ? 'bg-red-600 text-white hover:bg-red-700' : 'border border-cyan-300 text-cyan-700 hover:bg-cyan-50'}`}
+            >
+              {dictating ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              {dictating ? 'Aufnahme beenden' : 'Diktieren'}
+            </button>
+            <p className="text-xs text-slate-400">
+              Die Spracherkennung läuft im Browser. Diktierter Text wird an die Beschreibung angehängt.
+            </p>
+            {dictating && dictationInterim && (
+              <div className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-800">
+                <span className="mr-1 text-[11px] font-medium text-cyan-900">Live:</span>
+                {dictationInterim}
+              </div>
+            )}
+            {dictationError && <p className="text-xs text-red-600">{dictationError}</p>}
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled
+            title="In diesem Browser nicht verfügbar"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-slate-200 text-slate-400 cursor-not-allowed"
+          >
+            <Mic className="w-4 h-4" />
+            Diktieren (in diesem Browser nicht verfügbar)
+          </button>
+        ))}
+
         <button
           type="button"
           onClick={() => setShowExtra(s => !s)}
@@ -173,6 +325,45 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
           „Prozess automatisch erkennen" analysiert den Text und extrahiert Prozessschritte. Je konkreter die Beschreibung, desto besser das Ergebnis.
         </span>
       </div>
+
+      {showAiToggle && (
+        <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 space-y-2">
+          <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={aiOn}
+              onChange={handleToggleAi}
+              className="rounded border-slate-300 text-blue-600 focus:ring-blue-400"
+            />
+            <span className="text-sm font-medium text-slate-700">Mit KI analysieren</span>
+            <span className="text-xs text-slate-400">{aiOn ? '(KI aktiv)' : '(lokale Vorschau)'}</span>
+          </label>
+          {showAiConsent && !aiOn && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 space-y-2">
+              <p className="text-xs text-amber-900 leading-relaxed">
+                Bei „Mit KI analysieren" wird der eingegebene Analysetext an den konfigurierten externen Endpoint
+                gesendet (Ihr Proxy → Anthropic-API). Ohne diese Zustimmung wird nichts automatisch gesendet.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleConfirmAiConsent}
+                  className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Zustimmen &amp; einschalten
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelAiConsent}
+                  className="px-3 py-1.5 text-xs font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center gap-2 flex-wrap">
         <button

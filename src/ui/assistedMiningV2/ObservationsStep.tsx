@@ -646,7 +646,7 @@ export function ObservationsStep({ process, version, settings, state, integrity,
             </div>
             <div className="p-4">
               {activeTab === 'describe' ? (
-                <ObservationIntakePanel existingCaseCount={cases.length} onAddCase={addRawCase} onAddDerived={addDerivedCase} />
+                <ObservationIntakePanel existingCaseCount={cases.length} onAddCase={addRawCase} onAddDerived={addDerivedCase} enableDictation={true} enableInlineAiToggle={true} />
               ) : (
                 <FileImportPanel onImport={handleFileImport} />
               )}
