@@ -139,3 +139,50 @@ Fehlerfälle bei `POST /ai`:
 - `PROXY_SHARED_SECRET` gesetzt, aber Bearer fehlt/falsch → `401`.
 - Upstream nicht 2xx → derselbe Statuscode + lesbare Anthropic-Meldung.
 - Timeout (60 s) → `504` mit klarer Meldung.
+
+---
+
+# Transkriptions-Proxy (`process-transcription-proxy-v1` → OpenAI-kompatible `/audio/transcriptions`)
+
+**Separater Prozess auf eigenem Port** (Default `8788`) **neben** `aiProxy.mjs`. Nimmt Audio entgegen und reicht es als multipart-Upload (`file`, `model`, `language?`, `response_format=json`) an eine **OpenAI-kompatible** `/audio/transcriptions`-Gegenstelle weiter. Das funktioniert sowohl mit der **OpenAI-API** als auch mit vielen **self-hosted Whisper-Servern** (z. B. `faster-whisper-server`/`speaches`), die dieselbe Schnittstelle anbieten. Der Upstream-Schlüssel liegt ausschließlich serverseitig.
+
+Wie der KI-Proxy: keine Frameworks, keine npm-Abhängigkeiten — nur Node-Builtins + global `fetch`/`FormData`/`Blob` (Node ≥ 18). **Zwei getrennte Auth-Richtungen** (eingehend Browser→Proxy, ausgehend Proxy→Whisper/OpenAI).
+
+## Start
+
+```bash
+TRANSCRIPTION_ENDPOINT=http://localhost:8000/v1/audio/transcriptions node server/transcriptionProxy.mjs
+```
+
+Oder die `TRANSCRIPTION_*`-Variablen in `server/.env` setzen (wird ab Node ≥ 20.6 automatisch geladen) und `node server/transcriptionProxy.mjs` starten. (Es gibt bewusst kein npm-Skript — beide Proxys werden direkt per `node server/<datei>.mjs` gestartet, analog zum KI-Proxy.)
+
+## Konfiguration (ENV)
+
+| Variable | Pflicht | Default | Bedeutung |
+|---|---|---|---|
+| `TRANSCRIPTION_ENDPOINT` | **ja** | – | OpenAI-kompatible `/audio/transcriptions`-URL (self-hosted Whisper **oder** OpenAI). Fehlt sie, beendet sich der Proxy mit klarer Meldung. |
+| `TRANSCRIPTION_API_KEY` | nein | leer | **ausgehender** Bearer an die Gegenstelle (lokal oft leer; bei OpenAI der API-Key). |
+| `TRANSCRIPTION_MODEL` | nein | `whisper-1` | Modellname für die Gegenstelle. |
+| `PORT` | nein | `8788` | eigener Port (nicht `8787`). |
+| `ALLOWED_ORIGIN` | nein | `*` | `Access-Control-Allow-Origin` (CORS). |
+| `TRANSCRIPTION_PROXY_SHARED_SECRET` | nein | leer | **eingehender** Bearer (Browser→Proxy); darf demselben Wert wie `PROXY_SHARED_SECRET` entsprechen. |
+| `TRANSCRIPTION_TIMEOUT_MS` | nein | `60000` | Upstream-Timeout (Audio darf länger dauern als Text). |
+
+## Endpunkte / Verhalten
+
+| Methode | Pfad | Verhalten |
+|---|---|---|
+| `GET` | `/health` | `200` Body `ok`. |
+| `OPTIONS` | beliebig | CORS-Preflight (`204`). |
+| `POST` | `/transcribe` | Erwartet `{ schemaVersion: "process-transcription-proxy-v1", audioBase64, mimeType, language? }` → `200 { schemaVersion, text }`. |
+
+Fehlerfälle bei `POST /transcribe`: falsches `schemaVersion` / leeres `audioBase64` → `400`; eingehender Bearer fehlt/falsch (bei gesetztem Secret) → `401`; Upstream nicht 2xx → derselbe Statuscode + lesbare Meldung; Timeout → `504`. Secrets werden **nie** geloggt oder an den Client zurückgegeben.
+
+## Lokaler Test
+
+```bash
+curl http://localhost:8788/health
+# -> ok
+```
+
+Ein echter `/transcribe`-Test braucht eine laufende Gegenstelle und reale Audiodaten (Base64); die Aufnahme + Base64-Konvertierung im Browser folgt in einem späteren Schritt. Der zugehörige Browser-Client ist `src/speech/transcriptionProxyClient.ts` (`runTranscriptionProxyRequest`), analog zu `runAiProxyRequest`.

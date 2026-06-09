@@ -1,6 +1,7 @@
 import type { DataHandlingMode } from '../settings/appSettings';
+import { isAudioRecordingSupported } from './audioRecorder';
 
-export type TranscriptionProviderId = 'none' | 'web_speech';
+export type TranscriptionProviderId = 'none' | 'web_speech' | 'whisper';
 
 export interface TranscriptionProviderOption {
   id: TranscriptionProviderId;
@@ -29,6 +30,13 @@ export const TRANSCRIPTION_PROVIDERS: TranscriptionProviderOption[] = [
     dataHandling: 'external',
     description: 'Kann je nach Browser über einen externen Dienst laufen.',
     isAvailable: isWebSpeechSupported,
+  },
+  {
+    id: 'whisper',
+    label: 'Whisper (Server)',
+    dataHandling: 'external',
+    description: 'Nimmt Audio im Browser auf und sendet es an einen konfigurierten Transkriptions-Proxy (Whisper/OpenAI-kompatibel).',
+    isAvailable: () => isAudioRecordingSupported(),
   },
 ];
 

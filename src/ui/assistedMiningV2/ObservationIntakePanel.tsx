@@ -6,8 +6,13 @@ import { HelpPopover } from '../components/HelpPopover';
 import { useAppSettings } from '../../settings/useAppSettings';
 import { useProcessAnalysis } from './useProcessAnalysis';
 import { AnalysisStatus } from './AnalysisStatus';
-import { startWebSpeechTranscription, type WebSpeechSession } from '../../speech/webSpeechTranscription';
-import { isWebSpeechSupported } from '../../speech/transcriptionProviders';
+import {
+  startTranscription,
+  isTranscriptionProviderAvailable,
+  type TranscriptionState,
+  type TranscriptionProviderKind,
+  type TranscriptionSession,
+} from '../../speech/transcriptionProvider';
 import { getAiApiReadiness } from '../../ai/analysisMode';
 
 interface Props {
@@ -83,14 +88,37 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
     setShowAiConsent(false); // Schalter bleibt aus
   }
 
-  // Diktat (nur im geführten Aufruf via enableDictation). Nutzt die bewährte
-  // Web-Speech-Schicht; diktierter Text wird an den vorhandenen narrative-State
-  // angehängt (denselben, den handleAutoDerive liest). Keine Verdrahtung zu aiRawText.
-  const speechSupported = isWebSpeechSupported();
-  const [dictating, setDictating] = useState(false);
+  // Diktat (nur im geführten Aufruf via enableDictation). Läuft jetzt über die
+  // Provider-Abstraktion startTranscription(...): Web Speech ist der Boden/Default,
+  // Whisper nur als Opt-in bei vollständiger Konfiguration. Diktierter Text wird an
+  // den vorhandenen narrative-State angehängt (denselben, den handleAutoDerive liest).
+  // Keine Verdrahtung zu aiRawText.
+  const [dictationState, setDictationState] = useState<TranscriptionState>('idle');
   const [dictationInterim, setDictationInterim] = useState('');
   const [dictationError, setDictationError] = useState('');
-  const dictationSessionRef = useRef<WebSpeechSession | null>(null);
+  const [dictationKind, setDictationKind] = useState<TranscriptionProviderKind | null>(null);
+  const dictationSessionRef = useRef<TranscriptionSession | null>(null);
+
+  const isRecording = dictationState === 'recording';
+  const isTranscribing = dictationState === 'transcribing';
+  const dictationActive = isRecording || isTranscribing;
+
+  // Provider-Auflösung aus den aktuellen Settings (Web Speech als Boden, Whisper als Upgrade).
+  // Whisper nur bei providerId === 'whisper' + Endpoint + Audio-Consent + Recorder-Support;
+  // sonst (inkl. Default providerId === 'none') Web-Speech-Boden -> Diktat wird NICHT abgeschaltet.
+  const tx = settings.transcription;
+  const whisperReady =
+    tx.providerId === 'whisper' &&
+    !!tx.endpointUrl &&
+    !!tx.audioConsentGivenAt &&
+    isTranscriptionProviderAvailable('whisper');
+  const webSpeechReady = isTranscriptionProviderAvailable('web_speech');
+  const resolvedDictationKind: TranscriptionProviderKind | null = whisperReady
+    ? 'whisper'
+    : webSpeechReady
+      ? 'web_speech'
+      : null;
+  const dictationAvailable = resolvedDictationKind !== null;
 
   useEffect(() => {
     // Bei Unmount Mikrofon sauber beenden (kein weiterlaufendes Mikrofon, kein Leak).
@@ -102,54 +130,72 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
     };
   }, []);
 
-  function handleStartDictation() {
-    if (!enableDictation || !speechSupported || dictating) return;
+  async function handleStartDictation() {
+    if (!enableDictation || dictationActive) return;
+    const kind = resolvedDictationKind;
+    if (!kind) {
+      setDictationError('Diktat ist in diesem Browser nicht verfügbar.');
+      return;
+    }
     setDictationError('');
     setDictationInterim('');
-    const session = startWebSpeechTranscription(
-      {
-        language: settings.transcription.language || 'de-DE',
-        interimResults: true,
-        continuous: true,
-      },
-      {
-        onInterim: (text) => setDictationInterim(text),
-        onFinal: (text) => {
-          const clean = text.trim();
-          if (clean) {
-            // nicht-destruktiv an bereits getippten Text anhängen
-            setNarrative((prev) => (prev.trim() ? `${prev.trim()} ${clean}` : clean));
-          }
-          setDictationInterim('');
+    setDictationKind(kind);
+    try {
+      const session = await startTranscription(
+        kind,
+        {
+          language: tx.language || 'de-DE',
+          endpointUrl: tx.endpointUrl,
+          authMode: tx.authMode,
+          apiKey: tx.apiKey,
+          timeoutMs: 60000,
         },
-        onError: (msg) => {
-          setDictationError(msg || 'Spracherkennung konnte nicht gestartet werden.');
-          setDictating(false);
-          setDictationInterim('');
-          dictationSessionRef.current = null;
+        {
+          // Nur web_speech feuert onInterim (Live-Vorschau); whisper ruft es nie (Batch).
+          onInterim: (text) => setDictationInterim(text),
+          // Beide Provider: finalen Text nicht-destruktiv an die Beschreibung anhängen.
+          onFinal: (text) => {
+            const clean = text.trim();
+            if (clean) {
+              setNarrative((prev) => (prev.trim() ? `${prev.trim()} ${clean}` : clean));
+            }
+            setDictationInterim('');
+          },
+          // Treibt die UI: recording -> (nur whisper) transcribing -> stopped(=zurück zu idle).
+          onState: (s) => {
+            if (s === 'stopped') {
+              setDictationState('idle');
+              setDictationInterim('');
+              setDictationKind(null);
+              dictationSessionRef.current = null;
+            } else {
+              setDictationState(s);
+            }
+          },
+          onError: (err) => {
+            setDictationError(err.message || 'Diktat konnte nicht ausgeführt werden.');
+            setDictationState('idle');
+            setDictationInterim('');
+            setDictationKind(null);
+            dictationSessionRef.current = null;
+          },
         },
-        onEnd: () => {
-          setDictating(false);
-          setDictationInterim('');
-          dictationSessionRef.current = null;
-        },
-      },
-    );
-    if (session) {
+      );
       dictationSessionRef.current = session;
-      setDictating(true);
-    } else {
-      setDictating(false);
+    } catch (err) {
+      // reject: nicht unterstützt / Berechtigung verweigert / fehlender Endpoint -> freundlich, kein Crash.
+      setDictationError(err instanceof Error ? err.message : 'Diktat konnte nicht gestartet werden.');
+      setDictationState('idle');
+      setDictationInterim('');
+      setDictationKind(null);
+      dictationSessionRef.current = null;
     }
   }
 
   function handleStopDictation() {
-    if (dictationSessionRef.current) {
-      dictationSessionRef.current.stop();
-      dictationSessionRef.current = null;
-    }
-    setDictating(false);
-    setDictationInterim('');
+    // web_speech: endet -> finaler Text + 'stopped'. whisper: -> 'transcribing' -> finaler Text + 'stopped'.
+    // Ref NICHT hier nullen: das Ergebnis kommt noch über die Handler; onState('stopped') räumt auf.
+    dictationSessionRef.current?.stop();
   }
 
   function buildCase(): ProcessMiningObservationCase {
@@ -260,23 +306,43 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
           />
         </div>
 
-        {enableDictation && (speechSupported ? (
+        {enableDictation && (dictationAvailable ? (
           <div className="space-y-2">
             <button
               type="button"
-              onClick={dictating ? handleStopDictation : handleStartDictation}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${dictating ? 'bg-red-600 text-white hover:bg-red-700' : 'border border-cyan-300 text-cyan-700 hover:bg-cyan-50'}`}
+              onClick={dictationActive ? handleStopDictation : handleStartDictation}
+              disabled={isTranscribing}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                isTranscribing
+                  ? 'border border-slate-200 text-slate-400 cursor-not-allowed'
+                  : dictationActive
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'border border-cyan-300 text-cyan-700 hover:bg-cyan-50'
+              }`}
             >
-              {dictating ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              {dictating ? 'Aufnahme beenden' : 'Diktieren'}
+              {dictationActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              {isTranscribing ? 'Transkribiere…' : dictationActive ? 'Aufnahme beenden' : 'Diktieren'}
             </button>
             <p className="text-xs text-slate-400">
-              Die Spracherkennung läuft im Browser. Diktierter Text wird an die Beschreibung angehängt.
+              {resolvedDictationKind === 'whisper'
+                ? 'Die Aufnahme wird nach dem Beenden an den Transkriptions-Proxy gesendet. Der erkannte Text wird an die Beschreibung angehängt.'
+                : 'Die Spracherkennung läuft im Browser. Diktierter Text wird an die Beschreibung angehängt.'}
             </p>
-            {dictating && dictationInterim && (
+            {isRecording && dictationKind === 'whisper' && (
+              <div className="inline-flex items-center gap-2 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-800">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                Aufnahme läuft…
+              </div>
+            )}
+            {isRecording && dictationKind !== 'whisper' && dictationInterim && (
               <div className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-800">
                 <span className="mr-1 text-[11px] font-medium text-cyan-900">Live:</span>
                 {dictationInterim}
+              </div>
+            )}
+            {isTranscribing && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                Transkribiere… einen Moment bitte.
               </div>
             )}
             {dictationError && <p className="text-xs text-red-600">{dictationError}</p>}

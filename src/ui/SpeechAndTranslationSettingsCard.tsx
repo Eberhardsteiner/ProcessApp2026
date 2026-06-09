@@ -64,6 +64,33 @@ export function SpeechAndTranslationSettingsCard({
     });
   };
 
+  // Whisper-spezifische Felder (nur bei providerId === 'whisper'), gespiegelt an AiApiSettingsCard.
+  const handleWhisperEndpointChange = (endpointUrl: string) => {
+    onChange({ ...settings, transcription: { ...settings.transcription, endpointUrl } });
+  };
+
+  const handleWhisperAuthModeChange = (authMode: 'none' | 'bearer') => {
+    onChange({ ...settings, transcription: { ...settings.transcription, authMode } });
+  };
+
+  const handleWhisperApiKeyChange = (apiKey: string) => {
+    onChange({ ...settings, transcription: { ...settings.transcription, apiKey } });
+  };
+
+  const handleGrantAudioConsent = () => {
+    onChange({
+      ...settings,
+      transcription: { ...settings.transcription, audioConsentGivenAt: new Date().toISOString() },
+    });
+  };
+
+  const handleRevokeAudioConsent = () => {
+    onChange({
+      ...settings,
+      transcription: { ...settings.transcription, audioConsentGivenAt: null },
+    });
+  };
+
   const handleTranslationTargetLanguageChange = (targetLanguage: string) => {
     onChange({
       ...settings,
@@ -271,6 +298,143 @@ export function SpeechAndTranslationSettingsCard({
                 z.B. de-DE, en-US, fr-FR
               </p>
             </div>
+
+            {settings.transcription.providerId === 'whisper' && (
+              <div className="space-y-4 border-t border-slate-200 pt-4">
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Whisper nimmt Audio im Browser auf und sendet es an Ihren konfigurierten
+                  Transkriptions-Proxy. Der Upstream-Schlüssel liegt im Proxy, nicht im Browser.
+                </p>
+
+                <div>
+                  <div className="mb-2">
+                    <FieldLabel
+                      label="Endpoint URL (Transkriptions-Proxy)"
+                      info={{
+                        title: 'Transkriptions-Endpoint',
+                        content: (
+                          <>
+                            <p className="mb-2">
+                              Die URL Ihres Transkriptions-Proxys (Vertrag „process-transcription-proxy-v1").
+                            </p>
+                            <p>
+                              <strong>Empfehlung:</strong> Eigener Proxy/Backend, damit der Whisper-/OpenAI-Schlüssel im Server bleibt.
+                            </p>
+                          </>
+                        ),
+                      }}
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={settings.transcription.endpointUrl}
+                    onChange={(e) => handleWhisperEndpointChange(e.target.value)}
+                    placeholder="http://localhost:8788/transcribe"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="mb-2">
+                    <FieldLabel
+                      label="Authentifizierung"
+                      info={{
+                        title: 'Authentifizierungsmethode',
+                        content: (
+                          <>
+                            <p className="mb-2">Authentifizierung gegenüber dem Transkriptions-Proxy:</p>
+                            <p className="text-xs mb-1"><strong>Keine:</strong> Keine Authentifizierung</p>
+                            <p className="text-xs"><strong>Bearer Token:</strong> Authorization Header mit Bearer Token</p>
+                          </>
+                        ),
+                      }}
+                    />
+                  </div>
+                  <select
+                    value={settings.transcription.authMode}
+                    onChange={(e) => handleWhisperAuthModeChange(e.target.value as 'none' | 'bearer')}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="none">Keine</option>
+                    <option value="bearer">Bearer Token (Authorization: Bearer ...)</option>
+                  </select>
+                </div>
+
+                {settings.transcription.authMode === 'bearer' && (
+                  <div>
+                    <div className="mb-2">
+                      <FieldLabel
+                        label="API Key"
+                        info={{
+                          title: 'API Key Speicherung',
+                          content: (
+                            <>
+                              <p className="mb-2">
+                                Der Schlüssel wird ausschließlich lokal im Browser gespeichert (localStorage).
+                              </p>
+                              <p>
+                                Er verlässt den Browser nur als Bearer-Token an den oben konfigurierten Proxy.
+                              </p>
+                            </>
+                          ),
+                        }}
+                      />
+                    </div>
+                    <input
+                      type="password"
+                      value={settings.transcription.apiKey}
+                      onChange={(e) => handleWhisperApiKeyChange(e.target.value)}
+                      placeholder="Proxy Shared Secret"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Wird lokal im Browser gespeichert.
+                    </p>
+                    <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 leading-relaxed">
+                      <strong>Wichtig:</strong> Dieses Feld enthält <strong>nicht</strong> einen
+                      OpenAI-/Whisper-Schlüssel, sondern bei authMode „bearer" das
+                      {' '}<strong>TRANSCRIPTION_PROXY_SHARED_SECRET</strong> Ihres Proxys. Der echte
+                      Upstream-Schlüssel liegt ausschließlich im Proxy, niemals im Browser.
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-lg border border-slate-200 p-3 space-y-2">
+                  <p className="text-sm font-medium text-slate-800">Zustimmung zum Audio-Versand</p>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Bei aktivem Diktat über Whisper wird <strong>Roh-Audio</strong> Ihrer Aufnahme an den oben
+                    konfigurierten <strong>externen Endpoint</strong> gesendet — also an Ihren Transkriptions-Proxy,
+                    der es an die Whisper-/OpenAI-Gegenstelle weiterreicht. <strong>Ohne diese Zustimmung wird
+                    kein Audio gesendet.</strong>
+                  </p>
+                  {settings.transcription.audioConsentGivenAt ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-green-700">
+                        Zustimmung erteilt am {new Date(settings.transcription.audioConsentGivenAt).toLocaleString('de-DE')}.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRevokeAudioConsent}
+                        className="px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        Zustimmung widerrufen
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-slate-500">Noch keine Zustimmung erteilt.</span>
+                      <button
+                        type="button"
+                        onClick={handleGrantAudioConsent}
+                        className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Zustimmung erteilen
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-4">

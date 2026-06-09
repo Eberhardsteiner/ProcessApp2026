@@ -1,3 +1,11 @@
+## v0.49.0 – Whisper-fähiges Diktat
+
+- das **geführte Diktat** kann optional ein **selbst-gehostetes oder OpenAI-kompatibles Whisper-Backend** nutzen (genauere Transkription; das Audio bleibt auf der von Ihnen konfigurierten Infrastruktur). **Web Speech bleibt Default und Fallback**
+- neuer **Transkriptions-Proxy** (`server/transcriptionProxy.mjs`, Vertrag `process-transcription-proxy-v1`, OpenAI-kompatible `/audio/transcriptions`, eigener Port **8788**) analog zum KI-Proxy; dazu **Browser-Audioaufnahme** über `MediaRecorder` und eine **Ausführungs-Provider-Abstraktion** (web-speech streaming / whisper batch)
+- **Einstellungen:** neuer STT-Provider **„Whisper (Server)"** plus **Endpoint/Auth** und eine **Audio-Einwilligung** in der Karte „Sprache & Übersetzung"
+- **opt-in, nicht-brechend:** Whisper greift nur bei vollständiger Konfiguration (Endpoint + Audio-Consent + Recorder-Support); sonst Web Speech. Der Default-Provider bleibt unverändert. Die vier Experten-Diktatstellen sind unverändert. Engine/Benchmark unverändert (**77/100**)
+- **UX:** mit Whisper „Aufnahme läuft → Transkribiere → Text" (kein Live-Text); Web Speech weiterhin mit Live-Vorschau
+
 ## v0.48.0 – Geführter Modus auf drei Schritte gestrafft
 
 - geführter Fluss von sechs auf **drei Schritte** reduziert: **Start → Analysieren → Ergebnis**. Entfernt wurden die redundanten Schritte „Beschreiben", „Erfassen/Prompt" und „Einstellungen" — Material-Eingabe und Extraktion finden direkt im Analysieren-Schritt statt (seit der KI-Direktextraktion aus Paket 1 ist der alte Copy-Paste-Weg im Geführt-Modus überflüssig)

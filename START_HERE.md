@@ -1,4 +1,4 @@
-> Aktueller Produktstand: **v0.48.0**
+> Aktueller Produktstand: **v0.49.0**
 
 # Start hier
 
@@ -79,6 +79,13 @@ npm run dev
 - Ohne aktive API zeigt der KI-Modus einen **Copy/Paste-Prompt** (needs-paste); die lokale Heuristik ist immer als Fallback verfügbar. Ergebnisse sind als „Mit KI erstellt" bzw. „Lokale Vorschau ohne KI" gekennzeichnet.
 - Der Anthropic-Schlüssel liegt ausschließlich serverseitig im Proxy unter `server/` (Vertrag `process-ai-proxy-v1` → Anthropic). Start/Konfiguration: siehe [server/README.md](C:/Users/eberh/Documents/GitHub/ProcessApp2026/server/README.md).
 - Logik: [src/ai/analysisMode.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ai/analysisMode.ts) (Resolver), [src/ai/runAnalysis.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ai/runAnalysis.ts) (gemeinsame Weiche), [src/ai/aiToObservations.ts](C:/Users/eberh/Documents/GitHub/ProcessApp2026/src/ai/aiToObservations.ts) (Adapter → `DerivationResult`). Die lokale Engine in `documentDerivation.ts` bleibt unverändert.
+
+## Transkription / Diktat (opt-in, Paket 4)
+
+- Das **geführte Diktat** nutzt **standardmäßig die Browser-Spracherkennung (Web Speech)** mit Live-Vorschau — keine zusätzliche Konfiguration nötig, Web Speech bleibt Default und Fallback.
+- **Whisper ist optional:** in der Karte **„Sprache & Übersetzung"** den Provider **„Whisper (Server)"** wählen und **Endpoint-URL** + **Audio-Einwilligung** setzen. Greift nur bei vollständiger Konfiguration (Endpoint + Audio-Consent + Recorder-Support); sonst Web Speech. Ablauf dann als Batch: **Aufnahme läuft → Transkribiere → Text** (kein Live-Text).
+- Der **Transkriptions-Proxy ist ein separater Prozess** (`server/transcriptionProxy.mjs`, eigener Port **8788**), analog zum KI-Proxy; er reicht Audio an eine **OpenAI-kompatible `/audio/transcriptions`-Gegenstelle** (self-hosted Whisper oder OpenAI) weiter. Upstream-Schlüssel liegt ausschließlich serverseitig. Start/Konfiguration: siehe [server/README.md](C:/Users/eberh/Documents/GitHub/ProcessApp2026/server/README.md).
+- Die vier Experten-Diktatstellen sind unverändert und nutzen weiter direkt die Browser-Spracherkennung.
 
 ## Standardprüfung
 - **Standard (Produktivmodus):** QA-/Self-Test-/Freigabe-Surfaces sind aus dem Nutzerpfad entfernt.

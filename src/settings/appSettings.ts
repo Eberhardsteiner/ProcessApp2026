@@ -17,6 +17,12 @@ export interface AppSettings {
   transcription: {
     providerId: string;
     language: string;
+    // Whisper-Server (Paket 4): gespiegelt an settings.ai.api + Consent.
+    // Nur relevant für providerId === 'whisper'; web_speech/none ignorieren diese Felder.
+    endpointUrl: string;
+    authMode: 'none' | 'bearer';
+    apiKey: string;
+    audioConsentGivenAt: string | null;
   };
 
   translation: {
@@ -48,7 +54,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   uiMode: 'assisted',
   transcription: {
     providerId: 'none',
-    language: 'de-DE'
+    language: 'de-DE',
+    endpointUrl: '',
+    authMode: 'none',
+    apiKey: '',
+    audioConsentGivenAt: null
   },
   translation: {
     providerId: 'none',
