@@ -68,6 +68,9 @@ interface Props {
   onChange: (patch: Partial<ProcessMiningAssistedV2State>) => void;
   onResetState: () => void;
   onNext: () => void;
+  // 'expert' (Default) = volle Ansicht wie bisher; 'guided' = schlanke Laien-Ansicht
+  // (Material → erkannte Schritte prüfen), ohne fortgeschrittene Inspektoren/Panels.
+  variant?: 'guided' | 'expert';
 }
 
 function cloneSessionSnapshot<T>(value: T): T {
@@ -82,7 +85,7 @@ function ensureReviewState(value: ProcessMiningReviewState | undefined): Process
   };
 }
 
-export function ObservationsStep({ process, version, settings, state, integrity, onChange, onResetState, onNext }: Props) {
+export function ObservationsStep({ process, version, settings, state, integrity, onChange, onResetState, onNext, variant = 'expert' }: Props) {
   const operatingModeProfile = getOperatingModeProfile(state.operatingMode);
   const [activeTab, setActiveTab] = useState<InputTab>('describe');
   const [expandedEditorCaseId, setExpandedEditorCaseId] = useState<string | null>(null);
@@ -593,6 +596,130 @@ export function ObservationsStep({ process, version, settings, state, integrity,
       },
     },
   ];
+
+  // Geführt-Variante: schlanke Laien-Ansicht. Nur Material hinzufügen und die
+  // erkannten Schritte prüfen. Fortgeschrittene Panels (Engine-Profil, Import-Health,
+  // Quellenübersicht, Prüfwerkstatt, Beleg-Inspektor, KI-Verfeinerung, Datenreife)
+  // sowie der Export (kommt im Workbench-Rahmen) bleiben dem Experten-Modus vorbehalten.
+  // Die 'expert'-Rückgabe darunter bleibt unverändert.
+  if (variant === 'guided') {
+    return (
+      <div className="space-y-6">
+        <WorkbenchSection
+          title="1. Material hinzufügen"
+          description="Laden Sie ein Dokument hoch oder beschreiben Sie einen Prozessfall. Die App erkennt die Schritte automatisch."
+          helpKey="pmv2.observations"
+          badge={cases.length > 0 ? (
+            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-medium text-cyan-800">
+              {cases.length} {cases.length === 1 ? 'Quelle erfasst' : 'Quellen erfasst'}
+            </span>
+          ) : undefined}
+          actions={cases.length > 0 ? (
+            <button
+              type="button"
+              onClick={handleResetState}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Zurücksetzen
+            </button>
+          ) : undefined}
+        >
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <div className="grid grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('describe')}
+                className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'describe' ? 'border-b-2 border-blue-600 bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}
+              >
+                <MessageSquare className="h-4 w-4" />
+                Prozess beschreiben
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('upload')}
+                className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'upload' ? 'border-b-2 border-blue-600 bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}
+              >
+                <Upload className="h-4 w-4" />
+                Dokument hochladen
+              </button>
+            </div>
+            <div className="p-4">
+              {activeTab === 'describe' ? (
+                <ObservationIntakePanel existingCaseCount={cases.length} onAddCase={addRawCase} onAddDerived={addDerivedCase} />
+              ) : (
+                <FileImportPanel onImport={handleFileImport} />
+              )}
+            </div>
+          </div>
+        </WorkbenchSection>
+
+        {(cases.length > 0 || quality) && (
+          <WorkbenchSection
+            title="2. Erkannte Schritte prüfen"
+            description="Stimmt der Prozess? Fehlt etwas? Wer macht das? Sehen Sie die automatisch erkannten Schritte kurz durch."
+            helpKey="pmv2.observations"
+            badge={quality ? (
+              <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-[11px] font-medium text-violet-800">
+                {quality.stepObservationCount} erkannte Schritte
+              </span>
+            ) : undefined}
+          >
+            <div className="space-y-4">
+              {quality && (
+                <div title="Zeigt, wie viele Schritte erkannt wurden und wie verlässlich die automatische Analyse ist.">
+                  <QualitySummaryCard summary={quality} />
+                </div>
+              )}
+              {cases.length === 0 && (
+                <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+                  Sobald ein Dokument oder Fall ausgewertet wurde, erscheinen hier die erkannten Schritte zum Durchsehen.
+                </div>
+              )}
+              {cases.map((caseItem, index) => {
+                const caseObservations = observations.filter(observation => observation.sourceCaseId === caseItem.id);
+                return (
+                  <div key={caseItem.id}>
+                    <NarrativeCaseCard
+                      caseItem={caseItem}
+                      observations={caseObservations}
+                      caseIndex={index}
+                      onUpdate={updatedCase => updateCase(caseItem.id, updatedCase)}
+                      onDelete={() => deleteCase(caseItem.id)}
+                      onExtract={() => extractForCase(caseItem)}
+                      allowExtract={canReanalyzeCase(caseItem)}
+                      onToggleEditor={() => toggleEditorForCase(caseItem.id)}
+                      editorOpen={expandedEditorCaseId === caseItem.id}
+                      dragHandleProps={{ onMouseDown: () => {} }}
+                    />
+                    {activeCase?.id === caseItem.id && (
+                      <div className="mt-2">
+                        <AnalysisStatus
+                          state={analysis.state}
+                          onUseHeuristicFallback={() =>
+                            applyResultForCase(caseItem, analysis.runHeuristicFallback(analysisInputsForCase(caseItem)))
+                          }
+                          onImportPasted={(aiText) => {
+                            const i = analysisInputsForCase(caseItem);
+                            const r = analysis.importPasted({ aiText, originalText: i.text, sourceName: i.sourceName, sourceType: i.sourceType });
+                            if (r.ok && r.result) applyResultForCase(caseItem, r.result);
+                          }}
+                          onRetry={() => extractForCase(caseItem)}
+                        />
+                      </div>
+                    )}
+                    {expandedEditorCaseId === caseItem.id && caseObservations.length > 0 && (
+                      <ObservationEditor observations={observations} onUpdate={updateObservations} caseId={caseItem.id} caseName={caseItem.name} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </WorkbenchSection>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

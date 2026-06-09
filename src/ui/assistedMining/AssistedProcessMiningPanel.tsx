@@ -7,6 +7,7 @@ interface AssistedProcessMiningPanelProps {
   version: ProcessVersion;
   settings: AppSettings;
   onSave: (patch: Partial<ProcessVersion>) => Promise<void>;
+  variant?: 'guided' | 'expert';
 }
 
 export function AssistedProcessMiningPanel(props: AssistedProcessMiningPanelProps) {

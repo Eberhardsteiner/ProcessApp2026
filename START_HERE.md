@@ -1,4 +1,4 @@
-> Aktueller Produktstand: **v0.46.0**
+> Aktueller Produktstand: **v0.47.0**
 
 # Start hier
 
@@ -8,6 +8,13 @@
 npm ci
 npm run dev
 ```
+
+## Bedienmodi: Geführt vs. Experte
+
+- **Umschalter im Kopfbereich** des Arbeitsbereichs (Geführt ⇄ Experte). Der Wechsel passiert nur bewusst über diesen Schalter — keine verdeckten Modus-Sprünge mehr.
+- **Geführt (Standard):** schlanker Klartext-Fluss **Material → Analyse → Prüfen → Export**. Sichtbar sind nur das Hinzufügen von Material und die erkannten Schritte zum Prüfen („Stimmt der Prozess? Fehlt etwas? Wer macht das?"); fortgeschrittene Schritte und Panels bleiben ausgeblendet.
+- **Experte:** voller Arbeitsbereich mit allen Tabs. Die komplette Analyse-Workbench ist zusätzlich als eigener Tab **„Analyse-Workbench"** erreichbar; das datenintensive Event-Log-Mining bleibt im Tab **„Process Mining"** unverändert.
+- **QA-/Governance-Flächen** bleiben unverändert hinter dem Dev-Flag (`VITE_ENABLE_QA_SURFACES=1` bzw. `?qa=1`).
 
 ## Produktivmodus vs. QA-/Dev-Modus
 

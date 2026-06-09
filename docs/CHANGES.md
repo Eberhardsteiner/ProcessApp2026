@@ -1,3 +1,12 @@
+## v0.47.0 – Zwei klar getrennte Bedienmodi „Geführt" und „Experte"
+
+- bewusster, beschrifteter Modus-Umschalter im Kopfbereich („Geführt"/„Experte"); die bisherigen verdeckten `setUiMode`-Sprünge aus der Geführt-Ansicht wurden entfernt
+- Geführt = minimaler Klartext-Fluss (Material → Analyse → Prüfen → Export): nur Material-Eingabe und die erkannten Schritte zum Prüfen, fortgeschrittene Schritte/Panels ausgeblendet, Prüfung als klare Fragen statt metriklastiger Begriffe
+- Experte = voller Arbeitsbereich; die volle Analyse-Workbench ist zusätzlich über einen eigenen Tab „Analyse-Workbench" erreichbar; das Event-Log-Mining („Process Mining") bleibt unverändert
+- Workbench und ObservationsStep über ein additives Prop `variant: 'guided' | 'expert'` (Default `expert`) gesteuert; der Experten-Pfad bleibt unverändert
+- tote `uiMode==='assisted'`-Verzweigung im „Process Mining"-Tab entfernt (mountet jetzt direkt das Experten-Panel)
+- QA-/Governance-Flächen unverändert hinter dem Dev-Flag; die lokale Engine (`documentDerivation.ts`) blieb unangetastet (Benchmark weiterhin 77/100)
+
 ## v0.46.0 – KI-Extraktion als opt-in Standardpfad für die Analyse
 
 - die operative „Analyse" kann jetzt direkt KI nutzen (Schema `ai-capture-v1`); die lokale Heuristik bleibt vollwertiger Fallback und wird im Ergebnis als „Lokale Vorschau ohne KI" gekennzeichnet

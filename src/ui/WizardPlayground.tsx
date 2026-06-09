@@ -61,7 +61,7 @@ import { Stepper } from './components/Stepper';
 import { OverlayLoadingState, SectionLoadingState } from './components/LoadingState';
 import { resetAllAppData, APP_RESET_SCOPE_NOTE } from '../persistence/resetAllAppData';
 
-type TabId = 'setup' | 'wizard' | 'draft' | 'review' | 'issues' | 'improvements' | 'report' | 'ai' | 'mining' | 'changes' | 'workshop' | 'settings' | 'transfer';
+type TabId = 'setup' | 'wizard' | 'draft' | 'review' | 'issues' | 'improvements' | 'report' | 'ai' | 'mining' | 'analysis-workbench' | 'changes' | 'workshop' | 'settings' | 'transfer';
 type AssistedStepId = 'context' | 'setup' | 'describe' | 'prompt' | 'analyze' | 'optimize';
 
 interface TabConfig {
@@ -82,6 +82,7 @@ const TAB_CONFIG: TabConfig[] = [
   { id: 'transfer', label: 'Import/Export', group: 'tools' },
   { id: 'ai', label: 'KI-Assistent', group: 'tools' },
   { id: 'mining', label: 'Process Mining', group: 'tools' },
+  { id: 'analysis-workbench', label: 'Analyse-Workbench', group: 'tools' },
   { id: 'changes', label: 'Änderungen', group: 'tools' },
   { id: 'workshop', label: 'Workshop', group: 'tools' },
 ];
@@ -108,12 +109,12 @@ const LazySpeechAndTranslationSettingsCard = lazy(async () => ({ default: (await
 const LazyAiApiSettingsCard = lazy(async () => ({ default: (await import('./AiApiSettingsCard')).AiApiSettingsCard }));
 
 const ASSISTED_STEPS = [
-  { id: 'context', label: 'Kontext', description: 'Projekt & Prozess' },
-  { id: 'setup', label: 'Setup', description: 'KI, Sprache' },
-  { id: 'describe', label: 'Beschreiben', description: 'Was wird gemacht?' },
-  { id: 'prompt', label: 'Erfassen & KI ergänzen', description: 'Vorerfassen, Prompt, Übernahme' },
-  { id: 'analyze', label: 'Analysieren', description: 'Process Mining' },
-  { id: 'optimize', label: 'Optimieren', description: 'Verbesserungen' },
+  { id: 'context', label: 'Start', description: 'Projekt & Prozess wählen' },
+  { id: 'setup', label: 'Einstellungen', description: 'KI & Sprache (optional)' },
+  { id: 'describe', label: 'Beschreiben', description: 'Worum geht es?' },
+  { id: 'prompt', label: 'Erfassen', description: 'Vorerfassen & ergänzen' },
+  { id: 'analyze', label: 'Analysieren', description: 'Schritte erkennen & prüfen' },
+  { id: 'optimize', label: 'Ergebnis', description: 'Verbessern & abschließen' },
 ];
 
 type ContextSubTab = 'select' | 'meta';
@@ -3364,14 +3365,6 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
                       </button>
                       <button
                         type="button"
-                        onClick={() => { setSettings({ ...settings, uiMode: 'expert' }); setActiveTab('draft'); }}
-                        className="px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors font-medium flex items-center justify-center gap-2"
-                      >
-                        <FileEdit className="w-4 h-4" />
-                        Entwurf ansehen
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => setAssistedStep('analyze')}
                         className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
                       >
@@ -3402,7 +3395,7 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
             {assistedStep === 'analyze' && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-semibold text-slate-900 mb-2">Analysieren (Process Mining)</h2>
+                  <h2 className="text-2xl font-semibold text-slate-900 mb-2">Analysieren</h2>
                   <p className="text-slate-600">
                     Geführte Analyse für Laienanwender. Der Expertenmodus bleibt unverändert. Ergebnisse werden später gezielt übernommen.
                   </p>
@@ -3431,6 +3424,7 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
                         version={version}
                         settings={settings}
                         onSave={handleSaveDraftChanges}
+                        variant="guided"
                       />
                     </Suspense>
                   </ErrorBoundary>
@@ -3523,47 +3517,12 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
                   </Suspense>
                 )}
 
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                  <p className="text-sm font-medium text-slate-700 mb-3">Weitere Aktionen:</p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => {
-                        setSettings({ ...settings, uiMode: 'expert' });
-                        setActiveTab('improvements');
-                      }}
-                      className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium flex items-center gap-2"
-                    >
-                      <TrendingUp className="w-4 h-4" />
-                      Maßnahmenliste im Expertenmodus
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSettings({ ...settings, uiMode: 'expert' });
-                        setActiveTab('report');
-                      }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Report erstellen
-                    </button>
-                  </div>
-                </div>
-
                 <div className="flex justify-between">
                   <button
                     onClick={() => setAssistedStep('analyze')}
                     className="px-6 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
                   >
                     Zurück
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSettings({ ...settings, uiMode: 'expert' });
-                      setActiveTab('report');
-                    }}
-                    className="px-6 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium"
-                  >
-                    Abschließen: Report
                   </button>
                 </div>
               </div>
@@ -3584,12 +3543,12 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-slate-900 mb-2">
-                  {isExpertMode ? 'Wizard Playground' : 'Prozesserfassung'}
+                  {isExpertMode ? 'Experten-Arbeitsbereich' : 'Prozesserfassung'}
                 </h1>
                 <p className="text-slate-600">
                   {isExpertMode
-                    ? 'Geführte Prozesserfassung ohne BPMN-Kenntnisse'
-                    : 'Schritt für Schritt zum optimierten Prozess'
+                    ? 'Voller Arbeitsbereich mit allen Werkzeugen und Tabs.'
+                    : 'Geführte Prozesserfassung – Schritt für Schritt zum Ergebnis.'
                   }
                 </p>
               </div>
@@ -6465,28 +6424,6 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
               <div className="bg-white rounded-lg border border-slate-200 p-6 text-sm text-slate-600">
                 Bitte zuerst einen Prozess und eine Version laden.
               </div>
-            ) : settings.uiMode === 'assisted' ? (
-              <ErrorBoundary
-                title="Assistiertes Process Mining"
-                hint="Ein unerwarteter Fehler ist aufgetreten. Bitte neu laden."
-              >
-                <Suspense
-                  fallback={
-                    <SectionLoadingState
-                      title="Assistierter Mining-Bereich wird geladen"
-                      description="Die geführte Mining-Umgebung wird erst beim Öffnen des Tabs nachgeladen."
-                    />
-                  }
-                >
-                  <LazyAssistedProcessMiningPanel
-                    key={version.id}
-                    process={process}
-                    version={version}
-                    settings={settings}
-                    onSave={handleSaveDraftChanges}
-                  />
-                </Suspense>
-              </ErrorBoundary>
             ) : (
               <ErrorBoundary
                 title="Experten-Mining"
@@ -6512,6 +6449,40 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
                     onCreateVersionFromMining={handleCreateVersionFromMining}
                     miningView={miningWorkspaceView}
                     onMiningViewChange={setMiningWorkspaceView}
+                  />
+                </Suspense>
+              </ErrorBoundary>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'analysis-workbench' && (
+          <div className="space-y-6">
+            {renderVersionInfoHeader()}
+            {!process || !version ? (
+              <div className="bg-white rounded-lg border border-slate-200 p-6 text-sm text-slate-600">
+                Bitte zuerst einen Prozess und eine Version laden.
+              </div>
+            ) : (
+              <ErrorBoundary
+                title="Analyse-Workbench"
+                hint="Ein unerwarteter Fehler ist aufgetreten. Bitte neu laden."
+              >
+                <Suspense
+                  fallback={
+                    <SectionLoadingState
+                      title="Analyse-Workbench wird geladen"
+                      description="Die geführte Analyse-Umgebung wird erst beim Öffnen des Tabs nachgeladen."
+                    />
+                  }
+                >
+                  <LazyAssistedProcessMiningPanel
+                    key={version.id}
+                    process={process}
+                    version={version}
+                    settings={settings}
+                    onSave={handleSaveDraftChanges}
+                    variant="expert"
                   />
                 </Suspense>
               </ErrorBoundary>

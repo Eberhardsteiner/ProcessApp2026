@@ -42,6 +42,9 @@ interface Props {
   version: ProcessVersion;
   settings: AppSettings;
   onSave: (patch: Partial<ProcessVersion>) => Promise<void>;
+  // 'expert' (Default) = volle Workbench wie bisher; 'guided' = strukturelles
+  // Minimum (Upload → Analyse → Prüfen → Export).
+  variant?: 'guided' | 'expert';
 }
 
 const STEP_HELP_KEYS: Record<ProcessMiningAssistedV2Step, HelpKey> = {
@@ -69,7 +72,7 @@ const EMPTY_INTEGRITY: WorkspaceIntegrityReport = {
   criticalCount: 0,
 };
 
-export function AssistedMiningWorkbench({ process, version, settings, onSave }: Props) {
+export function AssistedMiningWorkbench({ process, version, settings, onSave, variant = 'expert' }: Props) {
   const initialLoad = useMemo(() => loadV2State(version), [version]);
   const initialQaLoad = useMemo(
     () => (QA_SURFACES_ENABLED ? loadV2QaState(version) : null),
@@ -253,6 +256,72 @@ export function AssistedMiningWorkbench({ process, version, settings, onSave }: 
     () => mergeCoreAndQaState(miningState, qaState),
     [miningState, qaState],
   );
+
+  // Geführt-Variante: strukturelles Minimum (Upload → Analyse → Prüfen → Export).
+  // Nur der observations-Schritt + Export; fortgeschrittene Schritte (discovery/
+  // conformance/enhancement/augmentation) sowie Detail-/QA-Panels bleiben dem
+  // Experten-Modus vorbehalten. Die 'expert'-Rückgabe darunter bleibt unverändert.
+  if (variant === 'guided') {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">Kernpfad</p>
+          <p className="mt-1 text-sm text-blue-900">
+            Dokument hochladen → Analyse prüfen → Qualitäts-Export erstellen.
+          </p>
+        </div>
+
+        {saveError && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm space-y-2">
+            <p className="text-sm font-semibold text-rose-900">Der Arbeitsstand konnte nicht sicher gespeichert werden.</p>
+            <p className="text-sm leading-relaxed text-rose-900/90">{saveError}</p>
+            <button
+              type="button"
+              onClick={() => void saveState(latestStateRef.current)}
+              className="inline-flex items-center rounded-xl bg-rose-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-rose-700 transition-colors"
+            >
+              Erneut speichern
+            </button>
+          </div>
+        )}
+
+        <MiningWorkspaceOverview
+          state={miningState}
+          version={version}
+          settings={settings}
+          currentStep="observations"
+          detailsOpen={showOverviewDetails}
+          consistencyNotice={consistencyNotice}
+          onToggleDetails={() => setShowOverviewDetails(open => !open)}
+          onOperatingModeChange={mode => applyPatch({ operatingMode: mode })}
+        />
+
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <ObservationsStep
+            process={process}
+            version={version}
+            settings={settings}
+            state={miningState}
+            integrity={integrityReport}
+            onChange={applyPatch}
+            onResetState={resetState}
+            onNext={goNext}
+            variant="guided"
+          />
+        </div>
+
+        <QualityExportPanel
+          process={process}
+          version={version}
+          state={miningState}
+          settings={settings}
+          integrity={integrityReport}
+        />
+
+        <p className="text-xs text-slate-500">Mehr Analyse-Werkzeuge im Experten-Modus.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
