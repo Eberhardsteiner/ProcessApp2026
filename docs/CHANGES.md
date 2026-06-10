@@ -1,3 +1,11 @@
+## v0.50.0 – Aufräumen & Härten
+
+- toten `isAssisted`-Code aus `ProcessMiningLitePanel` und `WizardPlayground` entfernt: seit der bewussten Modus-Trennung (Paket 2) waren die geführten Zweige im Experten-Mining unerreichbar; **das Experten-Rendering bleibt byte-identisch** (nur unerreichbare Zweige entfernt, plus die dadurch verwaisten Helfer)
+- redundante npm-Skript-Aliasse der `changes-export`-Familie **7 → 2** eingedampft (`changes:export` und `changes:export:latest` bleiben; die fünf referenzlosen Varianten entfernt)
+- **ehrliche Kennzeichnung vervollständigt:** das Herkunfts-Label `AnalysisOriginBadge` („Mit KI erstellt" / „Lokale Vorschau ohne KI") erscheint jetzt auch im Narrativ-/Diktat-Pfad (`ObservationIntakePanel`) und im Observations-Schritt (`ObservationsStep`), nicht mehr nur beim Datei-Upload — gespeist aus `summary.provenance` des jeweils angezeigten Einzelergebnisses
+- Engine/Benchmark unverändert (**77/100**); keine neue Dependency; **kein Verhaltenswechsel** außer dem zusätzlichen Herkunfts-Label
+- **bewusst offengelassen:** das interne Splitten des 736-kB-Chunks `AssistedProcessMiningPanel` (Punkt B) und das Schließen des strengen Qualitäts-Gates (Engine-Qualitätsarbeit an `documentDerivation.ts`)
+
 ## v0.49.0 – Whisper-fähiges Diktat
 
 - das **geführte Diktat** kann optional ein **selbst-gehostetes oder OpenAI-kompatibles Whisper-Backend** nutzen (genauere Transkription; das Audio bleibt auf der von Ihnen konfigurierten Infrastruktur). **Web Speech bleibt Default und Fallback**

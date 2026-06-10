@@ -52,7 +52,7 @@ import { detectCsvMode, detectZipLooksLikeHtmlBundle, detectHtmlMode } from '../
 import type { DetectedImportHint } from '../import/importModeDetection';
 import { SemanticQuestionsChecklistEditor } from './SemanticQuestionsChecklistEditor';
 import { cloneMiningSidecarEventBlobs } from '../storage/eventBlobLifecycle';
-import { Mic, Square, Settings2, Upload, FileText, X, Search, CheckCircle2, File as FileEdit, Sparkles, TrendingUp, RefreshCw, ArrowDownUp, Check, Info, Download, Users, Target, MoreVertical } from 'lucide-react';
+import { Mic, Square, Settings2, Upload, FileText, X, Search, CheckCircle2, File as FileEdit, Sparkles, TrendingUp, RefreshCw, ArrowDownUp, Check, Info, Download, Users, Target } from 'lucide-react';
 import { ModeToggle } from './components/ModeToggle';
 import { InfoPopover } from './components/InfoPopover';
 import { FieldLabel } from './components/FieldLabel';
@@ -3163,8 +3163,6 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
                         {(() => {
                           const miningEnabled = !!version.sidecar.processMining;
 
-                          const guidedItem = { id: 'guided' as MiningWorkspaceView, label: 'Geführt', Icon: Sparkles } as const;
-
                           const coreItems = [
                             { id: 'data' as MiningWorkspaceView, label: 'Daten', Icon: FileText },
                             { id: 'preprocessing' as MiningWorkspaceView, label: 'Aufbereitung', Icon: RefreshCw },
@@ -3182,9 +3180,7 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
                             { id: 'drift' as MiningWorkspaceView, label: 'Vergleich', Icon: TrendingUp },
                           ] as const;
 
-                          const isAssisted = settings.uiMode === 'assisted';
-
-                          const renderBtn = ({ id, label, Icon }: typeof coreItems[number] | typeof advancedItems[number] | typeof guidedItem) => {
+                          const renderBtn = ({ id, label, Icon }: typeof coreItems[number] | typeof advancedItems[number]) => {
                             const disabled = !miningEnabled && id !== 'data';
                             const active = miningWorkspaceView === id;
 
@@ -3209,38 +3205,8 @@ export function WizardPlayground({ initialProcessId }: WizardPlaygroundProps = {
 
                           return (
                             <>
-                              {isAssisted && renderBtn(guidedItem)}
                               {coreItems.map(renderBtn)}
-
-                              {isAssisted ? (
-                                <details className="relative">
-                                  <summary className="list-none cursor-pointer pm-tab pm-tab-inactive inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs">
-                                    <MoreVertical className="w-4 h-4" />
-                                    Erweitert
-                                  </summary>
-                                  <div className="absolute left-0 mt-2 w-56 bg-white border border-slate-200 rounded-lg shadow-lg p-1 z-50">
-                                    {advancedItems.map(({ id, label, Icon }) => {
-                                      const disabled = !miningEnabled && id !== 'data';
-                                      return (
-                                        <button
-                                          key={id}
-                                          onClick={() => { if (!disabled) setMiningWorkspaceView(id); }}
-                                          className={[
-                                            'w-full flex items-center gap-2 px-3 py-2 text-sm rounded text-left',
-                                            disabled ? 'opacity-40 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50',
-                                          ].join(' ')}
-                                          type="button"
-                                        >
-                                          <Icon className="w-4 h-4" />
-                                          {label}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </details>
-                              ) : (
-                                advancedItems.map(renderBtn)
-                              )}
+                              {advancedItems.map(renderBtn)}
                             </>
                           );
                         })()}

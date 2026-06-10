@@ -38,6 +38,7 @@ import { applyNormalizationRules } from './reviewNormalization';
 import type { DerivationResult } from './documentDerivation';
 import { useProcessAnalysis } from './useProcessAnalysis';
 import { AnalysisStatus } from './AnalysisStatus';
+import { AnalysisOriginBadge } from './AnalysisOriginBadge';
 import type { SourceType } from '../../ai/aiToObservations';
 import { computeQualitySummary } from './narrativeParsing';
 import { getAnalysisModeLabel } from './pmShared';
@@ -863,6 +864,7 @@ export function ObservationsStep({ process, version, settings, state, integrity,
                   <span className={`rounded px-1.5 py-0.5 font-medium ${lastSummary.confidence === 'high' ? 'bg-green-100 text-green-800' : lastSummary.confidence === 'medium' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>
                     {lastSummary.confidence === 'high' ? 'Hohe Verlässlichkeit' : lastSummary.confidence === 'medium' ? 'Mittlere Verlässlichkeit' : 'Niedrige Verlässlichkeit'}
                   </span>
+                  <AnalysisOriginBadge provenance={lastSummary.provenance} />
                 </div>
                 {lastSummary.documentSummary && <p className="text-xs leading-relaxed text-slate-500">{lastSummary.documentSummary}</p>}
               </div>

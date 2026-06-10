@@ -1,7 +1,7 @@
 {
   "name": "vite-react-typescript-starter",
   "private": true,
-  "version": "0.49.0",
+  "version": "0.50.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -27,12 +27,7 @@
     "security:check": "node ./scripts/runPmSecurityCheck.mjs",
     "acceptance:check": "node ./scripts/runPmAcceptanceCheck.mjs",
     "changes:export": "node ./scripts/exportChangedFiles.mjs",
-    "changes:export:latest": "node ./scripts/exportChangedFiles.mjs --from HEAD~1 --to HEAD --out artifacts/latest-commit-files",
-    "export:changes": "node ./scripts/exportChangedFiles.mjs",
-    "changes-export": "node ./scripts/exportChangedFiles.mjs",
-    "export-changes": "node ./scripts/exportChangedFiles.mjs",
-    "changes-export-latest": "node ./scripts/exportChangedFiles.mjs --from HEAD~1 --to HEAD --out artifacts/latest-commit-files",
-    "latest-changes-export": "node ./scripts/exportChangedFiles.mjs --from HEAD~1 --to HEAD --out artifacts/latest-commit-files"
+    "changes:export:latest": "node ./scripts/exportChangedFiles.mjs --from HEAD~1 --to HEAD --out artifacts/latest-commit-files"
   },
   "dependencies": {
     "bpmn-js": "^18.12.0",

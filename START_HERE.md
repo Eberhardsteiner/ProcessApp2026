@@ -1,4 +1,4 @@
-> Aktueller Produktstand: **v0.49.0**
+> Aktueller Produktstand: **v0.50.0**
 
 # Start hier
 
@@ -86,6 +86,10 @@ npm run dev
 - **Whisper ist optional:** in der Karte **„Sprache & Übersetzung"** den Provider **„Whisper (Server)"** wählen und **Endpoint-URL** + **Audio-Einwilligung** setzen. Greift nur bei vollständiger Konfiguration (Endpoint + Audio-Consent + Recorder-Support); sonst Web Speech. Ablauf dann als Batch: **Aufnahme läuft → Transkribiere → Text** (kein Live-Text).
 - Der **Transkriptions-Proxy ist ein separater Prozess** (`server/transcriptionProxy.mjs`, eigener Port **8788**), analog zum KI-Proxy; er reicht Audio an eine **OpenAI-kompatible `/audio/transcriptions`-Gegenstelle** (self-hosted Whisper oder OpenAI) weiter. Upstream-Schlüssel liegt ausschließlich serverseitig. Start/Konfiguration: siehe [server/README.md](C:/Users/eberh/Documents/GitHub/ProcessApp2026/server/README.md).
 - Die vier Experten-Diktatstellen sind unverändert und nutzen weiter direkt die Browser-Spracherkennung.
+
+## Analyse-Herkunft sichtbar (Paket 5)
+
+- Jedes Analyseergebnis trägt ein Herkunfts-Label **„Mit KI erstellt"** bzw. **„Lokale Vorschau ohne KI"** — jetzt auf **allen** operativen Ergebnis-Oberflächen: **Upload** (Datei-Import), **Narrativ/Diktat** (Prozessfall beschreiben) und **Observations-Schritt**. So ist auf einen Blick erkennbar, ob ein Ergebnis von der KI oder der lokalen Heuristik stammt.
 
 ## Standardprüfung
 - **Standard (Produktivmodus):** QA-/Self-Test-/Freigabe-Surfaces sind aus dem Nutzerpfad entfernt.

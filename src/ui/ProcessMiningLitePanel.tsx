@@ -93,7 +93,6 @@ interface ProcessMiningLitePanelProps {
 }
 
 export function ProcessMiningLitePanel({ process, version, onSave, mappingSearchPreset, onConsumedMappingSearchPreset, settings, onGoToImprovement, onCreateVersionFromMining, miningView: externalMiningView, onMiningViewChange }: ProcessMiningLitePanelProps) {
-  const isAssisted = settings.uiMode === 'assisted';
   const prepareDatasetWithExternalization = useCallback(async (dataset: ProcessMiningDataset): Promise<ProcessMiningDataset> => {
     const externalizeEnabled = settings.processMining?.externalizeEvents ?? false;
     const externalizeThreshold = settings.processMining?.externalizeThreshold ?? 150000;
@@ -136,7 +135,6 @@ export function ProcessMiningLitePanel({ process, version, onSave, mappingSearch
   const [minEdgeCount, setMinEdgeCount] = useState<number>(5);
   const [maxNodes, setMaxNodes] = useState<number>(30);
   const [dfgHeatMetric, setDfgHeatMetric] = useState<'median' | 'p95'>('median');
-  const [discoveryPreset, setDiscoveryPreset] = useState<'overview' | 'balanced' | 'detailed'>('balanced');
   const [dfgWorkerResult, setDfgWorkerResult] = useState<BuildDfgResult | null>(null);
   const [dfgWorkerStatus, setDfgWorkerStatus] = useState<'idle' | 'computing' | 'error'>('idle');
   const [dfgWorkerError, setDfgWorkerError] = useState<string>('');
@@ -254,7 +252,7 @@ export function ProcessMiningLitePanel({ process, version, onSave, mappingSearch
   const [internalMiningView, setInternalMiningView] = useState<MiningView>(() => {
     const raw = localStorage.getItem(VIEW_KEY_GLOBAL);
     const allowed: MiningView[] = ['data','preprocessing','mapping','discovery','conformance','performance','cases','export','organisation','rootcause','drift','guided'];
-    const defaultView = isAssisted ? 'guided' : 'data';
+    const defaultView = 'data';
     return (allowed.includes(raw as MiningView) ? (raw as MiningView) : defaultView);
   });
 
@@ -972,30 +970,6 @@ export function ProcessMiningLitePanel({ process, version, onSave, mappingSearch
       discovery: { dfgMode, minEdgeCount, maxNodes, heatMetric: dfgHeatMetric },
     });
   }, [dfgMode, minEdgeCount, maxNodes, dfgHeatMetric, scheduleDatasetSettingsSave]);
-
-  const handleDiscoveryPresetChange = (preset: 'overview' | 'balanced' | 'detailed') => {
-    setDiscoveryPreset(preset);
-    let newMinEdgeCount: number;
-    let newMaxNodes: number;
-
-    switch (preset) {
-      case 'overview':
-        newMinEdgeCount = 10;
-        newMaxNodes = 20;
-        break;
-      case 'balanced':
-        newMinEdgeCount = 5;
-        newMaxNodes = 30;
-        break;
-      case 'detailed':
-        newMinEdgeCount = 1;
-        newMaxNodes = 50;
-        break;
-    }
-
-    setMinEdgeCount(newMinEdgeCount);
-    setMaxNodes(newMaxNodes);
-  };
 
   useEffect(() => {
     scheduleDatasetSettingsSave({
@@ -4356,125 +4330,45 @@ const draftTransitionConformance: DraftTransitionConformanceResult | null = useM
                   )}
                 </div>
 
-{isAssisted ? (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-2">
-                        Detailgrad der Karte
-                      </label>
-                      <div className="flex rounded-md overflow-hidden border border-slate-300">
-                        <button
-                          onClick={() => handleDiscoveryPresetChange('overview')}
-                          className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${discoveryPreset === 'overview' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'}`}
-                        >
-                          Übersichtlich
-                        </button>
-                        <button
-                          onClick={() => handleDiscoveryPresetChange('balanced')}
-                          className={`flex-1 px-3 py-2 text-xs font-medium transition-colors border-l border-slate-300 ${discoveryPreset === 'balanced' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'}`}
-                        >
-                          Ausgewogen
-                        </button>
-                        <button
-                          onClick={() => handleDiscoveryPresetChange('detailed')}
-                          className={`flex-1 px-3 py-2 text-xs font-medium transition-colors border-l border-slate-300 ${discoveryPreset === 'detailed' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'}`}
-                        >
-                          Detailliert
-                        </button>
-                      </div>
-                      <p className="text-xs text-slate-600 mt-1.5">
-                        {discoveryPreset === 'overview' && 'Übersichtlich blendet seltene Übergänge aus. Zeigt nur den Hauptablauf.'}
-                        {discoveryPreset === 'balanced' && 'Ausgewogen zeigt häufige Verbindungen und wichtige Pfade.'}
-                        {discoveryPreset === 'detailed' && 'Detailliert zeigt mehr, kann aber unruhig wirken.'}
-                      </p>
-                    </div>
-                    <details className="pt-2">
-                      <summary className="text-xs text-slate-600 cursor-pointer hover:text-slate-900">
-                        Erweiterte Einstellungen
-                      </summary>
-                      <div className="mt-3 space-y-3 pl-2 border-l-2 border-slate-200">
-                        <div>
-                          <label className="block text-xs font-medium text-slate-700 mb-1">
-                            Min. Häufigkeit (Übergänge)
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="range"
-                              min={1}
-                              max={500}
-                              value={minEdgeCount}
-                              onChange={(e) => setMinEdgeCount(Number(e.target.value))}
-                              className="w-28"
-                            />
-                            <input
-                              type="number"
-                              min={1}
-                              max={500}
-                              value={minEdgeCount}
-                              onChange={(e) => setMinEdgeCount(Math.max(1, Number(e.target.value)))}
-                              className="w-16 px-2 py-1 border border-slate-300 rounded text-xs text-center"
-                            />
-                          </div>
-                          <p className="text-xs text-slate-500 mt-1">Niedrigere Werte zeigen mehr Details</p>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-slate-700 mb-1">
-                            Max. Aktivitäten
-                          </label>
-                          <input
-                            type="number"
-                            min={10}
-                            max={100}
-                            value={maxNodes}
-                            onChange={(e) => setMaxNodes(Math.max(10, Math.min(100, Number(e.target.value))))}
-                            className="w-20 px-2 py-1 border border-slate-300 rounded text-xs text-center"
-                          />
-                          <p className="text-xs text-slate-500 mt-1">Anzahl der häufigsten Aktivitäten</p>
-                        </div>
-                      </div>
-                    </details>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-1">
-                        Min. Kantengewicht
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="range"
-                          min={1}
-                          max={500}
-                          value={minEdgeCount}
-                          onChange={(e) => setMinEdgeCount(Number(e.target.value))}
-                          className="w-28"
-                        />
-                        <input
-                          type="number"
-                          min={1}
-                          max={500}
-                          value={minEdgeCount}
-                          onChange={(e) => setMinEdgeCount(Math.max(1, Number(e.target.value)))}
-                          className="w-16 px-2 py-1 border border-slate-300 rounded text-xs text-center"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-1">
-                        Max. Knoten
-                      </label>
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                      Min. Kantengewicht
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={1}
+                        max={500}
+                        value={minEdgeCount}
+                        onChange={(e) => setMinEdgeCount(Number(e.target.value))}
+                        className="w-28"
+                      />
                       <input
                         type="number"
-                        min={10}
-                        max={100}
-                        value={maxNodes}
-                        onChange={(e) => setMaxNodes(Math.max(10, Math.min(100, Number(e.target.value))))}
-                        className="w-20 px-2 py-1 border border-slate-300 rounded text-xs text-center"
+                        min={1}
+                        max={500}
+                        value={minEdgeCount}
+                        onChange={(e) => setMinEdgeCount(Math.max(1, Number(e.target.value)))}
+                        className="w-16 px-2 py-1 border border-slate-300 rounded text-xs text-center"
                       />
                     </div>
-                  </>
-                )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                      Max. Knoten
+                    </label>
+                    <input
+                      type="number"
+                      min={10}
+                      max={100}
+                      value={maxNodes}
+                      onChange={(e) => setMaxNodes(Math.max(10, Math.min(100, Number(e.target.value))))}
+                      className="w-20 px-2 py-1 border border-slate-300 rounded text-xs text-center"
+                    />
+                  </div>
+                </>
 
                 <div>
                   <div className="flex items-center gap-1 mb-1.5">
@@ -4504,7 +4398,7 @@ const draftTransitionConformance: DraftTransitionConformanceResult | null = useM
                 <div className="space-y-6">
                   <div>
                     <h4 className="text-sm font-semibold text-slate-900 mb-2">
-                      {isAssisted ? 'Häufigste Aktivitäten' : 'Top Knoten'}{' '}
+                      Top Knoten{' '}
                       <span className="text-slate-400 font-normal">(nach Häufigkeit, max. {maxNodes})</span>
                     </h4>
                     <div className="overflow-x-auto">
@@ -4563,16 +4457,14 @@ const draftTransitionConformance: DraftTransitionConformanceResult | null = useM
 
                   <div>
                     <h4 className="text-sm font-semibold text-slate-900 mb-2">
-                      {isAssisted ? 'Häufige Übergänge' : 'Top Kanten'}{' '}
+                      Top Kanten{' '}
                       <span className="text-slate-400 font-normal">
-                        {isAssisted ? `(mind. ${minEdgeCount}×)` : `(minEdgeCount ≥ ${minEdgeCount})`}
+                        {`(minEdgeCount ≥ ${minEdgeCount})`}
                       </span>
                     </h4>
                     {dfgFiltered.filteredEdges.length === 0 ? (
                       <p className="text-sm text-slate-500 bg-amber-50 border border-amber-200 rounded-md p-3">
-                        {isAssisted
-                          ? 'Keine Übergänge bei aktueller Filterung. Versuchen Sie eine andere Ansicht oder passen Sie die Einstellungen an.'
-                          : 'Keine Kanten bei aktuellem Filter. minEdgeCount verringern oder maxNodes erhöhen.'}
+                        Keine Kanten bei aktuellem Filter. minEdgeCount verringern oder maxNodes erhöhen.
                       </p>
                     ) : (
                       <div className="overflow-x-auto">
@@ -4672,7 +4564,7 @@ const draftTransitionConformance: DraftTransitionConformanceResult | null = useM
                     <div>
                       <div className="flex items-center gap-1 mb-1">
                         <label className="text-xs font-medium text-slate-600">
-                          {isAssisted ? 'Seltene Übergänge ausblenden' : 'Min. Kanten-Anzahl'}
+                          Min. Kanten-Anzahl
                         </label>
                         <HelpPopover helpKey="mining.discoveryToBpmn.params" ariaLabel="Hilfe: Komplexität" />
                       </div>
@@ -4688,7 +4580,7 @@ const draftTransitionConformance: DraftTransitionConformanceResult | null = useM
                     <div>
                       <div className="flex items-center gap-1 mb-1">
                         <label className="text-xs font-medium text-slate-600">
-                          {isAssisted ? 'Min. Übergangs-Anteil' : 'Min. Kanten-Anteil'}
+                          Min. Kanten-Anteil
                         </label>
                         <HelpPopover helpKey="mining.discoveryToBpmn.minEdgeShare" ariaLabel="Hilfe: Min Kanten-Anteil" />
                       </div>
@@ -4726,7 +4618,7 @@ const draftTransitionConformance: DraftTransitionConformanceResult | null = useM
                     <div>
                       <div className="flex items-center gap-1 mb-1">
                         <label className="text-xs font-medium text-slate-600">
-                          {isAssisted ? 'Maximale Schritte im Modell' : 'Max. Steps'}
+                          Max. Steps
                         </label>
                       </div>
                       <input

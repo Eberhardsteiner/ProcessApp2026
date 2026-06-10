@@ -6,6 +6,7 @@ import { HelpPopover } from '../components/HelpPopover';
 import { useAppSettings } from '../../settings/useAppSettings';
 import { useProcessAnalysis } from './useProcessAnalysis';
 import { AnalysisStatus } from './AnalysisStatus';
+import { AnalysisOriginBadge } from './AnalysisOriginBadge';
 import {
   startTranscription,
   isTranscriptionProviderAvailable,
@@ -38,7 +39,7 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
   const [caseRef, setCaseRef] = useState('');
   const [dateHints, setDateHints] = useState('');
   const [sourceNote, setSourceNote] = useState('');
-  const [lastResult, setLastResult] = useState<{ stepCount: number; confidence: string } | null>(null);
+  const [lastResult, setLastResult] = useState<{ stepCount: number; confidence: string; provenance?: 'local' | 'ai' } | null>(null);
 
   const { settings, setSettings } = useAppSettings();
   const analysis = useProcessAnalysis();
@@ -236,7 +237,7 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
     const caseItem = buildCase();
     caseItem.id = result.cases[0]?.id ?? caseItem.id;
     const caseToUse = result.cases[0] ?? caseItem;
-    setLastResult({ stepCount: result.observations.length, confidence: result.confidence });
+    setLastResult({ stepCount: result.observations.length, confidence: result.confidence, provenance: result.summary.provenance });
     onAddDerived(caseToUse, result.observations, result.summary);
     reset();
   }
@@ -278,6 +279,7 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
         <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-xs text-green-800">
           <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
           <span>{lastResult.stepCount} Schritte automatisch erkannt · Verlässlichkeit: {lastResult.confidence === 'high' ? 'hoch' : lastResult.confidence === 'medium' ? 'mittel' : 'niedrig'}</span>
+          <AnalysisOriginBadge provenance={lastResult.provenance} />
         </div>
       )}
 
