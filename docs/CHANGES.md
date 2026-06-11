@@ -1,3 +1,11 @@
+## v0.51.0 – Robuster Diktat-Pfad ohne KI
+
+- **deterministische, KI-freie Schritt-Extraktion für unpunktierten Diktattext** im geführten Intake (`ObservationIntakePanel`): ein Segmentierer (`src/import/freeTextSegmenter.ts`) zerlegt den unpunktierten Sprachstrom in saubere Schritt-Sätze und verpackt sie als `ai-capture-v1` (`buildDictationCapture`), das der vorhandene Adapter `adaptAiCaptureToDerivation` formgleich in ein `DerivationResult` überführt — bewusst **ohne** das Step-Gating in `finalizeDerivationResult`, das kurze imperative Schritte verworfen hatte (Messung Prompt 1: lokaler Pfad lieferte 0 Schritte trotz korrektem Routing nach `semi-structured-procedure`)
+- greift **nur** bei `looksUnderpunctuated`-Text im geführten Diktat-/Narrativ-Pfad; Datei-Import, Experten-Stellen, Benchmark- und KI-Pfad für punktierten Text bleiben unverändert
+- Herkunft ehrlich auf **„Lokale Vorschau ohne KI"** gesetzt (`provenance = 'local'`, nicht `'ai'`)
+- **Engine unangetastet** (`documentDerivation.ts`/`sourceRouter.ts`/`documentStructureClassifier.ts` — kein Byte); keine neue Dependency; Benchmark unverändert **77/100**
+- Mess-/Diagnose-Harness `src/import/dictationProbe.ts` + `scripts/runDictationProbe.mjs` behalten (Option B liefert für das Referenz-Diktat **42 Schritte**)
+
 ## v0.50.0 – Aufräumen & Härten
 
 - toten `isAssisted`-Code aus `ProcessMiningLitePanel` und `WizardPlayground` entfernt: seit der bewussten Modus-Trennung (Paket 2) waren die geführten Zweige im Experten-Mining unerreichbar; **das Experten-Rendering bleibt byte-identisch** (nur unerreichbare Zweige entfernt, plus die dadurch verwaisten Helfer)

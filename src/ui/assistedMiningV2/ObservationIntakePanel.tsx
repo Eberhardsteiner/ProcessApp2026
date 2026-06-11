@@ -7,6 +7,8 @@ import { useAppSettings } from '../../settings/useAppSettings';
 import { useProcessAnalysis } from './useProcessAnalysis';
 import { AnalysisStatus } from './AnalysisStatus';
 import { AnalysisOriginBadge } from './AnalysisOriginBadge';
+import { looksUnderpunctuated, segmentDictatedText, buildDictationCapture } from '../../import/freeTextSegmenter';
+import { adaptAiCaptureToDerivation } from '../../ai/aiToObservations';
 import {
   startTranscription,
   isTranscriptionProviderAvailable,
@@ -242,11 +244,44 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
     reset();
   }
 
+  // Deterministische, KI-freie Schritt-Extraktion fuer unpunktierten Diktattext:
+  // Segmentierer -> ai-capture-v1 -> adaptAiCaptureToDerivation (umgeht bewusst das
+  // Step-Gating in finalizeDerivationResult, das kurze imperative Schritte verwirft).
+  // Provenance wird ehrlich auf 'local' gesetzt (Badge: "Lokale Vorschau ohne KI").
+  function deriveLocal(): DerivationResult | null {
+    const raw = narrative.trim();
+    if (!looksUnderpunctuated(raw)) return null;
+    const sentences = segmentDictatedText(raw).split('\n').map((s) => s.trim()).filter(Boolean);
+    const r = adaptAiCaptureToDerivation({
+      aiText: JSON.stringify(buildDictationCapture(sentences)),
+      originalText: raw,
+      sourceName: caseName(),
+      sourceType: 'narrative',
+    });
+    if (r.ok && r.result) {
+      r.result.summary.provenance = 'local';
+      return r.result;
+    }
+    return null;
+  }
+
   async function handleAutoDerive() {
-    const text = narrative.trim();
-    if (!text) return;
+    const raw = narrative.trim();
+    if (!raw) return;
+
+    // Diktat ohne Satzzeichen: deterministischer, KI-freier Pfad (Option B).
+    if (looksUnderpunctuated(raw)) {
+      setNarrative(segmentDictatedText(raw)); // editierbare Schritt-Saetze anzeigen (Transparenz)
+      const local = deriveLocal();
+      if (local) {
+        applyResult(local);
+        return;
+      }
+      // Sicherheitsnetz: scheitert der Adapter unerwartet, faellt es auf den normalen Pfad unten.
+    }
+
     const outcome = await analysis.run({
-      text,
+      text: raw,
       sourceName: caseName(),
       sourceType: 'narrative',
       settings,
@@ -456,11 +491,12 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
 
       <AnalysisStatus
         state={analysis.state}
-        onUseHeuristicFallback={() =>
+        onUseHeuristicFallback={() => {
+          const local = deriveLocal();
           applyResult(
-            analysis.runHeuristicFallback({ text: narrative.trim(), sourceName: caseName(), sourceType: 'narrative' }),
-          )
-        }
+            local ?? analysis.runHeuristicFallback({ text: narrative.trim(), sourceName: caseName(), sourceType: 'narrative' }),
+          );
+        }}
         onImportPasted={(aiText) => {
           const r = analysis.importPasted({ aiText, originalText: narrative.trim(), sourceName: caseName(), sourceType: 'narrative' });
           if (r.ok && r.result) applyResult(r.result);
