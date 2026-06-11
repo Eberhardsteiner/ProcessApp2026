@@ -1,3 +1,10 @@
+## v0.53.0 – Diktat-Segmentierer verallgemeinert (1. und 3. Person)
+
+- Finite-Verb-Erkennung im Segmentierer (`src/import/freeTextSegmenter.ts`) verallgemeinert: explizite Verbliste **plus** eine morphologische Regel, die die deutsche Groß-/Kleinschreibung ausnutzt — kleingeschriebenes Wort auf `-t` = finite 2./3. Person (`prüft`/`holt`/`leitet` …), während großgeschriebene Nomen automatisch ausgeschlossen sind (`looksFiniteVerb` ersetzt die alte, 1.-Person-lastige `isVerb`-Liste); plus ein `verbSeen`-Gate, das Subjekt+Verb zusammenhält
+- dadurch greift der lokale Diktat-Pfad jetzt auch auf **Organisationsprozessen in 3. Person** („der Sachbearbeiter prüft … dann leitet er weiter"): Held-out-Arbeitsprozess **7 → 13 Schritte**, 5 Rollen / 2 Systeme erkannt; Referenz-Diktat unverändert (**43** Schritte, keine Regression)
+- Held-out-Arbeitsprozess als **fester Regressionstest** im Harness (`src/import/dictationProbe.ts`): `runDictationProbe` misst HIS + HELD-OUT dauerhaft mit
+- Signaturen unverändert → keine Änderung an `ObservationIntakePanel`; **Engine unangetastet** (`documentDerivation.ts`/`sourceRouter.ts`/`documentStructureClassifier.ts` — kein Byte); keine neue Dependency; Benchmark unverändert **77/100**
+
 ## v0.52.0 – Diktat-Capture angereichert (Rollen/Systeme/Reibung/Bedingungen)
 
 - `buildDictationCapture` (`src/import/freeTextSegmenter.ts`) befüllt jetzt zusätzlich `roles`/`systems` (leichtes Lexikon), `stepDetails[].role` (Rolle je Schritt), `exceptions` (Reibung an `relatedStep`) und `decisions` (Bedingungen an `afterStep`); der bestehende Adapter `adaptAiCaptureToDerivation` übernimmt diese bereits in die Rollen-/Systeme-Listen, Reibungssignale und die Varianten-/Signalspur

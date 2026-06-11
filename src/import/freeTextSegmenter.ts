@@ -5,11 +5,18 @@
 
 import type { AiCaptureResultV1 } from '../ai/aiTypes';
 
-const ACTION_VERBS = new Set<string>([
+// Verb-Erkennung: explizite Liste (Alltag 1. Person/Imperativ + häufige Geschäftsverben)
+// PLUS morphologisch: kleingeschriebenes Wort auf -t = finite 2./3. Person (prüft, holt, leitet …).
+// Deutsche Nomen sind großgeschrieben -> Groß/Klein trennt Verb von Nomen ("prüft" vs. "Vollständigkeit").
+const VERB_SET = new Set<string>([
   'stehe','stelle','schalte','lege','gehe','geh','hole','hol','gieße','giesse','nehme','teile',
   'schmiere','lese','packe','schaue','fahre','tanke','öffne','oeffne','suche','trete','stecke',
   'dusche','trockne','rasiere','ziehe','zieh','mache','beginne','lasse','finde','bringe','setze',
   'fülle','fuelle','drücke','druecke','wähle','waehle','prüfe','pruefe','starte','klicke','ankomme',
+  // häufige Geschäftsverben als Infinitiv/Plural (-en; werden von der -t-Regel nicht erfasst)
+  'prüfen','holen','leiten','erfassen','vergleichen','erstellen','lösen','bestätigen','überweisen',
+  'klären','senden','genehmigen','bestellen','liefern','bearbeiten','informieren','melden',
+  'kontrollieren','buchen','zahlen',
 ]);
 const INFO_VERBS = new Set<string>(['beginnt','dauert','beträgt','betraegt','klingelt','startet','endet']);
 const FRONTING = new Set<string>([
@@ -24,9 +31,28 @@ const PRON_ALL = new Set<string>(['ich','sie','es','er','wir','mir','mich','dich
 const SUBJECT_PRON = new Set<string>(['ich','er','wir']);
 const SENT = '';
 
+// kleingeschriebene Wörter auf -t, die KEINE finiten Verben sind (Adverbien/Adjektive/Präpositionen)
+const NON_VERB_LOWER_T = new Set<string>([
+  'nicht','jetzt','mit','seit','samt','oft','fast','erst','meist','selbst','bereits','sofort',
+  'zuletzt','direkt','komplett','korrekt','exakt','perfekt','konkret','gesamt','bekannt','genannt',
+  'bestimmt','getrennt','zumindest','mindestens','höchstens','allerdings','damit','somit','womit',
+]);
+
 const cleanTok = (w: string): string => w.toLowerCase().replace(/[.,;:!?]/g, '');
-const isVerb = (w: string): boolean => ACTION_VERBS.has(cleanTok(w));
 const isInfoVerb = (w: string): boolean => INFO_VERBS.has(cleanTok(w));
+
+/** Finite-Verb-Erkennung: explizite Liste ODER morphologisch (kleingeschrieben + endet auf -t). */
+function looksFiniteVerb(w: string): boolean {
+  const lw = cleanTok(w);
+  if (VERB_SET.has(lw)) return true;
+  if (lw.length < 4) return false;
+  if (NON_VERB_LOWER_T.has(lw)) return false;
+  const raw = w.replace(/[.,;:!?]/g, '');
+  const capitalized = !!raw[0] && raw[0] === raw[0].toUpperCase() && raw[0] !== raw[0].toLowerCase();
+  if (capitalized) return false;                                       // dt. Nomen großgeschrieben -> kein Verb
+  if (lw.startsWith('ge') && lw.length > 6 && lw.endsWith('t')) return false; // Partizip (gemacht, geprüft)
+  return lw.endsWith('t');                                              // 2./3. Person Präsens
+}
 
 function applySpokenPunctuation(t: string): string {
   return t
@@ -49,13 +75,14 @@ function splitIntoSentences(raw: string): string[] {
   const t = applySpokenPunctuation(raw).replace(/\s+/g, ' ').trim();
   const ws = t.split(' ');
   const out: string[] = [];
+  let verbSeen = false; // wurde im aktuellen Segment schon ein finites Verb gesehen?
   for (let i = 0; i < ws.length; i++) {
     const w = ws[i];
     const lw = cleanTok(w);
     const prev = i > 0 ? cleanTok(ws[i - 1]) : '';
     const next = i + 1 < ws.length ? cleanTok(ws[i + 1]) : '';
     const prevBoundary = i > 0 && /[.!?]$/.test(ws[i - 1]);
-    const prevVerb = i > 0 && isVerb(ws[i - 1]);
+    const prevVerb = i > 0 && looksFiniteVerb(ws[i - 1]);
     let boundary = false;
     if (i > 0 && !prevBoundary) {
       if (FRONTING.has(lw)) { if (!prevVerb) boundary = true; }
@@ -64,16 +91,18 @@ function splitIntoSentences(raw: string): string[] {
         if (!prevVerb && !NO_SPLIT_PREV.has(prev) && !FRONTING.has(prev)) boundary = true;
       } else if ((lw === 'das' || lw === 'die' || lw === 'der') && i + 1 < ws.length && isInfoVerb(ws[i + 1])) {
         boundary = true;
-      } else if (isVerb(w)) {
+      } else if (looksFiniteVerb(w)) {
         const block = NO_SPLIT_PREV.has(prev) || PRON_ALL.has(prev) || prevVerb
-          || SUBJECT_PRON.has(next) || (i + 1 < ws.length && isVerb(ws[i + 1]));
+          || SUBJECT_PRON.has(next) || (i + 1 < ws.length && looksFiniteVerb(ws[i + 1])) || !verbSeen;
         if (!block) boundary = true;
       }
     }
-    if (boundary) out.push(SENT);
+    if (boundary) { out.push(SENT); verbSeen = false; }
     out.push(w);
+    if (looksFiniteVerb(w)) verbSeen = true;
+    if (prevBoundary) verbSeen = false;
   }
-  const joined = out.join(' ').replace(/\b(und|oder)\s+(\p{L}+)/gu, (m, _c, v: string) => (isVerb(v) ? `${SENT} ${v}` : m));
+  const joined = out.join(' ').replace(/\b(und|oder)\s+(\p{L}+)/gu, (m, _c, v: string) => (looksFiniteVerb(v) ? `${SENT} ${v}` : m));
   const parts = joined
     .split(SENT)
     .flatMap(s => s.split(/(?<=[.!?])\s+/))

@@ -39,14 +39,15 @@ try {
     console.log(`${pad(r.label, 26)} | ${pad(r.routingClass, 26)} | ${pad(r.obs, 5)} | ${r.derivedSteps}`);
   }
 
-  const b = out.optionB;
-  console.log('');
-  console.log(b.label);
-  console.log(`  ok: ${b.ok}   #Schritte: ${b.steps}   #Rollen: ${b.roles}   #Systeme: ${b.systems}   #Reibung: ${b.friction}${b.error ? `   error: ${b.error}` : ''}`);
-  console.log(`  Systeme: ${(b.systemsList ?? []).join(', ') || '(keine)'}`);
-  console.log(`  Rollen:  ${(b.rolesList ?? []).join(', ') || '(keine)'}`);
-  console.log('  erste 5 Schritt-Label:');
-  b.sample.forEach((s, i) => console.log(`    ${i + 1}. ${s}`));
+  for (const b of out.optionB) {
+    console.log('');
+    console.log(b.label);
+    console.log(`  ok: ${b.ok}   #Schritte: ${b.steps}   #Rollen: ${b.roles}   #Systeme: ${b.systems}   #Reibung: ${b.friction}${b.error ? `   error: ${b.error}` : ''}`);
+    console.log(`  Systeme: ${(b.systemsList ?? []).join(', ') || '(keine)'}`);
+    console.log(`  Rollen:  ${(b.rolesList ?? []).join(', ') || '(keine)'}`);
+    console.log('  erste 5 Schritt-Label:');
+    b.sample.forEach((s, i) => console.log(`    ${i + 1}. ${s}`));
+  }
 } finally {
   await rm(tempDir, { recursive: true, force: true });
 }
