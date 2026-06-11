@@ -1,3 +1,10 @@
+## v0.52.0 – Diktat-Capture angereichert (Rollen/Systeme/Reibung/Bedingungen)
+
+- `buildDictationCapture` (`src/import/freeTextSegmenter.ts`) befüllt jetzt zusätzlich `roles`/`systems` (leichtes Lexikon), `stepDetails[].role` (Rolle je Schritt), `exceptions` (Reibung an `relatedStep`) und `decisions` (Bedingungen an `afterStep`); der bestehende Adapter `adaptAiCaptureToDerivation` übernimmt diese bereits in die Rollen-/Systeme-Listen, Reibungssignale und die Varianten-/Signalspur
+- alle Schrittbezüge bleiben in `[1, happyPath.length]`; Signatur `buildDictationCapture(sentences): AiCaptureResultV1` **unverändert** → keine Änderung an `ObservationIntakePanel` nötig
+- Referenz-Diktat: weiterhin 42 Schritte, zusätzlich **10 Systeme** (Kaffeemaschine, Ofen, App, Auto, Aufzug, Beamer …) und die „Wenn"-Bedingungen als Entscheidungs-/Signalspur (Rollen 0 / Reibung 0 mangels Cues in diesem Diktat)
+- **Engine unangetastet** (`documentDerivation.ts`/`sourceRouter.ts`/`documentStructureClassifier.ts` — kein Byte); keine neue Dependency; Benchmark unverändert **77/100**
+
 ## v0.51.0 – Robuster Diktat-Pfad ohne KI
 
 - **deterministische, KI-freie Schritt-Extraktion für unpunktierten Diktattext** im geführten Intake (`ObservationIntakePanel`): ein Segmentierer (`src/import/freeTextSegmenter.ts`) zerlegt den unpunktierten Sprachstrom in saubere Schritt-Sätze und verpackt sie als `ai-capture-v1` (`buildDictationCapture`), das der vorhandene Adapter `adaptAiCaptureToDerivation` formgleich in ein `DerivationResult` überführt — bewusst **ohne** das Step-Gating in `finalizeDerivationResult`, das kurze imperative Schritte verworfen hatte (Messung Prompt 1: lokaler Pfad lieferte 0 Schritte trotz korrektem Routing nach `semi-structured-procedure`)

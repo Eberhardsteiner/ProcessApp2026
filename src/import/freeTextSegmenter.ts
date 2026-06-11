@@ -107,13 +107,73 @@ export function toNumberedStepList(text: string): string {
   return sentences.map((s, i) => `${i + 1}. ${s}`).join('\n');
 }
 
+// --- Leichte, fokussierte Erkennung für den lokalen Diktat-Pfad (keine Engine-Logik) ---
+const ROLE_RE = /\b(sachbearbeiter(?:in)?|bearbeiter(?:in)?|teamleitung|abteilungsleiter(?:in)?|vorgesetzte[rn]?|führungskraft|geschäftsführung|fachabteilung|fachbereich|einkauf|vertrieb|buchhaltung|controlling|sekretariat|poststelle|labor|qualitätssicherung|lieferant(?:in)?|kund(?:e|in)|dienstleister|techniker(?:in)?|disponent(?:in)?|mitarbeiter(?:in)?|kolleg(?:e|in)|hausmeister)\b/i;
+const SYSTEM_RE = /\b(sap|erp|crm|jira|servicenow|sharepoint|portal|intranet|outlook|excel|word|powerpoint|teams|datenbank|e-?mail|software|applikation|anwendung|beamer|notebook|laptop|drucker|scanner|kaffeemaschine|backofen|ofen|kühlschrank|app|smartphone|handy|auto|aufzug|fahrstuhl|tankstelle)\b/i;
+const FRICTION_RE = /\b(verzögerung|wartezeit|manuell|medienbruch|doppelt|doppelerfassung|fehlerhaft|rückfrage|nachfassen|unklar|abtippen|ausdrucken|engpass|stau)\b/i;
+const DECISION_START_RE = /^(wenn|sobald|falls|sofern)\b/i;
+
+function titleCaseWord(s: string): string {
+  const t = s.trim();
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+}
+
+/** Alle eindeutigen Treffer eines Lexikons im Text (originale Schreibweise, dedupliziert). */
+function collectMatches(singleRe: RegExp, text: string, cap = 12): string[] {
+  const globalRe = new RegExp(singleRe.source, 'gi');
+  const seen = new Set<string>();
+  const out: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = globalRe.exec(text)) !== null) {
+    const val = m[0].trim();
+    const key = val.toLowerCase();
+    if (val && !seen.has(key)) {
+      seen.add(key);
+      out.push(titleCaseWord(val));
+      if (out.length >= cap) break;
+    }
+  }
+  return out;
+}
+
 /**
- * Baut aus segmentierten Diktat-Saetzen einen minimal-validen ai-capture-v1.
- * happyPath = die Saetze; endToEnd aus erstem/letztem Schritt. Deterministisch, keine KI.
+ * Baut aus segmentierten Diktat-Saetzen einen minimal-validen ai-capture-v1 und
+ * reichert ihn leicht an: Rollen/Systeme (Lexikon), Rolle je Schritt, Reibung
+ * (exceptions) und Bedingungen (decisions). Deterministisch, keine KI, keine Engine.
  */
 export function buildDictationCapture(sentences: string[]): AiCaptureResultV1 {
   const steps = sentences.map(s => s.trim()).filter(Boolean);
-  return {
+  const fullText = steps.join(' ');
+
+  const roles = collectMatches(ROLE_RE, fullText);
+  const systems = collectMatches(SYSTEM_RE, fullText);
+
+  const stepDetails: NonNullable<AiCaptureResultV1['stepDetails']> = [];
+  const exceptions: NonNullable<AiCaptureResultV1['exceptions']> = [];
+  const decisions: NonNullable<AiCaptureResultV1['decisions']> = [];
+
+  steps.forEach((step, i) => {
+    const stepNo = i + 1; // immer in [1, steps.length]
+    const roleMatch = step.match(ROLE_RE);
+    if (roleMatch) stepDetails.push({ step: stepNo, role: titleCaseWord(roleMatch[0]) });
+    if (FRICTION_RE.test(step)) {
+      exceptions.push({
+        type: 'other',
+        relatedStep: stepNo,
+        description: step,
+        handling: 'Manuell prüfen – mögliches Automatisierungspotenzial.',
+      });
+    }
+    if (DECISION_START_RE.test(step)) {
+      decisions.push({
+        afterStep: stepNo,
+        question: step,
+        branches: [{ conditionLabel: 'Bedingung erfüllt' }],
+      });
+    }
+  });
+
+  const capture: AiCaptureResultV1 = {
     schemaVersion: 'ai-capture-v1',
     language: 'de',
     endToEnd: {
@@ -123,4 +183,10 @@ export function buildDictationCapture(sentences: string[]): AiCaptureResultV1 {
     },
     happyPath: steps,
   };
+  if (roles.length) capture.roles = roles;
+  if (systems.length) capture.systems = systems;
+  if (stepDetails.length) capture.stepDetails = stepDetails;
+  if (exceptions.length) capture.exceptions = exceptions;
+  if (decisions.length) capture.decisions = decisions;
+  return capture;
 }

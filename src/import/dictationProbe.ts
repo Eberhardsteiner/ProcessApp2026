@@ -31,7 +31,16 @@ function probeOptionB() {
   const sample = r.ok && r.result
     ? r.result.observations.slice(0, 5).map(o => (o as { label?: string; title?: string }).label ?? (o as { title?: string }).title ?? '(?)')
     : [];
-  return { label: 'OPTION B (Segmenter -> ai-capture-v1 -> Adapter)', ok: r.ok, error: r.error, steps, sample };
+  const summary = (r.result as { summary?: { roles?: string[]; systems?: string[]; issueSignals?: string[] } } | undefined)?.summary;
+  const rolesList = summary?.roles ?? (r.result as { roles?: string[] } | undefined)?.roles ?? [];
+  const systemsList = summary?.systems ?? (r.result as { systems?: string[] } | undefined)?.systems ?? [];
+  const friction = summary?.issueSignals?.length ?? (r.result as { issueSignals?: string[] } | undefined)?.issueSignals?.length ?? 0;
+  return {
+    label: 'OPTION B (angereichert)',
+    ok: r.ok, error: r.error, steps, sample,
+    roles: rolesList.length, systems: systemsList.length, friction,
+    rolesList, systemsList,
+  };
 }
 
 export function runDictationProbe() {
