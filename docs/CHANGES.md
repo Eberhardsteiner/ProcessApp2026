@@ -1,3 +1,10 @@
+## v0.54.0 – Schnelle Vorschläge greifen nach Mining/Diktat-Analyse
+
+- Der Button „Vorschläge erstellen" im Optimierungs-Coach funktioniert jetzt auch für Prozesse aus Mining/Diktat-Analyse: fehlt ein `captureDraft`, wird beim Klick einer aus den vorhandenen Schritt-Beobachtungen **synthetisiert** (`synthesizeCaptureDraftFromMining`), in die Version geschrieben (nur wenn keiner existiert — ein vorhandener wird **nie** überschrieben) und die Heuristik-Vorschläge werden sofort daraus berechnet
+- deckt bestehende UND neue Versionen ab; `summary.systems` → `ProcessSystem[]` ({id, name}), sodass auf einem diktierten Prozess **vier** Heuristiken feuern (Standardisieren & digitalisieren, System-Zuordnung vervollständigen, Datenobjekte definieren, Messbarkeit schaffen)
+- **ehrlicher Hinweis statt stillem Leerlauf**, wenn gar keine analysierten Daten vorliegen
+- Extraktions-Engine unangetastet (`documentDerivation.ts`/`sourceRouter.ts`/`documentStructureClassifier.ts` — kein Byte); keine neue Dependency; Benchmark unverändert **77/100**
+
 ## v0.53.0 – Diktat-Segmentierer verallgemeinert (1. und 3. Person)
 
 - Finite-Verb-Erkennung im Segmentierer (`src/import/freeTextSegmenter.ts`) verallgemeinert: explizite Verbliste **plus** eine morphologische Regel, die die deutsche Groß-/Kleinschreibung ausnutzt — kleingeschriebenes Wort auf `-t` = finite 2./3. Person (`prüft`/`holt`/`leitet` …), während großgeschriebene Nomen automatisch ausgeschlossen sind (`looksFiniteVerb` ersetzt die alte, 1.-Person-lastige `isVerb`-Liste); plus ein `verbSeen`-Gate, das Subjekt+Verb zusammenhält

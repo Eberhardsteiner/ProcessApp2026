@@ -5,6 +5,8 @@ import type { AppSettings } from '../settings/appSettings';
 import { startWebSpeechTranscription, type WebSpeechSession } from '../speech/webSpeechTranscription';
 import { isWebSpeechSupported } from '../speech/transcriptionProviders';
 import { generateHeuristicCandidates, type HeuristicCandidate } from '../assessment/heuristicRecommendations';
+import { loadV2State } from './assistedMiningV2/storage';
+import { synthesizeCaptureDraftFromMining } from './assistedMiningV2/miningToCaptureDraft';
 
 interface AssistedOptimizationCoachProps {
   process: Process;
@@ -60,6 +62,7 @@ export function AssistedOptimizationCoach({ process, version, settings, onSave }
 
   const [quickWins, setQuickWins] = useState<QuickWinCandidate[]>([]);
   const [generatingQuickWins, setGeneratingQuickWins] = useState(false);
+  const [quickWinsAttempted, setQuickWinsAttempted] = useState(false);
 
   const [recordingField, setRecordingField] = useState<'constraints' | 'successCriteria' | string | null>(null);
   const [interimTranscript, setInterimTranscript] = useState('');
@@ -175,8 +178,36 @@ export function AssistedOptimizationCoach({ process, version, settings, onSave }
 
   const handleGenerateQuickWins = () => {
     setGeneratingQuickWins(true);
+    setQuickWinsAttempted(true);
     try {
-      const candidates = generateHeuristicCandidates(process, version);
+      // Wenn (noch) kein captureDraft existiert, einen aus den Mining-Beobachtungen
+      // synthetisieren, in die Version schreiben (nur wenn keiner da ist) und
+      // die Vorschläge sofort daraus berechnen.
+      let effectiveVersion = version;
+      if (!version.sidecar.captureDraft) {
+        const { state } = loadV2State(version);
+        const synth = synthesizeCaptureDraftFromMining(
+          state.observations,
+          state.lastDerivationSummary,
+        );
+        if (synth) {
+          const sidecarHasSystems = (version.sidecar.systems?.length ?? 0) > 0;
+          const nextSidecar = {
+            ...version.sidecar,
+            captureDraft: synth.captureDraft,
+            ...(!sidecarHasSystems && synth.systems.length > 0
+              ? { systems: synth.systems }
+              : {}),
+          };
+          effectiveVersion = { ...version, sidecar: nextSidecar };
+          // Dauerhaft persistieren (kein await nötig — die Vorschläge entstehen
+          // aus effectiveVersion). Überschreibt nie einen vorhandenen captureDraft,
+          // weil wir nur in diesem Zweig (captureDraft fehlt) hier sind.
+          void onSave({ sidecar: nextSidecar });
+        }
+      }
+
+      const candidates = generateHeuristicCandidates(process, effectiveVersion);
 
       const quickWinCandidates: QuickWinCandidate[] = candidates.map((candidate) => {
         const firstSentence = candidate.text.split(/[.!?]/)[0].trim();
@@ -593,14 +624,23 @@ export function AssistedOptimizationCoach({ process, version, settings, onSave }
         </p>
 
         {quickWins.length === 0 ? (
-          <button
-            onClick={handleGenerateQuickWins}
-            disabled={generatingQuickWins}
-            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50"
-          >
-            <Lightbulb className="w-4 h-4" />
-            {generatingQuickWins ? 'Erstellt...' : 'Vorschläge erstellen'}
-          </button>
+          <>
+            <button
+              onClick={handleGenerateQuickWins}
+              disabled={generatingQuickWins}
+              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+            >
+              <Lightbulb className="w-4 h-4" />
+              {generatingQuickWins ? 'Erstellt...' : 'Vorschläge erstellen'}
+            </button>
+            {quickWinsAttempted && (
+              <p className="mt-3 text-sm text-slate-500">
+                Aktuell lassen sich keine automatischen Vorschläge ableiten. Erfassen oder
+                analysieren Sie zuerst einen Prozess (z.&nbsp;B. per Diktat oder Upload) –
+                dann erscheinen hier konkrete Quick Wins.
+              </p>
+            )}
+          </>
         ) : (
           <div className="space-y-4">
             <div className="space-y-3">
