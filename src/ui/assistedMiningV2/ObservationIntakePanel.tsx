@@ -7,7 +7,7 @@ import { useAppSettings } from '../../settings/useAppSettings';
 import { useProcessAnalysis } from './useProcessAnalysis';
 import { AnalysisStatus } from './AnalysisStatus';
 import { AnalysisOriginBadge } from './AnalysisOriginBadge';
-import { looksUnderpunctuated, segmentDictatedText, buildDictationCapture } from '../../import/freeTextSegmenter';
+import { looksUnderpunctuated, segmentDictatedText, buildDictationCapture, splitNarrativeIntoSteps, hasTimelineStructure } from '../../import/freeTextSegmenter';
 import { adaptAiCaptureToDerivation } from '../../ai/aiToObservations';
 import {
   startTranscription,
@@ -244,14 +244,18 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
     reset();
   }
 
-  // Deterministische, KI-freie Schritt-Extraktion fuer unpunktierten Diktattext:
-  // Segmentierer -> ai-capture-v1 -> adaptAiCaptureToDerivation (umgeht bewusst das
-  // Step-Gating in finalizeDerivationResult, das kurze imperative Schritte verwirft).
+  // Deterministische, KI-freie Schritt-Extraktion fuer freie Narrative (mit ODER ohne
+  // Satzzeichen): Satz-Split -> ai-capture-v1 -> adaptAiCaptureToDerivation (umgeht bewusst
+  // das Step-Gating in finalizeDerivationResult). Zeitstrahl-Protokolle bleiben bei der Engine.
   // Provenance wird ehrlich auf 'local' gesetzt (Badge: "Lokale Vorschau ohne KI").
   function deriveLocal(): DerivationResult | null {
     const raw = narrative.trim();
-    if (!looksUnderpunctuated(raw)) return null;
-    const sentences = segmentDictatedText(raw).split('\n').map((s) => s.trim()).filter(Boolean);
+    if (!raw) return null;
+    // Zeitstrahl-Protokolle der Engine überlassen (Timeline-Pfad); sonst freie Narrative
+    // (mit oder ohne Satzzeichen) deterministisch über ai-capture verarbeiten.
+    if (hasTimelineStructure(raw)) return null;
+    const sentences = splitNarrativeIntoSteps(raw);
+    if (sentences.length < 2) return null;
     const r = adaptAiCaptureToDerivation({
       aiText: JSON.stringify(buildDictationCapture(sentences)),
       originalText: raw,
@@ -269,17 +273,16 @@ export function ObservationIntakePanel({ existingCaseCount, onAddCase, onAddDeri
     const raw = narrative.trim();
     if (!raw) return;
 
-    // Diktat ohne Satzzeichen: deterministischer, KI-freier Pfad (Option B).
-    if (looksUnderpunctuated(raw)) {
-      setNarrative(segmentDictatedText(raw)); // editierbare Schritt-Saetze anzeigen (Transparenz)
-      const local = deriveLocal();
-      if (local) {
-        applyResult(local);
-        return;
-      }
-      // Sicherheitsnetz: scheitert der Adapter unerwartet, faellt es auf den normalen Pfad unten.
+    // Freie Narrative bevorzugt über den KI-freien ai-capture-Pfad (umgeht das Step-Gating).
+    const local = deriveLocal();
+    if (local) {
+      // Nur bei Diktat ohne Satzzeichen die segmentierten Schritt-Sätze sichtbar machen.
+      if (looksUnderpunctuated(raw)) setNarrative(segmentDictatedText(raw));
+      applyResult(local);
+      return;
     }
 
+    // Fallback: Engine (Zeitstrahl-Protokolle, < 2 Sätze oder unerwarteter Adapter-Fehler).
     const outcome = await analysis.run({
       text: raw,
       sourceName: caseName(),

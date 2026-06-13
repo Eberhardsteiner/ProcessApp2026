@@ -127,6 +127,26 @@ export function segmentDictatedText(text: string): string {
   return splitIntoSentences(text).join('\n');
 }
 
+/** Zeitstrahl-strukturierte Protokolle (Format "HH:MM Uhr | ..."), die die Engine
+ *  besser über ihren Timeline-Pfad verarbeitet. Ab 2 Treffern => der Engine überlassen. */
+export function hasTimelineStructure(text: string): boolean {
+  const matches = text.match(/\d{1,2}:\d{2}\s*Uhr\s*\|/g);
+  return (matches?.length ?? 0) >= 2;
+}
+
+/** Zerlegt freie Narrative in Schritt-Sätze:
+ *  - unpunktiert (Diktat-Stream) -> morphologischer Segmentierer
+ *  - punktiert (ausformuliert)   -> Trennung an Satzgrenzen, nur vor Großbuchstabe/Anführung
+ *    (robust gegen Abkürzungen und "5.000"). */
+export function splitNarrativeIntoSteps(text: string): string[] {
+  const raw = text.trim();
+  if (!raw) return [];
+  const parts = looksUnderpunctuated(raw)
+    ? segmentDictatedText(raw).split('\n')
+    : raw.split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ"„(])/);
+  return parts.map((s) => s.trim()).filter(Boolean);
+}
+
 /** Schritt-Saetze als nummerierte Liste (1., 2., …) — fuer den Struktur-Pfad der Engine.
  *  Unpunktierter Strom -> erst segmentieren; bereits zeilenweiser Text -> Zeilen nummerieren (idempotent). */
 export function toNumberedStepList(text: string): string {
@@ -139,7 +159,7 @@ export function toNumberedStepList(text: string): string {
 // --- Leichte, fokussierte Erkennung für den lokalen Diktat-Pfad (keine Engine-Logik) ---
 const ROLE_RE = /\b(sachbearbeiter(?:in)?|bearbeiter(?:in)?|teamleitung|abteilungsleiter(?:in)?|vorgesetzte[rn]?|führungskraft|geschäftsführung|fachabteilung|fachbereich|einkauf|vertrieb|buchhaltung|controlling|sekretariat|poststelle|labor|qualitätssicherung|lieferant(?:in)?|kund(?:e|in)|dienstleister|techniker(?:in)?|disponent(?:in)?|mitarbeiter(?:in)?|kolleg(?:e|in)|hausmeister)\b/i;
 const SYSTEM_RE = /\b(sap|erp|crm|jira|servicenow|sharepoint|portal|intranet|outlook|excel|word|powerpoint|teams|datenbank|e-?mail|software|applikation|anwendung|beamer|notebook|laptop|drucker|scanner|kaffeemaschine|backofen|ofen|kühlschrank|app|smartphone|handy|auto|aufzug|fahrstuhl|tankstelle)\b/i;
-const FRICTION_RE = /\b(verzögerung|wartezeit|manuell|medienbruch|doppelt|doppelerfassung|fehlerhaft|rückfrage|nachfassen|unklar|abtippen|ausdrucken|engpass|stau)\b/i;
+const FRICTION_RE = /(verzöger|wartezeit|manuell|medienbruch|doppelt|doppelerfassung|fehlerhaft|fehleranfällig|rückfrag|nachfrag|nachfass|unklar|abtipp|ausdruck|engpass|\bstau\b|uneinheitlich|rücklauf|zurückschick|skonto|kaum (jemand|genutzt|verwendet|benutzt)|nicht einheitlich|keine vertretung|niemand .{0,18}bescheid|keine? rückmeldung|verlier\w*.{0,14}überblick|kein\w*.{0,14}überblick|kein\w*.{0,14}durchgäng|zieht sich|zu viele|warte\w*.{0,18}(woche|tage?|länger|monat)|frist.{0,14}reiß|reißen wir)/i;
 const DECISION_START_RE = /^(wenn|sobald|falls|sofern)\b/i;
 
 function titleCaseWord(s: string): string {

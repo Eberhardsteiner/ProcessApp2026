@@ -1,3 +1,11 @@
+## v0.55.0 – Gut-interpunktierte Narrative laufen über den ai-capture-Pfad
+
+- Freie Prozessbeschreibungen (mit ODER ohne Satzzeichen) laufen jetzt über den KI-freien ai-capture-Pfad, statt bei der alten Engine in Nebensatz-Fragmente zu zerfallen: unpunktiert → morphologischer Segmentierer, punktiert → Trennung an Satzgrenzen (`splitNarrativeIntoSteps`, robust gegen Abkürzungen/„5.000"); beides → `buildDictationCapture` + Adapter (umgeht das Step-Gating). Ergebnis: deutlich mehr und sauberere Schritte/Rollen/Systeme/Entscheidungen, Badge „Lokale Vorschau ohne KI"
+- **Zeitstrahl-Protokolle** (Format „HH:MM Uhr | …", ab 2 Treffern via `hasTimelineStructure`) bleiben bei der Engine (Timeline-Pfad)
+- **Reibungserkennung geschärft:** `FRICTION_RE` erkennt jetzt gebeugte Formen (Stämme statt geschlossener Wörter, z. B. „doppelte", „Verzögerungen") und prosa-typische Signale („zieht sich", „Rückläufer", „kaum genutzt", „nicht einheitlich", „reißen wir … Skonto")
+- Bonus: mit deutlich mehr Schritten + Systemen feuern danach auch die Quick Wins (Paket 7) korrekt
+- Engine unangetastet (`documentDerivation.ts`/`sourceRouter.ts`/`documentStructureClassifier.ts` — kein Byte); keine neue Dependency; Benchmark unverändert **77/100**
+
 ## v0.54.0 – Schnelle Vorschläge greifen nach Mining/Diktat-Analyse
 
 - Der Button „Vorschläge erstellen" im Optimierungs-Coach funktioniert jetzt auch für Prozesse aus Mining/Diktat-Analyse: fehlt ein `captureDraft`, wird beim Klick einer aus den vorhandenen Schritt-Beobachtungen **synthetisiert** (`synthesizeCaptureDraftFromMining`), in die Version geschrieben (nur wenn keiner existiert — ein vorhandener wird **nie** überschrieben) und die Heuristik-Vorschläge werden sofort daraus berechnet
