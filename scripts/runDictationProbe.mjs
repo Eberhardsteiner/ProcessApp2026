@@ -48,6 +48,22 @@ try {
     console.log('  erste 5 Schritt-Label:');
     b.sample.forEach((s, i) => console.log(`    ${i + 1}. ${s}`));
   }
+
+  // --- Paket 9: lokale Pfad-Fixtures ---
+  const fx = mod.runLocalPathFixtures();
+  console.log('\n=== Lokaler Pfad — 10 Fixtures ===');
+  const p = (s, n) => String(s).padEnd(n);
+  console.log(`${p('Text', 5)} | ${p('Pfad', 7)} | ${p('Schr', 5)} | ${p('Roll', 5)} | ${p('Sys', 4)} | ${p('Reib', 5)} | Schritt 1`);
+  for (const r of fx.rows) {
+    console.log(`${p(r.key, 5)} | ${p(r.path, 7)} | ${p(r.steps, 5)} | ${p(r.roles, 5)} | ${p(r.systems, 4)} | ${p(r.friction, 5)} | ${(r.sample[0] ?? '').slice(0, 56)}`);
+  }
+  if (fx.failures.length) {
+    console.error('\n✗ FIXTURE-FEHLER:');
+    for (const f of fx.failures) console.error('  - ' + f);
+    process.exitCode = 1;
+  } else {
+    console.log('\n✓ Alle harten Fixture-Erwartungen erfüllt.');
+  }
 } finally {
   await rm(tempDir, { recursive: true, force: true });
 }

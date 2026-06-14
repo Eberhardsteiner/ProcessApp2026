@@ -1,3 +1,10 @@
+## v0.56.0 – Lokaler Analysepfad gehärtet (Listen, Kopfzeilen, Lexikon, Fixtures)
+
+- `splitNarrativeIntoSteps` (`src/import/freeTextSegmenter.ts`) erkennt jetzt **Aufzählungen** (Bullets `- `/`*`/`•`, nummeriert `1.`/`1)`/`a.`) und **verwirft führende Kopf-/Meta-Zeilen** (z. B. „Prozessbeschreibung: …", „Version …", „Verantwortlich: …"); mehrzeilige Eingaben werden zeilenbewusst zerlegt. **Einzeilige Eingaben bleiben byte-identisch** (Schritt 1–3 sind No-Op, Schritt 4 = bisheriges Verhalten) → keine Diktat-/Benchmark-Regression
+- `ROLE_RE`/`SYSTEM_RE` um fachübergreifende Begriffe erweitert (u. a. Personalabteilung, Lohnbuchhaltung, MTA, Laborleiter, Arzt, Entwickler, Release-Manager, Versicherungsnehmer, Gutachter, First/Second/Third-Level; DMS, LIMS, Repository, Pipeline, Monitoring, Ticketsystem, Kalender, Analysegerät, Confluence, Salesforce) — keine Dubletten
+- **zehn graduierte Testtexte** als feste Regressions-Fixtures (`runLocalPathFixtures` in `dictationProbe.ts`) inkl. **Exit-Code-Gate** im Diktat-Runner (`scripts/runDictationProbe.mjs`): harte Erwartungen an Schrittzahl + erkannte Rollen/Systeme; Zeitstrahl-Protokolle (T8) gehen weiter an die Engine
+- Engine unangetastet (`documentDerivation.ts`/`sourceRouter.ts`/`documentStructureClassifier.ts` — kein Byte); keine neue Dependency; Benchmark unverändert **77/100**
+
 ## v0.55.0 – Gut-interpunktierte Narrative laufen über den ai-capture-Pfad
 
 - Freie Prozessbeschreibungen (mit ODER ohne Satzzeichen) laufen jetzt über den KI-freien ai-capture-Pfad, statt bei der alten Engine in Nebensatz-Fragmente zu zerfallen: unpunktiert → morphologischer Segmentierer, punktiert → Trennung an Satzgrenzen (`splitNarrativeIntoSteps`, robust gegen Abkürzungen/„5.000"); beides → `buildDictationCapture` + Adapter (umgeht das Step-Gating). Ergebnis: deutlich mehr und sauberere Schritte/Rollen/Systeme/Entscheidungen, Badge „Lokale Vorschau ohne KI"

@@ -134,17 +134,79 @@ export function hasTimelineStructure(text: string): boolean {
   return (matches?.length ?? 0) >= 2;
 }
 
-/** Zerlegt freie Narrative in Schritt-Sätze:
- *  - unpunktiert (Diktat-Stream) -> morphologischer Segmentierer
- *  - punktiert (ausformuliert)   -> Trennung an Satzgrenzen, nur vor Großbuchstabe/Anführung
- *    (robust gegen Abkürzungen und "5.000"). */
+// --- Paket 9: Listen-/Kopf-/zeilenbewusster Splitter ---
+const LIST_RE = /^\s*([-*•‣◦]|\d{1,3}[.)]|[a-zA-Z][.)])\s+/;
+const META_KW = /^(version|stand|datum|gültig|verantwortlich|autor|ersteller|verfasser|freigegeben|geändert|seite|prozessbeschreibung|dokument|titel|thema|bereich|gesprächspartner(?:in)?|gesprächsnotiz)\b/i;
+const SENT_SPLIT_RE = /(?<=[.!?])\s+(?=[A-ZÄÖÜ"„(])/;
+
+function stripListMarker(line: string): string {
+  return line.replace(LIST_RE, '').trim();
+}
+
+function isLabelLine(line: string): boolean {
+  // Einwort-Label vor Doppelpunkt ("Verantwortlich: …", "Thema: …"); keine Leerzeichen vor dem Doppelpunkt.
+  return /^[A-ZÄÖÜ][A-Za-zÄÖÜäöüß\/-]{0,24}:\s+\S/.test(line) && line.split(/\s+/).length <= 8;
+}
+
+function looksMetaLine(line: string): boolean {
+  const isSentence = /[.!?]\s*$/.test(line);
+  return isLabelLine(line) || (META_KW.test(line) && !isSentence);
+}
+
+function splitSentences(block: string): string[] {
+  return block.split(SENT_SPLIT_RE).map(s => s.trim()).filter(Boolean);
+}
+
+// Bisheriges Verhalten — für EINZEILIGE Eingaben byte-identisch zu vorher.
+function splitSingleBlock(block: string): string[] {
+  if (looksUnderpunctuated(block)) {
+    return segmentDictatedText(block).split('\n').map(s => s.trim()).filter(Boolean);
+  }
+  return splitSentences(block);
+}
+
+/** Zerlegt freie Narrative in Schritt-Sätze (Paket 9: Listen-/Kopf-/zeilenbewusst):
+ *  - führende Kopf-/Meta-Zeilen werden verworfen,
+ *  - Listen (≥2 Marker-Zeilen) -> Marker strippen, je Zeile (ggf. Satztrennung) ein Schritt,
+ *  - mehrzeiliger Text ohne Marker -> je Zeile,
+ *  - Einzelblock -> bisheriges Verhalten (unpunktiert: Segmenter, sonst Satztrennung; byte-identisch). */
 export function splitNarrativeIntoSteps(text: string): string[] {
-  const raw = text.trim();
+  const raw = (text ?? '').trim();
   if (!raw) return [];
-  const parts = looksUnderpunctuated(raw)
-    ? segmentDictatedText(raw).split('\n')
-    : raw.split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ"„(])/);
-  return parts.map((s) => s.trim()).filter(Boolean);
+
+  // 1) Führende Kopf-/Meta-Zeilen verwerfen (nur am Anfang, bis zur ersten echten Zeile).
+  const lines = raw.split('\n').map(l => l.trim());
+  let start = 0;
+  while (start < lines.length) {
+    const l = lines[start];
+    if (l === '') { start++; continue; }       // Leerzeile: überspringen, weiter scannen
+    if (looksMetaLine(l)) { start++; continue; } // Meta-/Label-Zeile: verwerfen
+    break;                                        // erste echte Zeile
+  }
+  const nonEmpty = lines.slice(start).filter(Boolean);
+  if (nonEmpty.length === 0) return [];
+
+  // 2) Listenstruktur (≥2 Zeilen mit Marker)? → Marker strippen, je Zeile (ggf. Satztrennung) ein Schritt.
+  const markered = nonEmpty.filter(l => LIST_RE.test(l)).length;
+  if (markered >= 2) {
+    const steps: string[] = [];
+    for (const l of nonEmpty) {
+      const core = stripListMarker(l);
+      if (core) splitSentences(core).forEach(s => steps.push(s));
+    }
+    return steps;
+  }
+
+  // 3) Mehrzeiliger Text ohne Listenmarker → je Zeile aufteilen
+  //    (deckt "ein Schritt pro Zeile" ohne Bullets ab; sonst würde das Zusammenfügen die Zeilengrenzen zerstören).
+  if (nonEmpty.length >= 2 && nonEmpty.length <= 40) {
+    const steps: string[] = [];
+    for (const l of nonEmpty) splitSingleBlock(l).forEach(s => steps.push(s));
+    return steps;
+  }
+
+  // 4) Einzelblock → bisheriges Verhalten (byte-identisch zu vorher).
+  return splitSingleBlock(nonEmpty.join(' '));
 }
 
 /** Schritt-Saetze als nummerierte Liste (1., 2., …) — fuer den Struktur-Pfad der Engine.
@@ -157,8 +219,8 @@ export function toNumberedStepList(text: string): string {
 }
 
 // --- Leichte, fokussierte Erkennung für den lokalen Diktat-Pfad (keine Engine-Logik) ---
-const ROLE_RE = /\b(sachbearbeiter(?:in)?|bearbeiter(?:in)?|teamleitung|abteilungsleiter(?:in)?|vorgesetzte[rn]?|führungskraft|geschäftsführung|fachabteilung|fachbereich|einkauf|vertrieb|buchhaltung|controlling|sekretariat|poststelle|labor|qualitätssicherung|lieferant(?:in)?|kund(?:e|in)|dienstleister|techniker(?:in)?|disponent(?:in)?|mitarbeiter(?:in)?|kolleg(?:e|in)|hausmeister)\b/i;
-const SYSTEM_RE = /\b(sap|erp|crm|jira|servicenow|sharepoint|portal|intranet|outlook|excel|word|powerpoint|teams|datenbank|e-?mail|software|applikation|anwendung|beamer|notebook|laptop|drucker|scanner|kaffeemaschine|backofen|ofen|kühlschrank|app|smartphone|handy|auto|aufzug|fahrstuhl|tankstelle)\b/i;
+const ROLE_RE = /\b(sachbearbeiter(?:in)?|bearbeiter(?:in)?|teamleitung|abteilungsleiter(?:in)?|vorgesetzte[rn]?|führungskraft|geschäftsführung|fachabteilung|fachbereich|einkauf|vertrieb|buchhaltung|controlling|sekretariat|poststelle|labor|qualitätssicherung|lieferant(?:in)?|kund(?:e|in)|dienstleister|techniker(?:in)?|disponent(?:in)?|mitarbeiter(?:in)?|kolleg(?:e|in)|hausmeister|personalabteilung|lohnbuchhaltung|laborleiter(?:in)?|antragsteller(?:in)?|anwender(?:in)?|nutzer(?:in)?|benutzer(?:in)?|entwickler(?:in)?|release[\s-]?manager|versicherungsnehmer(?:in)?|gutachter(?:in)?|mta|arzt|ärztin|support|bereitschaft(?:sdienst)?|first-level|second-level|third-level|projektleiter(?:in)?|produktmanager(?:in)?)\b/i;
+const SYSTEM_RE = /\b(sap|erp|crm|jira|servicenow|sharepoint|portal|intranet|outlook|excel|word|powerpoint|teams|datenbank|e-?mail|software|applikation|anwendung|beamer|notebook|laptop|drucker|scanner|kaffeemaschine|backofen|ofen|kühlschrank|app|smartphone|handy|auto|aufzug|fahrstuhl|tankstelle|dms|lims|repository|repo|pipeline|monitoring|ticketsystem|ticket|servicedesk|kalender|analysegerät|messgerät|wiki|confluence|salesforce)\b/i;
 const FRICTION_RE = /(verzöger|wartezeit|manuell|medienbruch|doppelt|doppelerfassung|fehlerhaft|fehleranfällig|rückfrag|nachfrag|nachfass|unklar|abtipp|ausdruck|engpass|\bstau\b|uneinheitlich|rücklauf|zurückschick|skonto|kaum (jemand|genutzt|verwendet|benutzt)|nicht einheitlich|keine vertretung|niemand .{0,18}bescheid|keine? rückmeldung|verlier\w*.{0,14}überblick|kein\w*.{0,14}überblick|kein\w*.{0,14}durchgäng|zieht sich|zu viele|warte\w*.{0,18}(woche|tage?|länger|monat)|frist.{0,14}reiß|reißen wir)/i;
 const DECISION_START_RE = /^(wenn|sobald|falls|sofern)\b/i;
 
